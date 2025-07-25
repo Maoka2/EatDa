@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { NavigationContainer } from "@react-navigation/native";
 import AuthNavigator from "./src/navigation/AuthNavigator";
+import Sidebar from "./src/components/Sidebar";
 
 // SplashScreen이 자동으로 숨겨지지 않도록 설정
 SplashScreen.preventAutoHideAsync();
