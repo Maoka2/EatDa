@@ -15,25 +15,31 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
-    // 5초 동안 보여주고 종료
-    const timer = setTimeout(() => {
-      console.log("5 seconds completed, proceeding to app");
+    // 안전장치: 최대 30초 후 강제 종료 (비디오가 너무 길거나 문제가 생겼을 때)
+    const safetyTimer = setTimeout(() => {
+      console.log("Safety timeout reached, proceeding to app");
       onFinish();
-    }, 5000);
+    }, 30000); // 30초
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(safetyTimer);
     };
   }, [onFinish]);
 
   const handlePlaybackStatusUpdate = (status: AVPlaybackStatus) => {
     if (status.isLoaded) {
-      // 비디오가 끝나면 다시 처음부터 재생 (루프 효과)
+      // 비디오가 끝나면 앱으로 이동
       if (status.didJustFinish) {
-        console.log("Video loop completed, restarting...");
-        // 비디오 재시작은 isLooping={true}로 자동 처리됨
+        console.log("Video playback completed, proceeding to app");
+        onFinish();
       }
     }
+  };
+
+  const handleVideoError = (error: string) => {
+    console.log("Video error occurred:", error);
+    // 비디오 에러 시 바로 앱으로 이동
+    onFinish();
   };
 
   const handleLoad = () => {
@@ -43,88 +49,84 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 
   return (
     <View style={styles.container}>
-      {/* 배경 */}
-      <View style={[styles.background, { width, height }]} />
+      {/* 전체 화면 비디오 */}
+      <Video
+        source={require("../../assets/intro.mp4")}
+        style={[styles.fullScreenVideo, { width, height }]}
+        shouldPlay={true}
+        isLooping={false} // 루프 비활성화 - 한 번만 재생
+        useNativeControls={false}
+        resizeMode={ResizeMode.COVER}
+        volume={0}
+        onLoad={handleLoad}
+        onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
+        onError={handleVideoError}
+      />
 
-      {/* 비디오 - 화면을 거의 채우는 크기로 */}
-      <View
-        style={[
-          styles.videoContainer,
-          { width: width * 0.8, height: width * 0.8 },
-        ]}
-      >
-        <Video
-          source={require("../../assets/intro.mov")}
-          style={[styles.video, { width: width * 0.8, height: width * 0.8 }]}
-          shouldPlay={true}
-          isLooping={true} // 루프 활성화
-          useNativeControls={false} // 컨트롤 숨기기
-          resizeMode={ResizeMode.CONTAIN}
-          volume={0} // 음소거
-          onLoad={handleLoad}
-          onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
-        />
-      </View>
-
-      {/* 로고 - 각 글자별 색상 */}
-      <View style={styles.logoContainer}>
-        <View style={styles.logoTextContainer}>
-          <Text
-            style={[
-              textStyles.logo,
-              styles.logoChar,
-              { fontSize: width * 0.15, color: COLORS.primaryEater },
-            ]}
-          >
-            E
-          </Text>
-          <Text
-            style={[
-              textStyles.logo,
-              styles.logoChar,
-              { fontSize: width * 0.2, color: COLORS.secondaryMaker },
-            ]}
-          >
-            a
-          </Text>
-          <Text
-            style={[
-              textStyles.logo,
-              styles.logoChar,
-              { fontSize: width * 0.15, color: COLORS.primaryMaker },
-            ]}
-          >
-            t
-          </Text>
-          <Text
-            style={[
-              textStyles.logo,
-              styles.logoChar,
-              { fontSize: width * 0.2, color: COLORS.secondaryEater },
-            ]}
-          >
-            D
-          </Text>
-          <Text
-            style={[
-              textStyles.logo,
-              styles.logoChar,
-              { fontSize: width * 0.15, color: COLORS.primaryEater },
-            ]}
-          >
-            a
-          </Text>
-          <Text
-            style={[
-              textStyles.logo,
-              styles.logoChar,
-              { fontSize: width * 0.2, color: COLORS.primaryMaker },
-            ]}
-          >
-            !
-          </Text>
+      {/* 로고 오버레이 - 비디오 위에 표시 */}
+      <View style={styles.logoOverlay}>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoTextContainer}>
+            <Text
+              style={[
+                textStyles.logo,
+                styles.logoChar,
+                { fontSize: width * 0.15, color: COLORS.primaryEater },
+              ]}
+            >
+              E
+            </Text>
+            <Text
+              style={[
+                textStyles.logo,
+                styles.logoChar,
+                { fontSize: width * 0.2, color: COLORS.secondaryMaker },
+              ]}
+            >
+              a
+            </Text>
+            <Text
+              style={[
+                textStyles.logo,
+                styles.logoChar,
+                { fontSize: width * 0.15, color: COLORS.primaryMaker },
+              ]}
+            >
+              t
+            </Text>
+            <Text
+              style={[
+                textStyles.logo,
+                styles.logoChar,
+                { fontSize: width * 0.2, color: COLORS.secondaryEater },
+              ]}
+            >
+              D
+            </Text>
+            <Text
+              style={[
+                textStyles.logo,
+                styles.logoChar,
+                { fontSize: width * 0.15, color: COLORS.primaryEater },
+              ]}
+            >
+              a
+            </Text>
+            <Text
+              style={[
+                textStyles.logo,
+                styles.logoChar,
+                { fontSize: width * 0.2, color: COLORS.primaryMaker },
+              ]}
+            >
+              !
+            </Text>
+          </View>
         </View>
       </View>
+
+      {/* 반투명 오버레이 (선택사항 - 로고 가독성 향상) */}
+      <View style={styles.dimOverlay} />
     </View>
   );
 }
@@ -132,40 +134,43 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
   },
-  background: {
+  fullScreenVideo: {
     position: "absolute",
     top: 0,
     left: 0,
-    backgroundColor: "#fff",
+    zIndex: 1, // 가장 뒤에 배치
   },
-  videoContainer: {
+  logoOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 50,
-  },
-  video: {
-    // 동적 크기는 인라인 스타일로 적용됨
+    zIndex: 3, // 로고를 가장 앞에 배치
   },
   logoContainer: {
     alignItems: "center",
+    borderRadius: 20,
+    paddingHorizontal: 30,
+    paddingVertical: 20,
   },
   logoTextContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
   logoChar: {
-    textShadowColor: "rgba(0,0,0,0.1)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
   },
-  debugInfo: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 10,
-    textAlign: "center",
+  dimOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
   },
 });
