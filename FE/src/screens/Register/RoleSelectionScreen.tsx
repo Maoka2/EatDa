@@ -63,17 +63,22 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
         resizeMode="cover"
       >
         <SafeAreaView
-          style={[styles.content, { paddingVertical: height * 0.04 }]}
+          style={[
+            styles.content,
+            {
+              paddingVertical: height * 0.04,
+            },
+          ]}
         >
           {/* 로고 및 타이틀 */}
           <View style={[styles.headerContainer, { marginTop: height * 0.05 }]}>
             <Text
               style={[
                 textStyles.logo,
-                { fontSize: width * 0.09, marginBottom: height * 0.015 },
+                { fontSize: width * 0.08, marginBottom: height * 0.015 },
               ]}
             >
-              <Text style={{ color: "#fc6fae" }}>E</Text>at
+              <Text style={{ color: "#53a3da" }}>E</Text>at
               <Text style={{ color: "#38cca2" }}>D</Text>a!
             </Text>
             <Text
@@ -106,14 +111,14 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
                 style={[styles.cardContainer3D, eaterPressed && styles.pressed]}
               >
                 <LinearGradient
-                  colors={["#fef7f7", "#fce7f3", "#fbcfe8"]}
+                  colors={["#fef7f7", "#fce7f3", "#f3e8ff"]}
                   style={styles.cardBackground}
                 >
                   <LinearGradient
                     colors={
                       eaterPressed
-                        ? ["#ff8bb5", "#ff69b4", "#fc6fae"]
-                        : ["#fc6fae", "#f472b6", "#ec4899"]
+                        ? ["#ff8bb5", "#fc6fae", "#53a3da"]
+                        : ["#fc6fae", "#53a3da", "#4f46e5"]
                     }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
@@ -157,25 +162,19 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
                     <View style={[styles.decorCircle, styles.decorCircle3]} />
 
                     <View style={styles.cardContent}>
-                      {/* 배지 - 카드 밖으로 이동 */}
-                      <View style={[styles.badge, styles.eaterBadge]}>
-                        <Text style={styles.badgeText}>FOODIE</Text>
-                      </View>
-
-                      {/* 캐릭터 영역 */}
-                      <View style={styles.characterContainer}>
-                        <View style={styles.characterBg}>
-                          <EaterProfileIcon width={48} height={48} />
+                      {/* 왼쪽: 캐릭터 영역 */}
+                      <View style={styles.leftSection}>
+                        <View style={styles.characterContainer}>
+                          <View style={styles.characterBg}>
+                            <EaterProfileIcon width={100} height={100} />
+                          </View>
                         </View>
                       </View>
 
-                      {/* 텍스트 영역 */}
-                      <View style={styles.textContainer}>
+                      {/* 오른쪽: 텍스트 영역 */}
+                      <View style={styles.rightSection}>
                         <Text
-                          style={[
-                            styles.roleTitle,
-                            { fontSize: width * 0.048 },
-                          ]}
+                          style={[styles.roleTitle, { fontSize: width * 0.04 }]}
                         >
                           냠냠이로 가입하기
                         </Text>
@@ -191,6 +190,10 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
                     </View>
                   </LinearGradient>
                 </LinearGradient>
+              </View>
+              {/* 배지를 카드 밖으로 완전히 분리 */}
+              <View style={[styles.badge, styles.eaterBadge]}>
+                <Text style={styles.badgeText}>FOODIE</Text>
               </View>
             </TouchableOpacity>
 
@@ -215,8 +218,8 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
                   <LinearGradient
                     colors={
                       makerPressed
-                        ? ["#ffd480", "#ffc947", "#fec566"]
-                        : ["#fec566", "#38cca2", "#10b981"]
+                        ? ["#ffd480", "#fec566", "#38cca2"]
+                        : ["#fec566", "#38cca2", "#059669"]
                     }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
@@ -260,25 +263,19 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
                     <View style={[styles.decorCircle, styles.decorCircle3]} />
 
                     <View style={styles.cardContent}>
-                      {/* 배지 - 카드 밖으로 이동 */}
-                      <View style={[styles.badge, styles.makerBadge]}>
-                        <Text style={styles.badgeText}>BUSINESS</Text>
-                      </View>
-
-                      {/* 캐릭터 영역 */}
-                      <View style={styles.characterContainer}>
-                        <View style={styles.characterBg}>
-                          <MakerProfileIcon width={52} height={52} />
+                      {/* 왼쪽: 캐릭터 영역 */}
+                      <View style={styles.leftSection}>
+                        <View style={styles.characterContainer}>
+                          <View style={styles.characterBg}>
+                            <MakerProfileIcon width={110} height={110} />
+                          </View>
                         </View>
                       </View>
 
-                      {/* 텍스트 영역 */}
-                      <View style={styles.textContainer}>
+                      {/* 오른쪽: 텍스트 영역 */}
+                      <View style={styles.rightSection}>
                         <Text
-                          style={[
-                            styles.roleTitle,
-                            { fontSize: width * 0.048 },
-                          ]}
+                          style={[styles.roleTitle, { fontSize: width * 0.04 }]}
                         >
                           사장님으로 가입하기
                         </Text>
@@ -294,6 +291,10 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
                     </View>
                   </LinearGradient>
                 </LinearGradient>
+              </View>
+              {/* 배지를 카드 밖으로 완전히 분리 */}
+              <View style={[styles.badge, styles.makerBadge]}>
+                <Text style={styles.badgeText}>BUSINESS</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -346,10 +347,13 @@ const styles = StyleSheet.create({
   cardContainer: {
     flex: 1,
     paddingHorizontal: 8,
+    paddingTop: 40,
   },
   roleCard: {
     borderRadius: 28,
     overflow: "visible",
+    position: "relative",
+    paddingBottom: 24,
   },
   cardContainer3D: {
     borderRadius: 28,
@@ -403,15 +407,29 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
     zIndex: 10,
     position: "relative",
+    paddingHorizontal: 5,
+  },
+  leftSection: {
+    flex: 0.4,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 8,
+  },
+  rightSection: {
+    flex: 0.6,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    paddingLeft: 8,
   },
   badge: {
     position: "absolute",
-    top: -35,
-    right: 15,
+    top: -15,
+    right: 25,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -420,13 +438,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 6,
-    zIndex: 20,
+    zIndex: 100,
   },
   eaterBadge: {
-    backgroundColor: "rgba(252, 111, 174, 0.9)",
+    backgroundColor: COLORS.secondaryEater,
   },
   makerBadge: {
-    backgroundColor: "rgba(254, 197, 102, 0.9)",
+    backgroundColor: COLORS.secondaryMaker,
   },
   badgeText: {
     color: "#fff",
@@ -439,32 +457,21 @@ const styles = StyleSheet.create({
   },
   characterContainer: {
     alignItems: "center",
-    marginBottom: 14,
     position: "relative",
   },
   characterBg: {
-    width: 70,
-    height: 70,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    width: 80,
+    height: 80,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 6,
   },
   textContainer: {
     alignItems: "center",
   },
   roleTitle: {
-    fontWeight: "800",
+    fontWeight: "700",
     color: "#fff",
     marginBottom: 8,
-    textShadowColor: "rgba(0, 0, 0, 0.25)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
     textAlign: "center",
     letterSpacing: -0.3,
   },
@@ -473,22 +480,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: "600",
     textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.1)",
-    textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   backButton: {
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 28,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    borderRadius: 20,
     marginHorizontal: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
   },
   backText: {
     color: "#475569",
