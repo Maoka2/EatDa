@@ -39,7 +39,7 @@ export default function AuthForm({
   const btnHeight = height * 0.055; // 0.065에서 0.055로 줄임
 
   return (
-    <View style={[styles.container, { paddingHorizontal: width * 0.05 }]}>
+    <View style={[styles.container, { paddingHorizontal: width * 0.04 }]}>
       {/* 입력 필드들 */}
       {fields.map((field) => (
         <InputGroup

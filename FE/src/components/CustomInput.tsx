@@ -1,22 +1,27 @@
-// src/components/CustomInput.tsx
 import React from "react";
 import { TextInput, StyleSheet, TextInputProps } from "react-native";
 import { Shadow } from "react-native-shadow-2";
+import { useResponsive } from "../utils/useResponsive";
 
 interface Props extends TextInputProps {
   style?: any;
 }
 
 export default function CustomInput({ style, ...props }: Props) {
+  const { hp, wp } = useResponsive();
   return (
     <Shadow
-      offset={[0, 2]}
-      distance={4}
+      offset={[0, hp(0.005)]}
+      distance={hp(0.01)}
       startColor="rgba(0,0,0,0.1)"
       style={styles.shadowContainer}
     >
       <TextInput
-        style={[styles.input, style]}
+        style={[
+          styles.input,
+          { height: hp(0.065), paddingHorizontal: wp(0.04) },
+          style,
+        ]}
         placeholderTextColor="#aaa"
         {...props}
       />
@@ -25,18 +30,11 @@ export default function CustomInput({ style, ...props }: Props) {
 }
 
 const styles = StyleSheet.create({
-  shadowContainer: {
-    width: "100%",
-    borderRadius: 8,
-    paddingBottom: 3, // 4에서 3으로 줄임
-    overflow: "visible",
-  },
+  shadowContainer: { width: "100%", borderRadius: 8, overflow: "visible" },
   input: {
     width: "100%",
-    height: 38, // 42에서 38로 줄임
-    borderRadius: 8,
-    paddingHorizontal: 12,
     backgroundColor: "#fff",
-    fontSize: 14, // 폰트 크기 명시
+    fontSize: 14,
+    borderRadius: 10,
   },
 });

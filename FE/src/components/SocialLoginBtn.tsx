@@ -1,21 +1,19 @@
-// src/components/SocialLoginBtn.tsx
 import React from "react";
 import {
   TouchableOpacity,
   Text,
   StyleSheet,
   useWindowDimensions,
-  ViewStyle,
 } from "react-native";
-import { SvgProps } from "react-native-svg";
 import { Shadow } from "react-native-shadow-2";
 import { COLORS, SPACING, RADIUS } from "../constants/theme";
+import { SvgProps } from "react-native-svg";
 
 interface Props {
   title: string;
   IconComponent: React.FC<SvgProps>;
   onPress: () => void;
-  style?: ViewStyle;
+  style?: any;
   iconStyle?: { width: number; height: number };
 }
 
@@ -27,7 +25,7 @@ export default function SocialLoginBtn({
   iconStyle,
 }: Props) {
   const { height } = useWindowDimensions();
-  const btnHeight = height * 0.055; // 0.065에서 0.055로 줄임
+  const btnHeight = height * 0.055;
 
   return (
     <Shadow
@@ -42,8 +40,8 @@ export default function SocialLoginBtn({
         style={[styles.button, { height: btnHeight }, style]}
       >
         <IconComponent
-          width={iconStyle?.width || 18} // 20에서 18로 줄임
-          height={iconStyle?.height || 18} // 20에서 18로 줄임
+          width={iconStyle?.width || 18}
+          height={iconStyle?.height || 18}
           style={styles.icon}
         />
         <Text
@@ -71,13 +69,11 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     width: "100%",
   },
-  icon: {
-    marginRight: SPACING.sm,
-  },
+  icon: { marginRight: SPACING.sm },
   text: {
     fontSize: 14,
     fontWeight: "600",
     color: COLORS.text,
-    textAlign: "center", // 명시적 중앙 정렬
+    textAlign: "center",
   },
 });
