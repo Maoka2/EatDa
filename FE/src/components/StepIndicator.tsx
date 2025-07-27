@@ -27,7 +27,7 @@ export default function StepIndicator({
                   backgroundColor: isActive
                     ? activeColor
                     : COLORS.inactive + "30",
-                  borderColor: isActive ? activeColor : COLORS.inactive,
+                  borderColor: isActive ? activeColor : "#ddd",
                 },
               ]}
             >
