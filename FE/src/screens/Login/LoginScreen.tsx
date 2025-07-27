@@ -14,6 +14,8 @@ import EaterLoginScreen from "./EaterLoginScreen";
 import MakerLoginScreen from "./MakerLoginScreen";
 import RoleSelectionScreen from "../Register/RoleSelectionScreen";
 import RegisterScreen from "../Register/RegisterScreen";
+import ReviewTabScreen from "../Review/ReviewTabScreen";
+import ResultModal from "../../components/ResultModal";
 import { COLORS, textStyles } from "../../constants/theme";
 
 type TabKey = "eater" | "maker";
@@ -26,9 +28,42 @@ export default function LoginScreen() {
     null
   );
   const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<"eater" | "maker" | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState<"success" | "failure">("success");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalTitle, setModalTitle] = useState("");
 
   const primaryColor =
     activeTab === "eater" ? COLORS.primaryEater : COLORS.primaryMaker;
+
+  // 로그인 성공 핸들러
+  const handleLoginSuccess = (role: "eater" | "maker") => {
+    setModalType("success");
+    setModalTitle("로그인 성공");
+    setModalMessage(
+      `${role === "eater" ? "냠냠이" : "사장님"} 로그인에 성공했습니다!`
+    );
+    setShowModal(true);
+    setUserRole(role);
+  };
+
+  // 로그인 실패 핸들러
+  const handleLoginFailure = (message: string) => {
+    setModalType("failure");
+    setModalTitle("로그인 실패");
+    setModalMessage(message);
+    setShowModal(true);
+  };
+
+  // 모달 닫기 핸들러
+  const handleModalClose = () => {
+    setShowModal(false);
+    if (modalType === "success" && userRole) {
+      setIsLoggedIn(true);
+    }
+  };
 
   // 회원가입 네비게이션 핸들러들
   const handleNavigateToRegister = () => {
@@ -57,6 +92,17 @@ export default function LoginScreen() {
     console.log("회원가입 완료!");
     handleBackToLogin();
   };
+
+  // 로그아웃 핸들러
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserRole(null);
+  };
+
+  // 로그인 성공 후 리뷰 탭 화면 표시
+  if (isLoggedIn && userRole) {
+    return <ReviewTabScreen userRole={userRole} onLogout={handleLogout} />;
+  }
 
   // 역할 선택 화면 표시
   if (showRoleSelection) {
@@ -127,10 +173,14 @@ export default function LoginScreen() {
             {activeTab === "eater" ? (
               <EaterLoginScreen
                 onNavigateToRegister={handleNavigateToRegister}
+                onLoginSuccess={() => handleLoginSuccess("eater")}
+                onLoginFailure={handleLoginFailure}
               />
             ) : (
               <MakerLoginScreen
                 onNavigateToRegister={handleNavigateToRegister}
+                onLoginSuccess={() => handleLoginSuccess("maker")}
+                onLoginFailure={handleLoginFailure}
               />
             )}
           </View>
@@ -152,6 +202,15 @@ export default function LoginScreen() {
           />
         </View>
       </ImageBackground>
+
+      {/* 결과 모달 */}
+      <ResultModal
+        visible={showModal}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={handleModalClose}
+      />
     </View>
   );
 }
