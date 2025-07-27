@@ -1,7 +1,6 @@
 // src/components/AuthForm.tsx
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, useWindowDimensions, StyleSheet } from "react-native";
-import CustomInput from "./CustomInput";
 import LoginButton from "./LoginButton";
 import InputGroup from "./InputGroup";
 import { SPACING, COLORS } from "../constants/theme";
@@ -17,7 +16,7 @@ export type AuthField = {
 type Props = {
   role: "eater" | "maker";
   fields: AuthField[];
-  onSubmit: () => void;
+  onSubmit: (formData: Record<string, string>) => void; // 수정된 타입
   submitButtonText: string;
   linkItems?: string[];
   onLinkPress?: (item: string) => void;
@@ -36,7 +35,29 @@ export default function AuthForm({
   showLinks = true,
 }: Props) {
   const { width, height } = useWindowDimensions();
-  const btnHeight = height * 0.055; // 0.065에서 0.055로 줄임
+  const btnHeight = height * 0.055;
+
+  // Form 데이터 상태 관리
+  const [formData, setFormData] = useState<Record<string, string>>(() => {
+    const initialData: Record<string, string> = {};
+    fields.forEach((field) => {
+      initialData[field.key] = "";
+    });
+    return initialData;
+  });
+
+  // 입력값 변경 핸들러
+  const handleInputChange = (key: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  // 제출 핸들러
+  const handleSubmit = () => {
+    onSubmit(formData);
+  };
 
   return (
     <View style={[styles.container, { paddingHorizontal: width * 0.04 }]}>
@@ -48,6 +69,8 @@ export default function AuthForm({
           placeholder={field.placeholder}
           secureTextEntry={field.secureTextEntry || false}
           keyboardType={field.keyboardType || "default"}
+          value={formData[field.key]}
+          onChangeText={(value) => handleInputChange(field.key, value)}
           style={{
             height: btnHeight,
             paddingHorizontal: width * 0.04,
@@ -73,11 +96,11 @@ export default function AuthForm({
       <LoginButton
         title={submitButtonText}
         role={role}
-        onPress={onSubmit}
+        onPress={handleSubmit} // 수정된 핸들러 사용
         style={{
           height: btnHeight,
           borderRadius: width * 0.02,
-          marginBottom: height * 0.02, // 0.025에서 0.02로 줄임
+          marginBottom: height * 0.02,
         }}
         textStyle={{ fontSize: width * 0.04 }}
       />
@@ -90,7 +113,7 @@ export default function AuthForm({
               key={idx}
               style={[
                 styles.childItem,
-                { marginRight: idx === arr.length - 1 ? 0 : width * 0.03 }, // 0.02에서 0.03으로 증가
+                { marginRight: idx === arr.length - 1 ? 0 : width * 0.03 },
               ]}
             >
               {child}
