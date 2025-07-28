@@ -46,7 +46,7 @@ export default function ResultModal({
           <View style={styles.iconWrapper}>
             {type === "success" ? (
               <ModalSuccessIcon
-                width={modalWidth * 0.5}
+                width={modalWidth * 0.8}
                 height={modalWidth * 0.5}
               />
             ) : (
