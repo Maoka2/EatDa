@@ -1,8 +1,14 @@
 package com.global.dto.response;
 
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 public interface BaseResponse {
+    static String now() {
+        return Instant.now().truncatedTo(ChronoUnit.MILLIS).toString();
+    }
+
     @NotNull
     String code();
 
@@ -11,4 +17,7 @@ public interface BaseResponse {
 
     @NotNull
     int status();
+
+    @NotNull
+    String timestamp();
 }

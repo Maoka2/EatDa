@@ -1,6 +1,7 @@
 package com.global.dto.response;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static com.global.dto.response.BaseResponse.now;
 import static lombok.AccessLevel.PRIVATE;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -12,7 +13,8 @@ public record SuccessResponse<T>(
         @NotNull String code,
         @NotNull String message,
         @NotNull int status,
-        @JsonInclude(NON_NULL) T data // 추가 에러 상세 정보 (null인 경우 JSON에서 제외)
+        @JsonInclude(NON_NULL) T data, // 추가 에러 상세 정보 (null인 경우 JSON에서 제외)
+        @NotNull String timestamp
 ) implements BaseResponse {
 
     public static <T> SuccessResponse<T> of(final String code, final String message, final int status, final T data) {
@@ -21,6 +23,7 @@ public record SuccessResponse<T>(
                 .message(message)
                 .status(status)
                 .data(data)
+                .timestamp(now())
                 .build();
     }
 
@@ -29,6 +32,7 @@ public record SuccessResponse<T>(
                 .code(code)
                 .message(message)
                 .status(status)
+                .timestamp(now())
                 .build();
     }
 }
