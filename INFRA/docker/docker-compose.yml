@@ -1,0 +1,42 @@
+services:
+  front-nginx:
+    image: nginx:latest
+    container_name: front-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /srv/nginx/front/default.conf:/etc/nginx/conf.d/default.conf
+      - /srv/nginx/front:/srv/nginx/front
+    restart: always
+    networks:
+      - backend
+
+  prod-nginx:
+    image: nginx:latest
+    container_name: prod-nginx
+    expose:
+      - "80"
+    volumes:
+      - /srv/nginx/prod/default.conf:/etc/nginx/conf.d/default.conf
+      - /srv/nginx/prod:/srv/nginx/prod
+    restart: always
+    networks:
+      - backend
+
+  test-nginx:
+    image: nginx:latest
+    container_name: test-nginx
+    expose:
+      - "80"
+    volumes:
+      - /srv/nginx/test/default.conf:/etc/nginx/conf.d/default.conf
+      - /srv/nginx/test:/srv/nginx/test
+    restart: always
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: backend
