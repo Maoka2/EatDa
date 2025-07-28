@@ -10,6 +10,9 @@ import {
   StyleSheet,
   useWindowDimensions,
   Alert,
+  Modal,
+  TextInput,
+  Image,
 } from "react-native";
 import StepIndicator from "../../components/StepIndicator";
 import InputGroup from "../../components/InputGroup";
@@ -58,7 +61,7 @@ type MenuItemType = {
   name: string;
   price: string;
   description: string;
-  image?: string;
+  imageUri?: string;
 };
 
 export default function MakerRegisterScreen({ onBack, onComplete }: Props) {
@@ -78,6 +81,11 @@ export default function MakerRegisterScreen({ onBack, onComplete }: Props) {
     terms: false,
     marketing: false,
   });
+
+  // 새로 추가된 state들
+  const [isScanning, setIsScanning] = useState(false);
+  const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [modalType, setModalType] = useState<"success" | "failure">("success");
@@ -125,42 +133,72 @@ export default function MakerRegisterScreen({ onBack, onComplete }: Props) {
     setCurrentStep((s) => s - 1);
   };
 
-  // OCR 메뉴 스캔 함수
+  // 개선된 OCR 메뉴 스캔 함수
   const handleMenuScan = () => {
-    Alert.alert(
-      "메뉴 스캔",
-      "카메라로 메뉴판을 촬영하여 OCR 스캔을 시작합니다.",
-      [
-        { text: "취소", style: "cancel" },
+    setIsScanning(true);
+
+    // 실제로는 카메라 열고 OCR API 호출
+    setTimeout(() => {
+      const sampleMenus: MenuItemType[] = [
         {
-          text: "촬영하기",
-          onPress: () => {
-            const sampleMenus: MenuItemType[] = [
-              {
-                id: "1",
-                name: "김치찌개",
-                price: "8,000",
-                description: "얼큰한 김치찌개",
-              },
-              {
-                id: "2",
-                name: "된장찌개",
-                price: "7,000",
-                description: "구수한 된장찌개",
-              },
-              {
-                id: "3",
-                name: "불고기",
-                price: "15,000",
-                description: "달콤한 불고기",
-              },
-            ];
-            setMenuItems(sampleMenus);
-            setSelectedMenuImage("sample_menu.jpg");
-          },
+          id: "1",
+          name: "김치찌개",
+          price: "8000",
+          description: "",
         },
-      ]
-    );
+        {
+          id: "2",
+          name: "된장찌개",
+          price: "7000",
+          description: "",
+        },
+        {
+          id: "3",
+          name: "불고기",
+          price: "15000",
+          description: "",
+        },
+        {
+          id: "4",
+          name: "계란찜",
+          price: "6000",
+          description: "",
+        },
+      ];
+      setMenuItems(sampleMenus);
+      setSelectedMenuImage("scanned_menu.jpg");
+      setIsScanning(false);
+      Alert.alert("스캔 완료", `${sampleMenus.length}개의 메뉴를 찾았습니다!`);
+    }, 2000);
+  };
+
+  // 메뉴 편집 함수들
+  const handleEditMenu = (menuId: string) => {
+    setEditingMenuId(menuId);
+    setEditModalVisible(true);
+  };
+
+  const handleSaveMenuEdit = () => {
+    setEditModalVisible(false);
+    setEditingMenuId(null);
+  };
+
+  const handleImagePick = (menuId: string) => {
+    Alert.alert("이미지 선택", "메뉴 이미지를 어떻게 추가하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "카메라",
+        onPress: () => {
+          updateMenuItem(menuId, "imageUri", "camera_image.jpg");
+        },
+      },
+      {
+        text: "갤러리",
+        onPress: () => {
+          updateMenuItem(menuId, "imageUri", "gallery_image.jpg");
+        },
+      },
+    ]);
   };
 
   const updateMenuItem = (
@@ -174,7 +212,16 @@ export default function MakerRegisterScreen({ onBack, onComplete }: Props) {
   };
 
   const removeMenuItem = (id: string) => {
-    setMenuItems((prev) => prev.filter((item) => item.id !== id));
+    Alert.alert("메뉴 삭제", "이 메뉴를 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: () => {
+          setMenuItems((prev) => prev.filter((item) => item.id !== id));
+        },
+      },
+    ]);
   };
 
   const handleBusinessLicenseUpload = () => {
@@ -264,90 +311,378 @@ export default function MakerRegisterScreen({ onBack, onComplete }: Props) {
     </View>
   );
 
-  // Step 3: 메뉴 정보 입력
-  const renderStep3Content = () => (
-    <View style={styles.step3Container}>
-      <Text style={[styles.step2Description, { fontSize: width * 0.035 }]}>
-        메뉴판 이미지를 업로드하시면{"\n"}메뉴를 인식해 자동으로 등록 가능합니다
-      </Text>
-      <TouchableOpacity
-        style={[
-          styles.scanButton,
-          { height: height * 0.25, marginBottom: height * 0.03 },
-        ]}
-        onPress={handleMenuScan}
-      >
-        {selectedMenuImage ? (
-          <View style={styles.scanResult}>
-            <Text style={[styles.scanResultText, { fontSize: width * 0.04 }]}>
-              📷 메뉴판 스캔 완료
-            </Text>
-            <Text style={[styles.scanSubText, { fontSize: width * 0.03 }]}>
-              {menuItems.length}개 메뉴 감지됨
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.scanPlaceholder}>
-            <Text style={styles.scanIcon}>📷</Text>
-            <Text style={[styles.scanText, { fontSize: width * 0.04 }]}>
-              메뉴판을 촬영하여 OCR 스캔
-            </Text>
-            <Text style={[styles.scanSubText, { fontSize: width * 0.03 }]}>
-              메뉴 이름과 가격을 자동으로 인식합니다
-            </Text>
+  // Step 3: 개선된 메뉴 정보 입력
+  const renderStep3Content = () => {
+    const editingMenu = menuItems.find((item) => item.id === editingMenuId);
+
+    return (
+      <View style={styles.step3Container}>
+        {/* OCR 스캔 영역 */}
+        <Text style={[styles.step2Description, { fontSize: width * 0.035 }]}>
+          메뉴판을 촬영하여 메뉴 정보를 자동으로 가져오세요
+        </Text>
+
+        <TouchableOpacity
+          style={[
+            styles.scanButton,
+            {
+              height: menuItems.length > 0 ? height * 0.15 : height * 0.25,
+              marginBottom: height * 0.03,
+              opacity: isScanning ? 0.7 : 1,
+            },
+          ]}
+          onPress={handleMenuScan}
+          disabled={isScanning}
+        >
+          {selectedMenuImage ? (
+            <View style={styles.scanResult}>
+              <Text style={[styles.scanResultText, { fontSize: width * 0.04 }]}>
+                📷 메뉴판 스캔 완료
+              </Text>
+              <Text style={[styles.scanSubText, { fontSize: width * 0.03 }]}>
+                {menuItems.length}개 메뉴 감지됨
+              </Text>
+              <TouchableOpacity
+                style={styles.rescanButton}
+                onPress={handleMenuScan}
+              >
+                <Text style={[styles.rescanText, { fontSize: width * 0.03 }]}>
+                  다시 스캔하기
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.scanPlaceholder}>
+              <Text style={styles.scanIcon}>{isScanning ? "📱" : "📷"}</Text>
+              <Text style={[styles.scanText, { fontSize: width * 0.04 }]}>
+                {isScanning
+                  ? "메뉴판 스캔 중..."
+                  : "메뉴판을 촬영하여 OCR 스캔"}
+              </Text>
+              <Text style={[styles.scanSubText, { fontSize: width * 0.03 }]}>
+                {isScanning
+                  ? "잠시만 기다려주세요"
+                  : "메뉴 이름과 가격을 자동으로 인식합니다"}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* 메뉴 리스트 */}
+        {menuItems.length > 0 && (
+          <View style={styles.menuItemsContainer}>
+            <View style={styles.menuHeaderRow}>
+              <Text style={[styles.menuItemsTitle, { fontSize: width * 0.04 }]}>
+                인식된 메뉴 ({menuItems.length}개)
+              </Text>
+              <Text style={[styles.menuHelpText, { fontSize: width * 0.03 }]}>
+                각 메뉴를 터치하여 상세 정보를 입력하세요
+              </Text>
+            </View>
+
+            {menuItems.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.menuItemCard}
+                onPress={() => handleEditMenu(item.id)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemContent}>
+                  {/* 메뉴 이미지 */}
+                  <View
+                    style={[
+                      styles.menuImageContainer,
+                      {
+                        width: width * 0.15,
+                        height: width * 0.15,
+                      },
+                    ]}
+                  >
+                    {item.imageUri ? (
+                      <View style={styles.menuImageWrapper}>
+                        <Text style={styles.menuImagePlaceholder}>🍽️</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.addImageButton}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleImagePick(item.id);
+                        }}
+                      >
+                        <Text style={styles.addImageIcon}>📷</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {/* 메뉴 정보 */}
+                  <View style={styles.menuInfo}>
+                    <Text style={[styles.menuName, { fontSize: width * 0.04 }]}>
+                      {item.name}
+                    </Text>
+                    <Text
+                      style={[styles.menuPrice, { fontSize: width * 0.035 }]}
+                    >
+                      {Number(item.price).toLocaleString()}원
+                    </Text>
+                    <Text
+                      style={[
+                        styles.menuDescription,
+                        { fontSize: width * 0.03 },
+                      ]}
+                    >
+                      {item.description || "설명을 추가해주세요"}
+                    </Text>
+                  </View>
+
+                  {/* 편집 버튼 */}
+                  <TouchableOpacity
+                    style={[
+                      styles.editButton,
+                      { backgroundColor: secondaryColor },
+                    ]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleEditMenu(item.id);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.editButtonText,
+                        { fontSize: width * 0.03 },
+                      ]}
+                    >
+                      편집
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 완성도 표시 */}
+                <View style={styles.completionIndicator}>
+                  <View style={styles.completionDots}>
+                    <View
+                      style={[
+                        styles.completionDot,
+                        {
+                          backgroundColor: item.name
+                            ? secondaryColor
+                            : "#E5E5E5",
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.completionDot,
+                        {
+                          backgroundColor: item.price
+                            ? secondaryColor
+                            : "#E5E5E5",
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.completionDot,
+                        {
+                          backgroundColor: item.description
+                            ? secondaryColor
+                            : "#E5E5E5",
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.completionDot,
+                        {
+                          backgroundColor: item.imageUri
+                            ? secondaryColor
+                            : "#E5E5E5",
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
-      </TouchableOpacity>
 
-      {menuItems.length > 0 && (
-        <View style={styles.menuItemsContainer}>
-          <Text style={[styles.menuItemsTitle, { fontSize: width * 0.04 }]}>
-            인식된 메뉴 ({menuItems.length}개)
-          </Text>
-          {menuItems.map((item) => (
-            <View key={item.id} style={styles.menuItem}>
-              <View style={styles.menuItemHeader}>
-                <Text
-                  style={[styles.menuItemName, { fontSize: width * 0.035 }]}
-                >
-                  메뉴 {item.id}
+        {/* 메뉴 편집 모달 */}
+        <Modal
+          visible={editModalVisible}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setEditModalVisible(false)}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Text style={[styles.modalCancel, { fontSize: width * 0.04 }]}>
+                  취소
                 </Text>
-                <TouchableOpacity onPress={() => removeMenuItem(item.id)}>
-                  <Text style={styles.removeButton}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <InputGroup
-                label="메뉴명"
-                value={item.name}
-                onChangeText={(text) => updateMenuItem(item.id, "name", text)}
-                style={styles.menuInput}
-              />
-
-              <InputGroup
-                label="가격"
-                value={item.price}
-                onChangeText={(text) => updateMenuItem(item.id, "price", text)}
-                keyboardType="numeric"
-                style={styles.menuInput}
-              />
-
-              <InputGroup
-                label="설명"
-                value={item.description}
-                onChangeText={(text) =>
-                  updateMenuItem(item.id, "description", text)
-                }
-                placeholder="메뉴 설명을 입력해주세요"
-                style={styles.menuInput}
-                multiline
-              />
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { fontSize: width * 0.045 }]}>
+                메뉴 편집
+              </Text>
+              <TouchableOpacity onPress={handleSaveMenuEdit}>
+                <Text
+                  style={[
+                    styles.modalSave,
+                    { fontSize: width * 0.04, color: secondaryColor },
+                  ]}
+                >
+                  완료
+                </Text>
+              </TouchableOpacity>
             </View>
-          ))}
-        </View>
-      )}
-    </View>
-  );
+
+            {editingMenu && (
+              <ScrollView style={styles.modalContent}>
+                {/* 이미지 섹션 */}
+                <View style={styles.modalSection}>
+                  <Text
+                    style={[
+                      styles.modalSectionTitle,
+                      { fontSize: width * 0.04 },
+                    ]}
+                  >
+                    메뉴 이미지
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handleImagePick(editingMenu.id)}
+                    style={[
+                      styles.imagePickerButton,
+                      {
+                        width: width * 0.3,
+                        height: width * 0.3,
+                      },
+                    ]}
+                  >
+                    {editingMenu.imageUri ? (
+                      <Text
+                        style={[
+                          styles.imagePickerIcon,
+                          { fontSize: width * 0.1 },
+                        ]}
+                      >
+                        🍽️
+                      </Text>
+                    ) : (
+                      <>
+                        <Text
+                          style={[
+                            styles.imagePickerIcon,
+                            { fontSize: width * 0.1 },
+                          ]}
+                        >
+                          📷
+                        </Text>
+                        <Text
+                          style={[
+                            styles.imagePickerText,
+                            { fontSize: width * 0.032 },
+                          ]}
+                        >
+                          이미지 추가
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {/* 메뉴명 */}
+                <View style={styles.modalSection}>
+                  <Text
+                    style={[
+                      styles.modalSectionTitle,
+                      { fontSize: width * 0.04 },
+                    ]}
+                  >
+                    메뉴명
+                  </Text>
+                  <TextInput
+                    style={[styles.modalInput, { fontSize: width * 0.04 }]}
+                    value={editingMenu.name}
+                    onChangeText={(text) =>
+                      updateMenuItem(editingMenu.id, "name", text)
+                    }
+                    placeholder="메뉴명을 입력하세요"
+                  />
+                </View>
+
+                {/* 가격 */}
+                <View style={styles.modalSection}>
+                  <Text
+                    style={[
+                      styles.modalSectionTitle,
+                      { fontSize: width * 0.04 },
+                    ]}
+                  >
+                    가격
+                  </Text>
+                  <TextInput
+                    style={[styles.modalInput, { fontSize: width * 0.04 }]}
+                    value={editingMenu.price}
+                    onChangeText={(text) =>
+                      updateMenuItem(editingMenu.id, "price", text)
+                    }
+                    placeholder="가격을 입력하세요"
+                    keyboardType="numeric"
+                  />
+                </View>
+
+                {/* 설명 */}
+                <View style={styles.modalSection}>
+                  <Text
+                    style={[
+                      styles.modalSectionTitle,
+                      { fontSize: width * 0.04 },
+                    ]}
+                  >
+                    메뉴 설명
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.modalDescriptionInput,
+                      { fontSize: width * 0.035 },
+                    ]}
+                    value={editingMenu.description}
+                    onChangeText={(text) =>
+                      updateMenuItem(editingMenu.id, "description", text)
+                    }
+                    placeholder="메뉴에 대한 설명을 입력하세요&#10;예) 매콤하고 고소한 김치볶음밥입니다"
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                {/* 메뉴 삭제 버튼 */}
+                <View style={styles.modalSection}>
+                  <TouchableOpacity
+                    style={styles.modalDeleteMenuButton}
+                    onPress={() => {
+                      removeMenuItem(editingMenu.id);
+                      setEditModalVisible(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.modalDeleteMenuText,
+                        { fontSize: width * 0.04 },
+                      ]}
+                    >
+                      메뉴 삭제
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+          </SafeAreaView>
+        </Modal>
+      </View>
+    );
+  };
 
   // Step 4: 동의 탭
   const renderStep4Content = () => {
@@ -615,7 +950,7 @@ const styles = StyleSheet.create({
     color: COLORS.inactive,
   },
 
-  // Step 3 스타일
+  // Step 3 스타일 (개선됨)
   step3Container: {
     flex: 1,
   },
@@ -653,14 +988,206 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 5,
   },
+  rescanButton: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    backgroundColor: "#ccc",
+    borderColor: "#ccc",
+  },
+  rescanText: {
+    color: "#fff",
+    fontWeight: "500",
+  },
+
+  // 메뉴 리스트 스타일
   menuItemsContainer: {
     marginBottom: 20,
+  },
+  menuHeaderRow: {
+    marginBottom: 15,
   },
   menuItemsTitle: {
     fontWeight: "600",
     color: COLORS.text,
-    marginBottom: 15,
+    marginBottom: 5,
   },
+  menuHelpText: {
+    color: COLORS.inactive,
+  },
+  menuItemCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.gray300,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  menuItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  menuImageContainer: {
+    borderRadius: 8,
+    backgroundColor: "#F5F5F5",
+    marginRight: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuImageWrapper: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  menuImagePlaceholder: {
+    fontSize: 30,
+  },
+  addImageButton: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    borderStyle: "dashed",
+  },
+  addImageIcon: {
+    fontSize: 20,
+    color: COLORS.inactive,
+  },
+  menuInfo: {
+    flex: 1,
+  },
+  menuName: {
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  menuPrice: {
+    color: COLORS.secondaryMaker,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  menuDescription: {
+    color: COLORS.inactive,
+    lineHeight: 16,
+  },
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  editButtonText: {
+    color: "#FFF",
+    fontWeight: "500",
+  },
+  completionIndicator: {
+    alignItems: "center",
+  },
+  completionDots: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  completionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+
+  // 모달 스타일
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#FFF",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  modalCancel: {
+    color: "#999",
+  },
+  modalTitle: {
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  modalSave: {
+    fontWeight: "600",
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  modalSection: {
+    marginTop: 20,
+  },
+  modalSectionTitle: {
+    fontWeight: "600",
+    color: COLORS.text,
+    marginBottom: 10,
+  },
+  imagePickerButton: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  imagePickerIcon: {
+    marginBottom: 5,
+  },
+  imagePickerText: {
+    color: "#999",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#FFF",
+  },
+  modalDescriptionInput: {
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#FFF",
+    minHeight: 80,
+  },
+
+  // 모달 내 삭제 버튼
+  modalDeleteMenuButton: {
+    width: "100%",
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#FF4444",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  modalDeleteMenuText: {
+    color: "#FFF",
+    fontWeight: "600",
+  },
+
+  // 기존 메뉴 아이템 스타일 (호환성 유지)
   menuItem: {
     backgroundColor: "#fff",
     borderRadius: 12,
