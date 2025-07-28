@@ -45,7 +45,9 @@ public class BaseResponse<T> {
         this.details = details;
     }
 
-    // 성공 응답 생성 - 데이터 포함
+    /**
+     * 성공 응답 생성 - 데이터 포함
+     */
     public static <T> BaseResponse<T> success(final SuccessCode successCode, final T data) {
         return BaseResponse.<T>builder()
                 .code(successCode.getCode())
@@ -55,7 +57,9 @@ public class BaseResponse<T> {
                 .build();
     }
 
-    // 성공 응답 생성 - 데이터 없음
+    /**
+     * 성공 응답 생성 - 데이터 없음
+     */
     public static <T> BaseResponse<T> success(final SuccessCode successCode) {
         return BaseResponse.<T>builder()
                 .code(successCode.getCode())
@@ -64,7 +68,9 @@ public class BaseResponse<T> {
                 .build();
     }
 
-    // 에러 응답 생성 - details 포함
+    /**
+     * 에러 응답 생성 - details 포함
+     */
     public static <T> BaseResponse<T> error(final ErrorCode errorCode, final Object details) {
         return BaseResponse.<T>builder()
                 .code(errorCode.getCode())
@@ -74,7 +80,9 @@ public class BaseResponse<T> {
                 .build();
     }
 
-    // 에러 응답 생성 - details 없음
+    /**
+     * 에러 응답 생성 - details 없음
+     */
     public static <T> BaseResponse<T> error(final ErrorCode errorCode) {
         return BaseResponse.<T>builder()
                 .code(errorCode.getCode())
