@@ -194,12 +194,12 @@ export default function LoginScreen() {
             style={[
               styles.finger,
               {
-                bottom: height * 0.02,
-                width: height < 700 ? width * 0.4 : width * 0.55, // 작은 화면에서 크기 감소
+                bottom: 0,
+                width: height < 700 ? width * 0.4 : width * 0.5, // 작은 화면에서 크기 감소
                 height:
                   height < 700
                     ? (width * 0.4 * 228) / 190
-                    : (width * 0.55 * 228) / 190,
+                    : (width * 0.5 * 228) / 190,
               },
             ]}
           />
