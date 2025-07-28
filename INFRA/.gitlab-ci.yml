@@ -1,0 +1,161 @@
+stages:
+  - infra
+  - test
+  - build
+  - deploy
+  - cleanup
+
+default:
+  image:
+    name: openjdk:21-slim
+    pull_policy: if-not-present
+
+reload-infra:
+  stage: infra
+  dependencies: []
+  image:
+    name: docker:latest
+    pull_policy: if-not-present
+    entrypoint: [""]
+  script:
+    - cp -r $CI_PROJECT_DIR/INFRA/nginx/* /srv/nginx/
+    - docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.yml up -d
+  rules:
+    - changes:
+        - INFRA/.gitlab-ci.yml
+      when: manual
+  allow_failure: true
+
+
+run-test:
+  stage: test
+  before_script:
+    - cd $CI_PROJECT_DIR/BE
+    - chmod +x gradlew
+    - export GRADLE_USER_HOME=/cache/.gradle
+  script:
+    - ./gradlew test --no-daemon
+  rules:
+    - changes:
+        - INFRA/.gitlab-ci.yml
+      when: never
+    - if: '($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "be/develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "be/master") && $CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH =~ /^be\//'
+
+check-build:
+  stage: test
+  before_script:
+    - cd $CI_PROJECT_DIR/BE
+    - chmod +x gradlew
+    - export GRADLE_USER_HOME=/cache/.gradle
+  script:
+    - ./gradlew compileJava --no-daemon
+  rules:
+    - changes:
+        - INFRA/.gitlab-ci.yml
+      when: never
+    - if: '($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "be/develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "be/master") && $CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "be/develop"'
+    - if: '$CI_COMMIT_BRANCH == "be/master"'
+
+build-jar:
+  stage: build
+  before_script:
+    - cd $CI_PROJECT_DIR/BE
+    - chmod +x gradlew
+    - export GRADLE_USER_HOME=/cache/.gradle
+  script:
+    - ./gradlew build -x test --no-daemon
+    - cp build/libs/app.jar app.jar
+  artifacts:
+    paths:
+      - BE/app.jar
+    expire_in: 1h
+  rules:
+    - changes:
+        - INFRA/.gitlab-ci.yml
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "be/develop"'
+    - if: '$CI_COMMIT_BRANCH == "be/master"'
+
+build-docker-image:
+  stage: build
+  image:
+    name: docker:latest
+    pull_policy: if-not-present
+    entrypoint: [""]
+  before_script:
+    - chmod +x $CI_PROJECT_DIR/INFRA/scripts/get-next-slot.sh
+    - cd $CI_PROJECT_DIR/BE
+  script:
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "be/master" ]]; then
+        export ENV=prod
+      else
+        export ENV=test
+      fi
+      export NEXT_SLOT=$($CI_PROJECT_DIR/INFRA/scripts/get-next-slot.sh $ENV)
+      docker build -t eatda:$CI_COMMIT_SHORT_SHA .
+      docker tag eatda:$CI_COMMIT_SHORT_SHA eatda:$ENV-$NEXT_SLOT
+  rules:
+    - changes:
+        - INFRA/.gitlab-ci.yml
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "be/develop"'
+    - if: '$CI_COMMIT_BRANCH == "be/master"'
+  needs:
+    - build-jar
+
+deploy-slot-based:
+  stage: deploy
+  dependencies: []
+  image:
+    name: docker:latest
+    pull_policy: if-not-present
+    entrypoint: [""]
+  before_script:
+    - chmod +x $CI_PROJECT_DIR/INFRA/scripts/get-next-slot.sh
+  script:
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "be/master" ]]; then
+        export ENV=prod
+      else
+        export ENV=test
+      fi
+      export NEXT_SLOT=$($CI_PROJECT_DIR/INFRA/scripts/get-next-slot.sh $ENV)
+      export PREV_SLOT=$( [ "$NEXT_SLOT" = "blue" ] && echo "green" || echo "blue" )
+      docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.${ENV}.yml up -d ${ENV}-${NEXT_SLOT}
+      docker exec ${ENV}-nginx ln -sf /srv/nginx/${ENV}/default-${NEXT_SLOT}.conf /srv/nginx/${ENV}/default.conf
+      # health check
+      docker exec ${ENV}-nginx nginx -s reload
+      docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.${ENV}.yml stop ${ENV}-${PREV_SLOT}
+  rules:
+    - changes:
+        - INFRA/.gitlab-ci.yml
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "be/develop"'
+    - if: '$CI_COMMIT_BRANCH == "be/master"'
+
+cleanup-temp-files:
+  stage: cleanup
+  dependencies: []
+  image:
+    name: docker:latest
+    pull_policy: if-not-present
+    entrypoint: [""]
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - |
+      images=$(docker images -f "dangling=true" -q | tail -n +6)
+      if [ -n "$images" ]; then
+        docker rmi $images || true
+      fi
+    - docker builder prune -f --filter 'until=24h'
+  rules:
+    - changes:
+        - INFRA/.gitlab-ci.yml
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "be/develop"'
+    - if: '$CI_COMMIT_BRANCH == "be/master"'
+    
