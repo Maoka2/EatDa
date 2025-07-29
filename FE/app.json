@@ -5,17 +5,15 @@
     "entryPoint": "index.js",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/modal_success.svg",
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "assets/**/*"
-    ],
+    "assetBundlePatterns": ["assets/**/*"],
     "ios": {
       "supportsTablet": true
     },
@@ -30,10 +28,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-font",
-      "expo-video"
-    ],
+    "plugins": ["expo-font", "expo-video"],
     "extra": {
       "eas": {
         "projectId": "dbc7317c-c30e-4a26-97b6-18bea7e9e35c"
