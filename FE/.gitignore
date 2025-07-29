@@ -37,7 +37,3 @@ yarn-error.*
 *.tsbuildinfo
 node_modules/
 dist/
-
-# apiKeys
-config/apiKeys.js
-.env
