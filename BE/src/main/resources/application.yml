@@ -2,4 +2,4 @@ spring:
   application:
     name: EatDa
   profiles:
-    active: local  # ← 여기서 기본 실행 profile 지정 (local or test)
+    active: local

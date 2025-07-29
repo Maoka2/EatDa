@@ -17,5 +17,3 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
-# test용 h2용도
