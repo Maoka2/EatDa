@@ -1,7 +1,7 @@
 package com.global.dto.response;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static com.global.dto.response.BaseResponse.now;
+import static com.global.utils.TimestampUtils.now;
 import static lombok.AccessLevel.PRIVATE;
 
 import com.fasterxml.jackson.annotation.JsonInclude;

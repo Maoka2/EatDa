@@ -1,5 +1,7 @@
 package com.global.exception;
 
+import static com.global.utils.PathUtils.extractLeafProperty;
+
 import com.global.constants.ErrorCode;
 import com.global.dto.response.BaseResponse;
 import com.global.dto.response.ErrorResponse;
@@ -114,15 +116,7 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.toMap(
                         violation -> extractLeafProperty(violation.getPropertyPath().toString()),
                         ConstraintViolation::getMessage,
-                        (first, second) -> first // 중복 필드는 첫 번째 메시지 유지
+                        (first, second) -> first
                 ));
-    }
-
-    /**
-     * 경로 문자열에서 마지막 필드명만 추출 (예: "method.param.field" → "field")
-     */
-    private String extractLeafProperty(String path) {
-        var lastDot = path.lastIndexOf('.');
-        return (lastDot != -1) ? path.substring(lastDot + 1) : path;
     }
 }
