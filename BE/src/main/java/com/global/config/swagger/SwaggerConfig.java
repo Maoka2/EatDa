@@ -1,5 +1,13 @@
 package com.global.config.swagger;
 
+import static com.global.constants.Messages.API_DESCRIPTION;
+import static com.global.constants.Messages.API_TITLE;
+import static com.global.constants.Messages.API_VERSION;
+import static com.global.constants.Messages.BEARER_FORMAT;
+import static com.global.constants.Messages.BEARER_SCHEME;
+import static com.global.constants.Messages.DEV_SERVER_URL;
+import static com.global.constants.Messages.LOCAL_SERVER_URL;
+import static com.global.constants.Messages.SECURITY_SCHEME_NAME;
 import static io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP;
 
 import io.swagger.v3.oas.models.Components;
@@ -15,8 +23,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
-    private static final String SECURITY_SCHEME_NAME = "BearerAuthentication";
-
     @Bean
     public OpenAPI openApi() {
         return new OpenAPI()
@@ -28,35 +34,35 @@ public class SwaggerConfig {
 
     // JWT 인증 관련 설정 생성
     private Components createSecurityComponents() {
-        SecurityScheme securityScheme = new SecurityScheme()
-                .type(HTTP)
-                .scheme("bearer")
-                .bearerFormat("JWT");
+        SecurityScheme scheme = createJwtSecurityScheme();
+        return new Components().addSecuritySchemes(SECURITY_SCHEME_NAME.getMessage(), scheme);
+    }
 
-        Components components = new Components();
-        components.addSecuritySchemes(SECURITY_SCHEME_NAME, securityScheme);
-        return components;
+    // JWT 보안 구성 설정 생성 - Bearer 토큰 방식의 인증 스키마 정의
+    private SecurityScheme createJwtSecurityScheme() {
+        return new SecurityScheme()
+                .type(HTTP)
+                .scheme(BEARER_SCHEME.getMessage())
+                .bearerFormat(BEARER_FORMAT.getMessage());
     }
 
     // 보안 요구사항 설정
     private SecurityRequirement createSecurityRequirement() {
-        SecurityRequirement securityRequirement = new SecurityRequirement();
-        securityRequirement.addList(SECURITY_SCHEME_NAME);
-        return securityRequirement;
+        return new SecurityRequirement().addList(SECURITY_SCHEME_NAME.getMessage());
     }
 
     // API 정보 설정
     private Info createApiInfo() {
         return new Info()
-                .title("EatDa API Document")
-                .description("잇다 API 명세서")
-                .version("1.0.0");
+                .title(API_TITLE.getMessage())
+                .description(API_DESCRIPTION.getMessage())
+                .version(API_VERSION.getMessage());
     }
 
     // 서버 정보 설정
     private List<Server> createServers() {
-        Server localServer = new Server().url("http://localhost:8080");
-        Server devServer = new Server().url("https://eatda.com");
+        Server localServer = new Server().url(LOCAL_SERVER_URL.getMessage());
+        Server devServer = new Server().url(DEV_SERVER_URL.getMessage());
         return List.of(localServer, devServer);
     }
 }
