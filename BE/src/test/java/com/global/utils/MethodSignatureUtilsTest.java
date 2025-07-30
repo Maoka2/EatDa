@@ -1,6 +1,6 @@
 package com.global.utils;
 
-import static com.global.constants.Messages.LOGGING_EXCLUDED_MESSAGE;
+import static com.global.constants.Messages.LOG_EXCLUDED_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.global.annotation.ExcludeFromLogging;
@@ -34,7 +34,7 @@ class MethodSignatureUtilsTest {
         assertThat(result)
                 .startsWith("TestController.testMethod(")
                 .contains("SampleArg[value=value1]")
-                .contains(LOGGING_EXCLUDED_MESSAGE.message())
+                .contains(LOG_EXCLUDED_VALUE.message())
                 .doesNotContain("secret");
     }
 
@@ -59,7 +59,7 @@ class MethodSignatureUtilsTest {
         // then
         assertThat(result)
                 .contains("visible=SampleArg[value=value1]")
-                .doesNotContain(LOGGING_EXCLUDED_MESSAGE.message());
+                .doesNotContain(LOG_EXCLUDED_VALUE.message());
     }
 
     @Test

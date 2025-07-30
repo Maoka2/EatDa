@@ -1,8 +1,8 @@
 package com.global.utils;
 
 import static com.global.constants.Messages.APACHE_PACKAGE;
-import static com.global.constants.Messages.LOGGING_EXCLUDED_MESSAGE;
 import static com.global.constants.Messages.LOG_ARG_CONVERSION_FAILED;
+import static com.global.constants.Messages.LOG_EXCLUDED_VALUE;
 import static com.global.constants.Messages.SPRING_PACKAGE;
 import static com.global.constants.Messages.UTILITY_CLASS_ERROR;
 import static com.global.utils.MaskingUtils.mask;
@@ -65,7 +65,7 @@ public final class MethodSignatureUtils {
 
             boolean excluded = isExcluded(parameterAnnotations[i]);
             String argString = excluded
-                    ? LOGGING_EXCLUDED_MESSAGE.message()
+                    ? LOG_EXCLUDED_VALUE.message()
                     : convertArgToString(arg);
 
             joiner.add(parameterNames[i] + EQUAL + argString);

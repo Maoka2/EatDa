@@ -28,7 +28,9 @@ public enum Messages {
     LOG_COMPLETE_PREFIX("<--"),
     LOG_EXCEPTION_PREFIX("<X-"),
     LOG_UNSUPPORTED_LEVEL("Unsupported log level: {}"),
-    LOGGING_EXCLUDED_MESSAGE("<excluded>"),
+    LOG_MASKED_VALUE("****"),
+    LOG_ERROR_VALUE("<error>"),
+    LOG_EXCLUDED_VALUE("<excluded>"),
 
     // Utility 클래스 관련 메시지
     UTILITY_CLASS_ERROR("Utility class");

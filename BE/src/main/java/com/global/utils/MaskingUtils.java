@@ -1,5 +1,8 @@
 package com.global.utils;
 
+import static com.global.constants.Messages.LOG_ERROR_VALUE;
+import static com.global.constants.Messages.LOG_EXCLUDED_VALUE;
+import static com.global.constants.Messages.LOG_MASKED_VALUE;
 import static com.global.constants.Messages.UTILITY_CLASS_ERROR;
 
 import com.global.annotation.ExcludeFromLogging;
@@ -11,10 +14,6 @@ import java.util.StringJoiner;
  * `@Sensitive`는 마스킹 처리, `@ExcludeFromLogging`은 로그 제외 처리를 수행하는 필드 전용 유틸리티 클래스입니다.
  */
 public final class MaskingUtils {
-
-    private static final String MASK = "****";
-    private static final String EXCLUDE = "<excluded>";
-    private static final String ERROR = "<error>";
 
     private MaskingUtils() {
         throw new IllegalStateException(UTILITY_CLASS_ERROR.message());
@@ -66,11 +65,11 @@ public final class MaskingUtils {
             }
 
             Object value = field.get(target);
-            String displayValue = isSensitive(field) ? MASK : String.valueOf(value);
+            String displayValue = isSensitive(field) ? LOG_MASKED_VALUE.message() : String.valueOf(value);
             return formatKeyValue(field.getName(), displayValue);
 
         } catch (IllegalAccessException e) {
-            return formatKeyValue(field.getName(), ERROR);
+            return formatKeyValue(field.getName(), LOG_ERROR_VALUE.message());
         }
     }
 
@@ -83,7 +82,7 @@ public final class MaskingUtils {
     }
 
     private static String formatExcluded(Field field) {
-        return formatKeyValue(field.getName(), EXCLUDE);
+        return formatKeyValue(field.getName(), LOG_EXCLUDED_VALUE.message());
     }
 
     private static String formatKeyValue(String key, String value) {
