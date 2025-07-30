@@ -26,7 +26,6 @@ reload-infra:
       when: manual
   allow_failure: true
 
-
 run-test:
   stage: test
   before_script:
@@ -125,7 +124,7 @@ deploy-slot-based:
       export NEXT_SLOT=$($CI_PROJECT_DIR/INFRA/scripts/get-next-slot.sh $ENV)
       export PREV_SLOT=$( [ "$NEXT_SLOT" = "blue" ] && echo "green" || echo "blue" )
       docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.${ENV}.yml up -d ${ENV}-${NEXT_SLOT}
-      docker exec ${ENV}-nginx ln -sf /srv/nginx/${ENV}/default-${NEXT_SLOT}.conf /srv/nginx/${ENV}/default.conf
+      docker exec ${ENV}-nginx cp /srv/nginx/${ENV}/default-${NEXT_SLOT}.conf /etc/nginx/conf.d/default.conf
       # health check
       docker exec ${ENV}-nginx nginx -s reload
       docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.${ENV}.yml stop ${ENV}-${PREV_SLOT}
@@ -158,4 +157,3 @@ cleanup-temp-files:
       when: never
     - if: '$CI_COMMIT_BRANCH == "be/develop"'
     - if: '$CI_COMMIT_BRANCH == "be/master"'
-    
