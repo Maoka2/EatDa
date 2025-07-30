@@ -1,8 +1,10 @@
 package com.global.utils;
 
+import static com.global.constants.Messages.UTILITY_CLASS_ERROR;
+
 public final class PathUtils {
     private PathUtils() {
-        throw new IllegalStateException("Utility class");
+        throw new IllegalStateException(UTILITY_CLASS_ERROR.message());
     }
 
     /**
