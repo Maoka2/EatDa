@@ -1,9 +1,15 @@
 package com.global.utils;
 
+import static com.global.constants.Messages.LOG_ERROR_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.global.annotation.ExcludeFromLogging;
 import com.global.annotation.Sensitive;
+import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
 
 class MaskingUtilsTest {
@@ -98,6 +104,35 @@ class MaskingUtilsTest {
 
         assertThat(masked)
                 .contains("name=testUser");
+    }
+
+    @Test
+    void 필드_접근_불가_시_에러_메시지가_출력된다() throws IllegalAccessException {
+        // given
+        Object target = new Object();
+        Field field = mock(Field.class);
+        when(field.getName()).thenReturn("secret");
+        when(field.get(target)).thenThrow(new IllegalAccessException());
+        when(field.isAnnotationPresent(any())).thenReturn(false);
+        doNothing().when(field).setAccessible(true);
+
+        // when
+        String result = invokeFormatFieldViaReflection(field, target);
+
+        // then
+        assertThat(result).isEqualTo("secret=" + LOG_ERROR_VALUE.message());
+    }
+
+    // MaskingUtils.formatField을 직접 호출할 수 없으므로 reflection 사용
+    private String invokeFormatFieldViaReflection(Field field, Object target) {
+        try {
+            var utilsClass = Class.forName("com.global.utils.MaskingUtils");
+            var method = utilsClass.getDeclaredMethod("formatField", Field.class, Object.class);
+            method.setAccessible(true);
+            return (String) method.invoke(null, field, target);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     static class TestUser {
