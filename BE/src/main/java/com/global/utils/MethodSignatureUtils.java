@@ -94,8 +94,8 @@ public final class MethodSignatureUtils {
      * 주어진 클래스가 스프링 또는 아파치 패키지에 속하는지 확인합니다.
      */
     private static boolean isNotSpringOrApachePackage(final String className) {
-        return className.startsWith(SPRING_PACKAGE.message())
-                || className.startsWith(APACHE_PACKAGE.message());
+        return !className.startsWith(SPRING_PACKAGE.message())
+                && !className.startsWith(APACHE_PACKAGE.message());
     }
 
     /**
