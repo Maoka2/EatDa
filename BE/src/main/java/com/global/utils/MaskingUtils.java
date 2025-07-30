@@ -8,7 +8,7 @@ import java.lang.reflect.Field;
 import java.util.StringJoiner;
 
 /**
- * 민감 정보(@Sensitive)를 포함한 객체에 대해 마스킹된 문자열로 변환하는 유틸리티 클래스입니다.
+ * `@Sensitive`는 마스킹 처리, `@ExcludeFromLogging`은 로그 제외 처리를 수행하는 필드 전용 유틸리티 클래스입니다.
  */
 public final class MaskingUtils {
 

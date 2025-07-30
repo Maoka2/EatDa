@@ -5,13 +5,18 @@ import static com.global.constants.Messages.LOGGING_EXCLUDED_MESSAGE;
 import static com.global.constants.Messages.LOG_ARG_CONVERSION_FAILED;
 import static com.global.constants.Messages.SPRING_PACKAGE;
 import static com.global.constants.Messages.UTILITY_CLASS_ERROR;
+import static com.global.utils.MaskingUtils.mask;
 
 import com.global.annotation.ExcludeFromLogging;
+import java.lang.annotation.Annotation;
 import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.util.StringJoiner;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
+/**
+ * 메서드 시그니처 정보를 처리하는 유틸리티 클래스
+ */
 public final class MethodSignatureUtils {
 
     private MethodSignatureUtils() {
@@ -25,13 +30,51 @@ public final class MethodSignatureUtils {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         String className = signature.getDeclaringType().getSimpleName();
         String methodName = signature.getName();
+        String arguments = formatArgumentsWithExclusions(joinPoint, signature);
 
-        String args = Arrays.stream(joinPoint.getArgs())
-                .filter(MethodSignatureUtils::isValidArgument)
-                .map(MethodSignatureUtils::convertArgToString)
-                .collect(Collectors.joining(", "));
+        return String.format("%s.%s(%s)", className, methodName, arguments);
+    }
 
-        return String.format("%s.%s(%s)", className, methodName, args);
+    /**
+     * 메서드의 매개변수 값들을 문자열로 포맷팅합니다
+     */
+    private static String formatArgumentsWithExclusions(final ProceedingJoinPoint joinPoint,
+                                                        final MethodSignature signature) {
+        Object[] args = joinPoint.getArgs();
+        Annotation[][] parameterAnnotations = signature.getMethod().getParameterAnnotations();
+        StringJoiner joiner = formatArgumentList(args, parameterAnnotations);
+
+        return joiner.toString();
+    }
+
+    /**
+     * 매개변수 배열을 문자열로 변환합니다
+     */
+    private static StringJoiner formatArgumentList(final Object[] args, final Annotation[][] parameterAnnotations) {
+        StringJoiner joiner = new StringJoiner(", ");
+
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+            if (!isValidArgument(arg)) {
+                continue;
+            }
+
+            boolean excluded = isExcluded(parameterAnnotations[i]);
+            String argString = excluded
+                    ? LOGGING_EXCLUDED_MESSAGE.message()
+                    : convertArgToString(arg);
+
+            joiner.add(argString);
+        }
+        return joiner;
+    }
+
+    /**
+     * 주어진 파라미터에 @ExcludeFromLogging 어노테이션이 있는지 검사합니다.
+     */
+    private static boolean isExcluded(final Annotation[] annotations) {
+        return Arrays.stream(annotations)
+                .anyMatch(a -> a.annotationType() == ExcludeFromLogging.class);
     }
 
     /**
@@ -54,13 +97,8 @@ public final class MethodSignatureUtils {
      */
     private static String convertArgToString(final Object arg) {
         try {
-            // @ExcludeFromLogging 어노테이션이 있는 경우 제외 
-            if (arg.getClass().isAnnotationPresent(ExcludeFromLogging.class)) {
-                return LOGGING_EXCLUDED_MESSAGE.message();
-            }
-
             // MaskingUtils를 통한 마스킹 처리
-            return MaskingUtils.mask(arg);
+            return mask(arg);
         } catch (Exception e) {
             return LOG_ARG_CONVERSION_FAILED.message();
         }
