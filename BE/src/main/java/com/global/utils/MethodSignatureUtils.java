@@ -19,6 +19,9 @@ import org.aspectj.lang.reflect.MethodSignature;
  */
 public final class MethodSignatureUtils {
 
+    private static final String ARGUMENT_SEPARATOR = ", ";
+    private static final String EQUAL = "=";
+
     private MethodSignatureUtils() {
         throw new IllegalStateException(UTILITY_CLASS_ERROR.message());
     }
@@ -42,16 +45,17 @@ public final class MethodSignatureUtils {
                                                         final MethodSignature signature) {
         Object[] args = joinPoint.getArgs();
         Annotation[][] parameterAnnotations = signature.getMethod().getParameterAnnotations();
-        StringJoiner joiner = formatArgumentList(args, parameterAnnotations);
+        String[] parameterNames = signature.getParameterNames();
 
-        return joiner.toString();
+        return formatArgumentList(args, parameterAnnotations, parameterNames).toString();
     }
 
     /**
      * 매개변수 배열을 문자열로 변환합니다
      */
-    private static StringJoiner formatArgumentList(final Object[] args, final Annotation[][] parameterAnnotations) {
-        StringJoiner joiner = new StringJoiner(", ");
+    private static StringJoiner formatArgumentList(final Object[] args, final Annotation[][] parameterAnnotations,
+                                                   final String[] parameterNames) {
+        StringJoiner joiner = new StringJoiner(ARGUMENT_SEPARATOR);
 
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
@@ -64,7 +68,7 @@ public final class MethodSignatureUtils {
                     ? LOGGING_EXCLUDED_MESSAGE.message()
                     : convertArgToString(arg);
 
-            joiner.add(argString);
+            joiner.add(parameterNames[i] + EQUAL + argString);
         }
         return joiner;
     }
@@ -81,7 +85,7 @@ public final class MethodSignatureUtils {
      * 유효(null이 아니고 spring/apache 패키지가 아닌 경우)한 인자인지 확인합니다.
      */
     private static boolean isValidArgument(final Object arg) {
-        return arg != null && !isSpringOrApachePackage(arg.getClass().getName());
+        return arg == null || (!isSpringOrApachePackage(arg.getClass().getName()));
     }
 
     /**
