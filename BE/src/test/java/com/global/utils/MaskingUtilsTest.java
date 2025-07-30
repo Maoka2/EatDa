@@ -2,6 +2,7 @@ package com.global.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.global.annotation.ExcludeFromLogging;
 import com.global.annotation.Sensitive;
 import org.junit.jupiter.api.Test;
 
@@ -77,6 +78,28 @@ class MaskingUtilsTest {
                 .contains(", ");  // 필드들이 쉼표와 공백으로 구분되는지 확인
     }
 
+    @Test
+    void exclude_어노테이션이_붙은_필드는_제외된다() {
+        ExcludeUser user = new ExcludeUser("testUser", "secretPassword");
+
+        String masked = MaskingUtils.mask(user);
+
+        assertThat(masked)
+                .contains("name=testUser")
+                .contains("password=<excluded>")
+                .doesNotContain("secretPassword");
+    }
+
+    @Test
+    void exclude_어노테이션이_없는_필드는_출력된다() {
+        ExcludeUser user = new ExcludeUser("testUser", "secretPassword");
+
+        String masked = MaskingUtils.mask(user);
+
+        assertThat(masked)
+                .contains("name=testUser");
+    }
+
     static class TestUser {
         private final String name;
 
@@ -101,6 +124,18 @@ class MaskingUtilsTest {
             this.password = password;
             this.age = age;
             this.email = email;
+        }
+    }
+
+    static class ExcludeUser {
+        private final String name;
+
+        @ExcludeFromLogging
+        private final String password;
+
+        ExcludeUser(String name, String password) {
+            this.name = name;
+            this.password = password;
         }
     }
 }
