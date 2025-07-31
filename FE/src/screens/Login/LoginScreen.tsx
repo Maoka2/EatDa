@@ -14,7 +14,8 @@ import EaterLoginScreen from "./EaterLoginScreen";
 import MakerLoginScreen from "./MakerLoginScreen";
 import RoleSelectionScreen from "../Register/RoleSelectionScreen";
 import RegisterScreen from "../Register/RegisterScreen";
-import ReviewTabScreen from "../Review/ReviewTabScreen";
+// import ReviewTabScreen from "../Review/ReviewTabScreen";
+import Reviews from "../Review/ReviewPageJh";
 import ResultModal from "../../components/ResultModal";
 import { COLORS, textStyles } from "../../constants/theme";
 
@@ -101,7 +102,7 @@ export default function LoginScreen() {
 
   // 로그인 성공 후 리뷰 탭 화면 표시
   if (isLoggedIn && userRole) {
-    return <ReviewTabScreen userRole={userRole} onLogout={handleLogout} />;
+    return <Reviews userRole={userRole} onLogout={handleLogout} />;
   }
 
   // 역할 선택 화면 표시

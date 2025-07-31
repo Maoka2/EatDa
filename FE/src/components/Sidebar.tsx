@@ -1,102 +1,172 @@
-// src/components/Sidebar.tsx
-import React, { useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
+  Animated,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
   View,
   Text,
-  Image,
-  StyleSheet,
-  useWindowDimensions,
-  TouchableOpacity,
-  SafeAreaView,
 } from "react-native";
-import SidebarComponent from "./SidebarComponent";
-import { imageStyles } from "../constants/theme";
-// .svg 파일로 했을 때 이미지가 잘려서 일단 .png 로 진행하였습니다.
-import MyPageIcon from "../../assets/mypage.svg";
-import EventPageIcon from "../../assets/eventpage.svg";
-import ReviewPageIcon from "../../assets/reviews.svg";
 
-import SidebarCharacter from "../../assets/sidebarCharacter.svg";
-import Spoon from "../../assets/sidespoon.svg";
-import Fork from "../../assets/sidefork.svg";
+export interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+  userRole: "eater" | "maker";
+  onLogout: () => void;
+  activePage: string;
+  // onNavigate: (currentPage: string) => void;
+}
 
-export default function Sidebar() {
-  const { width, height } = useWindowDimensions();
-  const topPadding = height * 0.05;
-  const [selected, setSelected] = useState<string | null>(null);
+export default function Sidebar({
+  isOpen,
+  onClose,
+  userRole,
+  onLogout,
+  activePage,
+}: SidebarProps) {
+  const { width } = useWindowDimensions();
+  const slideAnim = useRef(new Animated.Value(-width * 0.8)).current;
+  const [visible, setVisible] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: -width * 0.8,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => setVisible(false));
+    }
+  }, [isOpen]);
+
+  if (!visible) return null;
+
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { paddingTop: topPadding, overflow: "visible" },
-      ]}
-    >
-      <SidebarComponent
-        label="고객 리뷰"
-        IconComponent={ReviewPageIcon}
-        onPress={() => setSelected("고객 리뷰")}
-        selected={selected === "고객 리뷰"}
-      ></SidebarComponent>
-      <SidebarComponent
-        label="이벤트 게시판"
-        onPress={() => {
-          setSelected("이벤트 게시판");
-        }}
-        IconComponent={EventPageIcon}
-        selected={selected === "이벤트 게시판"}
-      ></SidebarComponent>
-      <SidebarComponent
-        label="마이 페이지"
-        onPress={() => {
-          setSelected("마이 페이지");
-        }}
-        IconComponent={MyPageIcon}
-        selected={selected === "마이 페이지"}
-      ></SidebarComponent>
-      {/* <View style={{ flex: 1 }}></View */}
+    <>
+      {/* 오버레이 */}
+      <TouchableOpacity
+        style={styles.overlay}
+        onPress={onClose}
+        activeOpacity={1}
+      />
 
-      <View
-        style={{
-          position: "absolute",
-          bottom: -50,
-          right: -480,
-          transform: [{ rotate: "-15deg" }],
-        }}
+      {/* 사이드바 */}
+      <Animated.View
+        style={[
+          styles.sideMenu,
+          { width: width * 0.8, transform: [{ translateX: slideAnim }] },
+        ]}
       >
-        <Fork width={1000}  height={600}></Fork>
-      </View>
-      <View
-        style={{
-          position: "absolute",
-          bottom: -200,
-          left: -480,
-          transform: [{ rotate: "20deg" }],
-        }}
-      >
-        <Spoon width={1000} height={600}></Spoon>
-      </View>
-    </SafeAreaView>
+        <View style={styles.header}>
+          <View
+            style={[
+              styles.profileImage,
+              { backgroundColor: userRole === "eater" ? "#ff6b6b" : "#4dabf7" },
+            ]}
+          >
+            <Text style={styles.profileInitial}>
+              {userRole === "eater" ? "냠" : "사"}
+            </Text>
+          </View>
+          <Text style={styles.profileName}>
+            {userRole === "eater" ? "냠냠이" : "사장님"}
+          </Text>
+        </View>
+
+        <View style={styles.menuItems}>
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              activePage === "reviewPage" && styles.active,
+            ]}
+            onPress={() => {
+              // if(activePage !== "reviewPage"){
+              // onNavigate("reviewPage");
+              // onClose();
+              // }
+            }}
+          >
+            <Text>🍽 고객 리뷰</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <Text>📋 이벤트 게시판</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <Text>👥 마이페이지</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <Text>⚙️ 설정</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <Text>📞 고객센터</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={onLogout}>
+            <Text>🚪 로그아웃</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F7F8F9",
-    height: "100%",
-    // backgroundColor: "yellow",
-    width: "100%",
-    position: "relative",
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    zIndex: 20,
+  },
+  sideMenu: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "white",
+    zIndex: 30,
+    paddingTop: 50,
+    paddingHorizontal: 20,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  profileInitial: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  profileName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  menuItems: {
+    marginTop: 10,
+  },
+  menuItem: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
 
-  character: {
-    // backgroundColor: "red",
-    position: "absolute",
-    // top: 0,
-    bottom: 0,
-    // width: "100%",
-    // height: "100%",
-    resizeMode: "contain",
-    opacity: 0.9,
+  active: {
+    backgroundColor: "#FEC566",
+    opacity: 0.5,
   },
 });

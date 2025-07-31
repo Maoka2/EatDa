@@ -20,7 +20,6 @@ export default function SidebarComponent({
   label,
   onPress,
   selected = false,
-// 일단 클릭했을 시 색깔 바뀌는걸로 해놓았습니다. 추후 나머지 페이지 완성 후 해당 페이지인 경우에 칠하게끔 수정하겠습니다.
 
 }: Props) {
   const { width, height } = useWindowDimensions();

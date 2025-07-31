@@ -30,9 +30,9 @@
     },
     "plugins": ["expo-font", "expo-video"],
     "extra": {
-      "eas": {
-        "projectId": "dbc7317c-c30e-4a26-97b6-18bea7e9e35c"
-      }
+      // "eas": {
+      //   "projectId": "dbc7317c-c30e-4a26-97b6-18bea7e9e35c"
+      // }
     }
   }
 }

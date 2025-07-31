@@ -7,7 +7,8 @@ import { NavigationContainer } from "@react-navigation/native";
 import { useKeepAwake } from "expo-keep-awake";
 import AuthNavigator from "./src/navigation/AuthNavigator";
 import SplashScreenVideo from "./src/screens/SplashScreen";
-
+import SearchBar from "./src/components/SearchBar";
+import Reviews from "./src/screens/Review/ReviewPageJh";
 // 네이티브 스플래시 자동 숨김 방지
 SplashScreen.preventAutoHideAsync();
 
