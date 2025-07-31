@@ -28,7 +28,11 @@ export default function Sidebar({
   onLogout,
   activePage,
 }: SidebarProps) {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  // 사이드바 내에서 숟가락, 포크 위치 결정용
+  const sidebarWidth = width * 0.8;
+  const sidebarHeight = height;
+
   const slideAnim = useRef(new Animated.Value(-width * 0.8)).current;
   const [visible, setVisible] = useState(isOpen);
 
@@ -100,8 +104,28 @@ export default function Sidebar({
             <Text>로그아웃</Text>
           </TouchableOpacity>
           <View style={styles.characterContainer}>
-            <Spoon style={styles.spoonStyle} width={350} height={350}></Spoon>
-            <Fork style={styles.forkStyle} width={350} height={350}></Fork>
+            <Spoon
+              style={{
+                position: "absolute",
+                left: -sidebarWidth * 0.58,
+                bottom: -height * 0.93,
+                transform: [{ rotate: "20deg" }],
+                opacity: 0.9,
+              }}
+              width={sidebarWidth * 1.5}
+              height={sidebarWidth * 1.5}
+            ></Spoon>
+            <Fork
+              style={{
+                position: "absolute",
+                right: -sidebarWidth * 0.7,
+                bottom: -height * 0.7,
+                transform: [{ rotate: "-15deg" }],
+                opacity: 0.9,
+              }}
+              width={sidebarWidth * 1.5}
+              height={sidebarWidth * 1.5}
+            ></Fork>
           </View>
         </View>
       </Animated.View>
@@ -154,46 +178,28 @@ const styles = StyleSheet.create({
   menuItems: {
     marginTop: 10,
     // paddingHorizontal:20,
-    
   },
   menuItem: {
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
-    paddingHorizontal:20,
+    paddingHorizontal: 20,
   },
 
   active: {
     backgroundColor: "#FEC566",
     opacity: 0.7,
   },
-  
+
   activeText: {
     fontWeight: 700,
   },
 
   characterContainer: {
     position: "absolute",
-    bottom: -500,
-    left: 0,
-    right: 0,
-    pointerEvents: "none",
-    backgroundColor: "yellow",
-  },
-
-  spoonStyle: {
-    position: "absolute",
-    left: -140,
-    bottom: -45,
-    transform: [{ rotate: "20deg" }],
-    opacity: 0.9,
-  },
-
-  forkStyle: {
-    position: "absolute",
-    right: -165,
-    bottom: 100,
-    transform: [{ rotate: "-15deg" }],
-    opacity: 0.9,
+    bottom: 0,
+    width: "100%",
+    height: 300,
+    // pointerEvents: "none",
   },
 });
