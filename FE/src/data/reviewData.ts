@@ -230,13 +230,4 @@ export const reviewData: ReviewItem[] = [
     likes: 324,
     views: 2500,
   },
-  {
-    id: "25",
-    type: "image",
-    uri: "https://picsum.photos/400/600?random=25",
-    title: "맛있는 버거",
-    description: "정말 맛있었어요!",
-    likes: 125,
-    views: 1200,
-  },
 ];
