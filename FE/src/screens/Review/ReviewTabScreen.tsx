@@ -165,7 +165,9 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
                     />
                   ) : (
                     <Video
-                      ref={(ref) => (vdoRefs.current[index] = ref!)}
+                      ref={(ref: Video | null) => {
+                        vdoRefs.current[index] = ref;
+                      }}
                       source={{ uri: item.uri }}
                       style={StyleSheet.absoluteFillObject}
                       resizeMode={ResizeMode.COVER}
@@ -225,7 +227,7 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
             key="grid"
             data={reviewData}
             onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-            renderItem={({ item , index}) => (
+            renderItem={({ item, index }) => (
               <GridComponent
                 item={item}
                 size={containerWidth / 3}
@@ -238,7 +240,6 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
                   }
                   handleOpenDetail(item);
                 }}
-
               />
             )}
             keyExtractor={(item) => item.id}
