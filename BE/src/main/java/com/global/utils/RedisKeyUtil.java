@@ -1,11 +1,11 @@
 package com.global.utils;
 
-import static com.global.constants.redis.RedisConstants.DLQ_SUFFIX;
-import static com.global.constants.redis.RedisStreamKey.EVENT_ASSET;
-import static com.global.constants.redis.RedisStreamKey.MENU_POSTER;
-import static com.global.constants.redis.RedisStreamKey.OCR_MENU;
-import static com.global.constants.redis.RedisStreamKey.OCR_VERIFICATION;
-import static com.global.constants.redis.RedisStreamKey.REVIEW_ASSET;
+import static com.global.redis.consntants.RedisConstants.DLQ_SUFFIX;
+import static com.global.redis.consntants.RedisStreamKey.EVENT_ASSET;
+import static com.global.redis.consntants.RedisStreamKey.MENU_POSTER;
+import static com.global.redis.consntants.RedisStreamKey.OCR_MENU;
+import static com.global.redis.consntants.RedisStreamKey.OCR_VERIFICATION;
+import static com.global.redis.consntants.RedisStreamKey.REVIEW_ASSET;
 
 public class RedisKeyUtil {
     private static final String STORE_DISTANCE_KEY_FORMAT = "POI:%d:store:%dm";

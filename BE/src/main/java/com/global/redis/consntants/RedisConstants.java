@@ -1,10 +1,13 @@
-package com.global.constants.redis;
+package com.global.redis.consntants;
 
 import static com.global.constants.Messages.UTILITY_CLASS_ERROR;
 
 import java.time.Duration;
 
 public final class RedisConstants {
+    // ===== 스트림 필드 =====
+    public static final String STREAM_FIELD_EXPIRE_AT = "expireAt";        // 스트림 메시지 만료 시간 필드
+    public static final int STREAM_MESSAGE_BATCH_SIZE = 1000;              // 스트림 메시지 최대 조회 건수
 
     // ===== DLQ (Dead Letter Queue) 관련 =====
     public static final String DLQ_SUFFIX = ".dead";
@@ -34,6 +37,10 @@ public final class RedisConstants {
     public static final Duration CACHE_EVENT_FEED_TTL = Duration.ofMinutes(30);    // 이벤트 피드 캐시
     public static final Duration CACHE_STORE_DETAIL_TTL = Duration.ofHours(1);     // 가게 상세 정보  
     public static final Duration CACHE_JWT_TOKEN_TTL = Duration.ofMinutes(15);     // 로그인 토큰
+
+    // ===== Batch Job 관련 =====
+    public static final String REDIS_STREAM_CLEANER_JOB_NAME = "redisStreamCleanerJob";
+    public static final String REDIS_STREAM_CLEANER_STEP_NAME = "redisStreamCleanerStep";
 
     private RedisConstants() {
         throw new UnsupportedOperationException(UTILITY_CLASS_ERROR.message());
