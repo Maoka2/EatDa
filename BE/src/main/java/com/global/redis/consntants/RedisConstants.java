@@ -20,12 +20,12 @@ public final class RedisConstants {
     public static final Duration STREAM_MENU_POSTER_TTL = Duration.ofMinutes(3);          // 메뉴 포스터 생성 요청 TTL
     public static final Duration STREAM_EVENT_ASSET_TTL = Duration.ofMinutes(3);          // 이벤트 에셋 생성 요청 TTL
 
-    // ===== Consumer Group 이름 =====
-    public static final String REVIEW_ASSET_CONSUMER_GROUP = "review_asset_group";
-    public static final String MENU_POSTER_CONSUMER_GROUP = "menu_poster_group";
-    public static final String EVENT_ASSET_CONSUMER_GROUP = "event_asset_group";
-    public static final String OCR_VERIFICATION_CONSUMER_GROUP = "ocr_verification_group";
-    public static final String OCR_MENU_CONSUMER_GROUP = "ocr_menu_group";
+    // ===== Stream Publisher 이름 =====
+    public static final String STREAM_REVIEW_ASSET = "review.asset.generate";       // 리뷰 에셋 생성 요청
+    public static final String STREAM_MENU_POSTER = "menu.poster.generate";         // 메뉴 포스터 생성 요청
+    public static final String STREAM_EVENT_ASSET = "event.asset.generate";         // 이벤트 에셋 생성 요청
+    public static final String STREAM_OCR_VERIFICATION = "ocr.verification.request"; // OCR 검증 요청
+    public static final String STREAM_OCR_MENU = "ocr.menu.request";               // OCR 메뉴 요청
 
     // ===== Retry 관련 =====
     public static final int MAX_RETRY_COUNT = 3;
