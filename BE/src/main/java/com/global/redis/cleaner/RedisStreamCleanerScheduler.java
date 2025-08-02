@@ -1,5 +1,8 @@
 package com.global.redis.cleaner;
 
+import static com.global.redis.consntants.RedisConstants.REDIS_STREAM_CLEANER_EXECUTION_ERROR;
+import static com.global.redis.consntants.RedisConstants.REDIS_STREAM_CLEANER_JOB_PARAM_TIMESTAMP;
+
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,9 +20,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RedisStreamCleanerScheduler {
 
-    private static final String JOB_PARAM_TIMESTAMP = "timestamp";
-    private static final String ERROR_BATCH_EXECUTION_FAILED = "[RedisCleanerScheduler] 배치 실행 실패";
-
     private final JobLauncher jobLauncher;
     private final Job redisStreamCleanerJob;
 
@@ -32,11 +32,12 @@ public class RedisStreamCleanerScheduler {
             jobLauncher.run(
                     redisStreamCleanerJob,
                     new JobParametersBuilder()
-                            .addLong(JOB_PARAM_TIMESTAMP, Instant.now().toEpochMilli()) // 매 실행마다 고유 파라미터 필요
+                            .addLong(REDIS_STREAM_CLEANER_JOB_PARAM_TIMESTAMP,
+                                    Instant.now().toEpochMilli()) // 매 실행마다 고유 파라미터 필요
                             .toJobParameters()
             );
         } catch (Exception e) {
-            log.error(ERROR_BATCH_EXECUTION_FAILED, e);
+            log.error(REDIS_STREAM_CLEANER_EXECUTION_ERROR, e);
         }
     }
 }

@@ -41,6 +41,10 @@ public final class RedisConstants {
     // ===== Batch Job 관련 =====
     public static final String REDIS_STREAM_CLEANER_JOB_NAME = "redisStreamCleanerJob";
     public static final String REDIS_STREAM_CLEANER_STEP_NAME = "redisStreamCleanerStep";
+    public static final String REDIS_STREAM_CLEANER_JOB_PARAM_TIMESTAMP = "timestamp";    // Job 실행 시간 파라미터
+    public static final String REDIS_STREAM_CLEANER_EXECUTION_ERROR =
+            "[RedisCleanerScheduler] 배치 실행 실패";                                      // 배치 실행 실패 에러 메시지
+
 
     private RedisConstants() {
         throw new UnsupportedOperationException(UTILITY_CLASS_ERROR.message());
