@@ -37,9 +37,15 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Slf4j
 public abstract class RedisStreamPublisher<T> {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final ObjectMapper objectMapper;
+    private final RedisTemplate<String, Object> redisTemplate;    // Redis 작업을 위한 템플릿
+    private final ObjectMapper objectMapper;                      // JSON 변환을 위한 매퍼
 
+    /**
+     * RedisStreamPublisher 생성자
+     *
+     * @param redisTemplate Redis 작업을 위한 템플릿
+     * @param objectMapper  JSON 변환을 위한 매퍼
+     */
     protected RedisStreamPublisher(final RedisTemplate<String, Object> redisTemplate,
                                    final ObjectMapper objectMapper) {
         this.redisTemplate = redisTemplate;
