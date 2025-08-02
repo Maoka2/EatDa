@@ -1,5 +1,6 @@
 package com.global.redis.constants;
 
+import static com.global.redis.constants.RedisConstants.DLQ_SUFFIX;
 import static com.global.redis.constants.RedisConstants.STREAM_EVENT_ASSET_TTL;
 import static com.global.redis.constants.RedisConstants.STREAM_MENU_POSTER_TTL;
 import static com.global.redis.constants.RedisConstants.STREAM_OCR_REQUEST_TTL;
@@ -28,5 +29,9 @@ public enum RedisStreamKey {
 
     public Duration ttl() {
         return ttl;
+    }
+
+    public String deadLetterQueueKey() {
+        return this.value + DLQ_SUFFIX;
     }
 }
