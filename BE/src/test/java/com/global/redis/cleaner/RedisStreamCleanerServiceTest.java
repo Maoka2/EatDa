@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.global.redis.consntants.RedisStreamKey;
+import com.global.redis.constants.RedisStreamKey;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;

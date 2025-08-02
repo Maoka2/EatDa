@@ -1,12 +1,12 @@
 package com.global.redis.cleaner;
 
-import static com.global.redis.consntants.RedisConstants.STREAM_FIELD_EXPIRE_AT;
-import static com.global.redis.consntants.RedisConstants.STREAM_MESSAGE_BATCH_SIZE;
+import static com.global.redis.constants.RedisConstants.STREAM_FIELD_EXPIRE_AT;
+import static com.global.redis.constants.RedisConstants.STREAM_MESSAGE_BATCH_SIZE;
 import static org.springframework.data.domain.Range.unbounded;
 import static org.springframework.data.redis.connection.Limit.limit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.global.redis.consntants.RedisStreamKey;
+import com.global.redis.constants.RedisStreamKey;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;

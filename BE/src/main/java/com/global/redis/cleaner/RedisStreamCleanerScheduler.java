@@ -1,7 +1,7 @@
 package com.global.redis.cleaner;
 
-import static com.global.redis.consntants.RedisConstants.REDIS_STREAM_CLEANER_EXECUTION_ERROR;
-import static com.global.redis.consntants.RedisConstants.REDIS_STREAM_CLEANER_JOB_PARAM_TIMESTAMP;
+import static com.global.redis.constants.RedisConstants.REDIS_STREAM_CLEANER_EXECUTION_ERROR;
+import static com.global.redis.constants.RedisConstants.REDIS_STREAM_CLEANER_JOB_PARAM_TIMESTAMP;
 
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;

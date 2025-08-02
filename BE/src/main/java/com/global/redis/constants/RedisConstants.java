@@ -1,4 +1,4 @@
-package com.global.redis.consntants;
+package com.global.redis.constants;
 
 import static com.global.constants.Messages.UTILITY_CLASS_ERROR;
 

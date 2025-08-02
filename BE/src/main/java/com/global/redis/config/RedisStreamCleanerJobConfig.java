@@ -1,7 +1,7 @@
 package com.global.redis.config;
 
-import static com.global.redis.consntants.RedisConstants.REDIS_STREAM_CLEANER_JOB_NAME;
-import static com.global.redis.consntants.RedisConstants.REDIS_STREAM_CLEANER_STEP_NAME;
+import static com.global.redis.constants.RedisConstants.REDIS_STREAM_CLEANER_JOB_NAME;
+import static com.global.redis.constants.RedisConstants.REDIS_STREAM_CLEANER_STEP_NAME;
 
 import com.global.redis.cleaner.RedisStreamCleanerTasklet;
 import lombok.RequiredArgsConstructor;

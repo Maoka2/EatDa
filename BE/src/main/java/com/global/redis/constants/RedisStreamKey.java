@@ -1,9 +1,9 @@
-package com.global.redis.consntants;
+package com.global.redis.constants;
 
-import static com.global.redis.consntants.RedisConstants.STREAM_EVENT_ASSET_TTL;
-import static com.global.redis.consntants.RedisConstants.STREAM_MENU_POSTER_TTL;
-import static com.global.redis.consntants.RedisConstants.STREAM_OCR_REQUEST_TTL;
-import static com.global.redis.consntants.RedisConstants.STREAM_REVIEW_ASSET_TTL;
+import static com.global.redis.constants.RedisConstants.STREAM_EVENT_ASSET_TTL;
+import static com.global.redis.constants.RedisConstants.STREAM_MENU_POSTER_TTL;
+import static com.global.redis.constants.RedisConstants.STREAM_OCR_REQUEST_TTL;
+import static com.global.redis.constants.RedisConstants.STREAM_REVIEW_ASSET_TTL;
 
 import java.time.Duration;
 
