@@ -12,7 +12,9 @@ import static com.global.redis.constants.RedisConstants.STREAM_REVIEW_ASSET;
 import static com.global.redis.constants.RedisConstants.STREAM_REVIEW_ASSET_TTL;
 
 import java.time.Duration;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public enum RedisStreamKey {
     REVIEW_ASSET(STREAM_REVIEW_ASSET, STREAM_REVIEW_ASSET_TTL),
     MENU_POSTER(STREAM_MENU_POSTER, STREAM_MENU_POSTER_TTL),
@@ -22,11 +24,6 @@ public enum RedisStreamKey {
 
     private final String value;
     private final Duration ttl;
-
-    RedisStreamKey(String value, Duration ttl) {
-        this.value = value;
-        this.ttl = ttl;
-    }
 
     public String value() {
         return value;
