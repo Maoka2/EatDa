@@ -36,6 +36,30 @@ services:
     networks:
       - backend
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    expose:
+      - "9090"
+    volumes:
+      - /srv/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: always
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    expose:
+      - "3000"
+    environment:
+      - GF_SERVER_ROOT_URL=http://i13a609.p.ssafy.io/grafana/
+      # - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - backend
+
 networks:
   backend:
     external: true
