@@ -65,6 +65,16 @@ public final class RedisConstants {
     public static final String REDIS_STREAM_CLEANER_PARSE_ERROR_MESSAGE =
             "[RedisCleaner] expireAt 파싱 실패 - messageId: {} (stream: {})";    // expireAt 파싱 실패 메시지
 
+    // ===== Redis Stream Retry Handler 관련 상수 =====
+    public static final String RETRY_MAX_COUNT_EXCEEDED_MESSAGE =
+            "[RedisRetryHandler] Max retry count exceeded. Sending to DLQ: {}";             // 최대 재시도 횟수 초과 메시지
+    public static final String ERROR_RETRY_STREAM_KEY_NOT_IMPLEMENTED =
+            "[RedisRetryHandler] Retry StreamKey는 구현체에서 지정해야 합니다.";                // Retry StreamKey 미구현 에러
+    public static final String ERROR_DLQ_STREAM_KEY_NOT_IMPLEMENTED =
+            "[RedisRetryHandler] DLQ StreamKey는 구현체에서 지정해야 합니다.";                 // DLQ StreamKey 미구현 에러
+    public static final String ERROR_UPDATE_RETRY_FIELDS_NOT_IMPLEMENTED =
+            "[RedisRetryHandler] 메시지 필드 업데이트 로직은 구현체에서 정의해야 합니다.";        // 재시도 필드 업데이트 미구현 에러
+    
     // ===== Redis Stream Publisher 관련 상수 =====
     public static final String REDIS_XADD_SCRIPT = """
                 return redis.call('XADD', KEYS[1], 'MAXLEN', '~', ARGV[1], '*', unpack(ARGV, 2))
