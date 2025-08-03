@@ -12,6 +12,8 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.global.redis.constants.RedisStreamKey;
+import com.global.redis.dto.RedisRetryableMessage;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -132,8 +134,22 @@ class RedisStreamPublisherTest {
         assertThrows(RuntimeException.class,
                 () -> publisher.publishToStreamWithMaxLen(validKey, payload));
     }
-    
-    record DummyPayload(String name, int value) {
+
+    record DummyPayload(String name, int value) implements RedisRetryableMessage {
+        @Override
+        public LocalDateTime getExpireAt() {
+            return LocalDateTime.now().plusMinutes(5);
+        }
+
+        @Override
+        public int getRetryCount() {
+            return 0;
+        }
+
+        @Override
+        public LocalDateTime getNextRetryAt() {
+            return LocalDateTime.now();
+        }
     }
 
     static class DummyPublisher extends RedisStreamPublisher<DummyPayload> {

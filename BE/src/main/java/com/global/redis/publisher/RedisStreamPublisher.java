@@ -17,6 +17,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.global.redis.constants.RedisStreamKey;
+import com.global.redis.dto.RedisRetryableMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,13 +30,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+// @formatter:off
 /**
- * Redis Stream에 메시지를 Lua 기반으로 MAXLEN 제어하여 발행하는 추상 클래스
+ * Redis Stream에 메시지를 Lua 기반으로 MAXLEN 제어하여 발행하는 추상 클래스.
+ * RedisRetryableMessage를 상속하여 메시지 재시도 처리가 가능한 객체만 발행할 수 있다.
  *
- * @param <T> 발행할 메시지의 타입
+ * @param <T> 발행할 메시지의 타입 (RedisRetryableMessage 구현체)
  */
+// @formatter:on
 @Slf4j
-public abstract class RedisStreamPublisher<T> {
+public abstract class RedisStreamPublisher<T extends RedisRetryableMessage> {
 
     private final RedisTemplate<String, Object> redisTemplate;    // Redis 작업을 위한 템플릿
     private final ObjectMapper objectMapper;                      // JSON 변환을 위한 매퍼
