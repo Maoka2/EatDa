@@ -192,7 +192,6 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
                       setSelectedItem(null);
                     }}
                   >
-                    {/* 배경이 흰색일 경우에 버튼이 안보여서 어떻게 하면 좋을지 질문해야할듯 */}
                     <CloseBtn></CloseBtn>
                   </TouchableOpacity>
 
