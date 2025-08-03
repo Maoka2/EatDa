@@ -18,13 +18,18 @@ public final class RedisConstants {
     public static final Duration STREAM_REVIEW_ASSET_TTL = Duration.ofMinutes(5);         // 리뷰 에셋 생성 요청 TTL
     public static final Duration STREAM_MENU_POSTER_TTL = Duration.ofMinutes(3);          // 메뉴 포스터 생성 요청 TTL
     public static final Duration STREAM_EVENT_ASSET_TTL = Duration.ofMinutes(3);          // 이벤트 에셋 생성 요청 TTL
+    public static final Duration STREAM_TEST_TTL = Duration.ZERO;                         // 테스트용 TTL (즉시 만료)
 
-    // ===== Stream Publisher 이름 =====
+    // ===== Redis Stream Key =====
     public static final String STREAM_REVIEW_ASSET = "review.asset.generate";       // 리뷰 에셋 생성 요청
     public static final String STREAM_MENU_POSTER = "menu.poster.generate";         // 메뉴 포스터 생성 요청
     public static final String STREAM_EVENT_ASSET = "event.asset.generate";         // 이벤트 에셋 생성 요청
     public static final String STREAM_OCR_VERIFICATION = "ocr.verification.request"; // OCR 검증 요청
     public static final String STREAM_OCR_MENU = "ocr.menu.request";               // OCR 메뉴 요청
+
+    // ===== 테스트 전용 Redis Stream Key (운영 사용 금지) =====
+    public static final String STREAM_TEST_RETRY = "test.retry";                   // 테스트용 재시도 스트림
+    public static final String STREAM_TEST_DLQ = "test.dlq";                       // 테스트용 DLQ 스트림
 
     // ===== Retry 관련 =====
     public static final int MAX_RETRY_COUNT = 3;
@@ -50,6 +55,7 @@ public final class RedisConstants {
     public static final long STREAM_EVENT_ASSET_MAX_LEN = 1_000;       // 이벤트 에셋 생성 요청 최대 메시지 수
     public static final long STREAM_OCR_VERIFICATION_MAX_LEN = 500;   // OCR 검증 요청 최대 메시지 수
     public static final long STREAM_OCR_MENU_MAX_LEN = 1_000;          // OCR 메뉴 요청 최대 메시지 수
+    public static final long STREAM_TEST_MAX_LEN = 10;               // 테스트용 MAXLEN
 
     // ===== Redis Stream Cleaner 로그 메시지 =====
     public static final String REDIS_STREAM_CLEANER_START_MESSAGE =
@@ -74,7 +80,7 @@ public final class RedisConstants {
             "[RedisRetryHandler] DLQ StreamKey는 구현체에서 지정해야 합니다.";                 // DLQ StreamKey 미구현 에러
     public static final String ERROR_UPDATE_RETRY_FIELDS_NOT_IMPLEMENTED =
             "[RedisRetryHandler] 메시지 필드 업데이트 로직은 구현체에서 정의해야 합니다.";        // 재시도 필드 업데이트 미구현 에러
-    
+
     // ===== Redis Stream Publisher 관련 상수 =====
     public static final String REDIS_XADD_SCRIPT = """
                 return redis.call('XADD', KEYS[1], 'MAXLEN', '~', ARGV[1], '*', unpack(ARGV, 2))
