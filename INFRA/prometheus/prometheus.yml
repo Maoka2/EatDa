@@ -4,7 +4,7 @@
 # scheme                 : 메트릭 요청 시 사용할 프로토콜 (http 또는 https)
 # scrape_interval        : 적용되는 개별 수집 주기 (Override)
 # static_configs         : 수집 대상의 정적 주소 목록 (컨테이너 이름 또는 호스트:포트 형식)
-# target:                : 실제 메트릭을 제공하는 Spring Boot 컨테이너 주소 (컨테이너 이름 or 호스트명:포트)
+# targets:                : 실제 메트릭을 제공하는 Spring Boot 컨테이너 주소 (컨테이너 이름 or 호스트명:포트)
 
 global:
   scrape_interval: 15s
