@@ -153,8 +153,8 @@ class RedisStreamPublisherTest {
         }
 
         @Override
-        public String getFailReason() {
-            return RetryFailReason.TIMEOUT.name();
+        public RetryFailReason getRetryFailReason() {
+            return RetryFailReason.TIMEOUT;
         }
     }
 

@@ -1,5 +1,6 @@
 package com.global.redis.dto;
 
+import com.global.redis.constants.RetryFailReason;
 import java.time.LocalDateTime;
 
 public interface RedisRetryableMessage {
@@ -9,5 +10,5 @@ public interface RedisRetryableMessage {
 
     LocalDateTime getNextRetryAt();
 
-    String getFailReason();
+    RetryFailReason getRetryFailReason();
 }
