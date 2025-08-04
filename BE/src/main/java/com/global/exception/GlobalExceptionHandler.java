@@ -95,7 +95,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 필드 유효성 검증 오류 메시지 추출
+     * 필드 유효성 검증 오류 메시지 추출 및 ErrorCode에 해당하는 메시지가 있다면 변환
      */
     private Map<String, String> extractFieldErrors(final MethodArgumentNotValidException e) {
         return e.getBindingResult()
@@ -103,8 +103,13 @@ public class GlobalExceptionHandler {
                 .stream()
                 .collect(Collectors.toMap(
                         FieldError::getField,
-                        error -> Optional.ofNullable(error.getDefaultMessage())
-                                .orElse(INVALID_INPUT.message()),
+                        error -> {
+                            String defaultMessage = Optional.ofNullable(error.getDefaultMessage())
+                                    .orElse(INVALID_INPUT.message());
+                            return ErrorCode.safeValueOf(defaultMessage)
+                                    .map(ErrorCode::getMessage)
+                                    .orElse(defaultMessage);
+                        },
                         (first, second) -> first // 중복 필드는 첫 번째 메시지 유지
                 ));
     }

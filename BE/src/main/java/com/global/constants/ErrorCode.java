@@ -1,5 +1,6 @@
 package com.global.constants;
 
+import java.util.Optional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -57,4 +58,15 @@ public enum ErrorCode {
     private final String code;
     private final String message;
     private final int status;
+
+    /**
+     * 주어진 이름으로 ErrorCode를 조회하며, 존재하지 않으면 Optional.empty()를 반환한다.
+     */
+    public static Optional<ErrorCode> safeValueOf(String name) {
+        try {
+            return Optional.of(ErrorCode.valueOf(name));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
 }
