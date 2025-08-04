@@ -73,8 +73,8 @@ export default function App() {
         backgroundColor="transparent"
       />
       <NavigationContainer>
-        {/* <AuthNavigator /> */}
-        <StoreScreen></StoreScreen>
+        <AuthNavigator />
+        {/* <StoreScreen></StoreScreen> */}
       </NavigationContainer>
     </View>
   );

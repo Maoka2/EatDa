@@ -26,7 +26,7 @@ import HamburgerButton from "../../components/Hamburger";
 import Sidebar from "../../components/Sidebar";
 import HeaderLogo from "../../components/HeaderLogo";
 import TabSwitcher from "../../components/TabSwitcher";
-import BottomButton from "../../components/BottomButton"
+import BottomButton from "../../components/BottomButton";
 
 // 메뉴판 스타일 버튼 더미이미지
 import MenuStyleDummy1 from "../../data/menuStyleDummy/menuStyleDummy1.svg";
@@ -46,12 +46,8 @@ interface StoreProps {
 }
 
 export default function StoreScreen() {
-  // 사이드바 관리
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
   // 탭스위쳐 관리
   const [activeTab, setActiveTab] = useState("menu");
-
 
   const tabs = [
     { key: "menu", label: "메뉴" },
@@ -66,9 +62,11 @@ export default function StoreScreen() {
       <View style={styles.headerContainer}>
         {/* 햄버거 버튼 */}
         <HamburgerButton
-          onPress={() => {
-            setIsSidebarOpen(true);
+          userRole="eater"
+          onLogout={() => {
+            console.log("로그아웃");
           }}
+          activePage="storePage"
         ></HamburgerButton>
         {/* 헤더 로고 */}
         <HeaderLogo></HeaderLogo>
@@ -127,17 +125,6 @@ export default function StoreScreen() {
       )}
       {/* 하단 버튼 3개 */}
       <BottomButton></BottomButton>
-
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        userRole="eater"
-        onLogout={() => {
-          // 나중에 로그인 페이지로 보내버리기?
-          console.log("로그아웃");
-        }}
-        activePage="storePage"
-      ></Sidebar>
     </SafeAreaView>
   );
 }
@@ -175,6 +162,4 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
   } as ViewStyle,
-
-
 });

@@ -6,6 +6,7 @@ import {
   useWindowDimensions,
   View,
   Text,
+  Dimensions,
 } from "react-native";
 
 // 사이드바에 사용될 숟가락, 포크 이미지
@@ -27,12 +28,13 @@ export default function Sidebar({
   userRole,
   onLogout,
   activePage,
-  // onNavigate,
-}: SidebarProps) {
+}: // onNavigate,
+SidebarProps) {
   const { width, height } = useWindowDimensions();
+
   // 사이드바 내에서 숟가락, 포크 위치 결정용
   const sidebarWidth = width * 0.8;
-  const sidebarHeight = height;
+  // const sidebarHeight = Dimensions.get("screen").height;
 
   const slideAnim = useRef(new Animated.Value(-width * 0.8)).current;
   const [visible, setVisible] = useState(false);
@@ -69,7 +71,11 @@ export default function Sidebar({
       <Animated.View
         style={[
           styles.sideMenu,
-          { width: width * 0.8, transform: [{ translateX: slideAnim }] },
+          {
+            width: width * 0.8,
+            // height: sidebarHeight,
+            transform: [{ translateX: slideAnim }],
+          },
         ]}
       >
         <View style={styles.menuItems}>
@@ -79,9 +85,9 @@ export default function Sidebar({
               activePage === "reviewPage" && styles.active,
             ]}
             onPress={() => {
-              if(activePage !== "reviewPage"){
-              // onNavigate("reviewPage");
-              onClose();
+              if (activePage !== "reviewPage") {
+                // onNavigate("reviewPage");
+                onClose();
               }
             }}
           >
@@ -95,12 +101,7 @@ export default function Sidebar({
           <TouchableOpacity style={styles.menuItem}>
             <Text>마이페이지</Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity style={styles.menuItem}>
-            <Text>⚙️ 설정</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text>📞 고객센터</Text>
-          </TouchableOpacity> */}
+
           <TouchableOpacity style={styles.menuItem} onPress={onLogout}>
             <Text>로그아웃</Text>
           </TouchableOpacity>
@@ -151,39 +152,35 @@ const styles = StyleSheet.create({
     left: 0,
     backgroundColor: "white",
     zIndex: 30,
-    paddingTop: 30,
-    // paddingHorizontal: 20,
+    // paddingTop: 30,
     overflow: "hidden",
   },
   header: {
     alignItems: "center",
     marginBottom: 20,
   },
-  profileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  profileInitial: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 18,
-  },
-  profileName: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  // profileImage: {
+  //   width: 60,
+  //   height: 60,
+  //   borderRadius: 30,
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   marginBottom: 10,
+  // },
+  // profileInitial: {
+  //   color: "#fff",
+  //   fontWeight: "bold",
+  //   fontSize: 18,
+  // },
+  // profileName: {
+  //   fontSize: 16,
+  //   fontWeight: "bold",
+  // },
   menuItems: {
     marginTop: 10,
-    // paddingHorizontal:20,
   },
   menuItem: {
     paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
     paddingHorizontal: 20,
   },
 

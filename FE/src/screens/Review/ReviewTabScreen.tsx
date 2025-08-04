@@ -136,9 +136,9 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
           >
             {/* 햄버거 아이콘 */}
             <HamburgerButton
-              onPress={() => {
-                setIsSidebarOpen(true);
-              }}
+              userRole="eater"
+              onLogout={onLogout}
+              activePage="review"
             ></HamburgerButton>
           </TouchableOpacity>
           {/* 로고 */}

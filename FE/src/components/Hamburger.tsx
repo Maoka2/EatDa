@@ -1,18 +1,53 @@
 // src/components/Hamburger.tsx
-// 햄버거 버튼 따로 컴포넌트로 빼놓으면 좋을거같아서 늦었지만 해보았습니다.
 
-import React from "react";
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import React, { useRef, useEffect, useState } from "react";
+import {
+  Animated,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+  Text,
+  Modal,
+} from "react-native";
 
-interface Props {
-  onPress: () => void;
+//
+
+// 사이드바에 사용될 숟가락, 포크 이미지
+import Spoon from "../../assets/sidespoon.svg";
+import Fork from "../../assets/sidefork.svg";
+import Sidebar from "./Sidebar";
+
+export interface Props {
+  userRole: "eater" | "maker";
+  onLogout: () => void;
+  activePage: string;
 }
 
-export default function HamburgerButton({ onPress }: Props) {
+export default function HamburgerButton({
+  userRole,
+  onLogout,
+  activePage,
+}: Props) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <TouchableOpacity onPress={onPress}>
-      <Text style={styles.icon}>☰</Text>
-    </TouchableOpacity>
+    // 사이드바 열고 닫기 관리
+    <>
+      <TouchableOpacity onPress={() => setIsOpen(true)}>
+        <Text style={styles.icon}>☰</Text>
+      </TouchableOpacity>
+
+      <Modal visible={isOpen} transparent animationType="none">
+        <Sidebar
+          isOpen={true}
+          onClose={() => setIsOpen(false)}
+          userRole={userRole}
+          onLogout={onLogout}
+          activePage={activePage}
+        />
+      </Modal>
+    </>
   );
 }
 
@@ -21,6 +56,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     paddingHorizontal: 20,
     paddingTop: 4,
-    marginTop:3,
+    marginTop: 3,
   },
 });
