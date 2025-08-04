@@ -26,7 +26,7 @@ import HamburgerButton from "../../components/Hamburger";
 import Sidebar from "../../components/Sidebar";
 import HeaderLogo from "../../components/HeaderLogo";
 import TabSwitcher from "../../components/TabSwitcher";
-import BottomButton from "../../components/bottomButton";
+import BottomButton from "../../components/BottomButton"
 
 // 메뉴판 스타일 버튼 더미이미지
 import MenuStyleDummy1 from "../../data/menuStyleDummy/menuStyleDummy1.svg";
@@ -51,6 +51,7 @@ export default function StoreScreen() {
 
   // 탭스위쳐 관리
   const [activeTab, setActiveTab] = useState("menu");
+
 
   const tabs = [
     { key: "menu", label: "메뉴" },
