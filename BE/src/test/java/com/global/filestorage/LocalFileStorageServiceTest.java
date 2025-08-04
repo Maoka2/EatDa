@@ -80,13 +80,14 @@ class LocalFileStorageServiceTest {
 
     @Test
     void 확장자가_없는_경우_예외가_발생한다() {
-        MockMultipartFile file = new MockMultipartFile("file",
-                "filename",
-                "image/png",
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "foo",
+                "application/octet-stream", // MIME 매핑 안됨
                 "content".getBytes());
 
         GlobalException exception = assertThrows(GlobalException.class,
-                () -> service.storeImage(file, "menus/1", "filename"));
+                () -> service.storeImage(file, "menus/1", "foo"));
 
         assertEquals("INVALID_FILE_TYPE", exception.getErrorCode().getCode());
     }
@@ -134,6 +135,7 @@ class LocalFileStorageServiceTest {
     @Test
     void 파일저장_실패시_GlobalException으로_포장된다() throws IOException {
         MultipartFile mockFile = mock(MultipartFile.class);
+        when(mockFile.getContentType()).thenReturn("image/jpeg");
         when(mockFile.getOriginalFilename()).thenReturn("error.jpg");
         doThrow(new IOException("Disk full")).when(mockFile).transferTo(any(File.class));
 
