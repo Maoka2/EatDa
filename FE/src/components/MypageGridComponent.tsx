@@ -36,9 +36,11 @@ export default function GridComponent({
         style={{
           width: size - 1, 
           height: size - 1,
-          marginRight: index % 2 !== 1 ? 2 : 0, // 안겹치게 
-          marginBottom: !LastRow ? 2 : 0,
+          marginRight: index % 2 !== 1 ? 16 : 0, // 간격 16 
+          marginBottom: !LastRow ? 16 : 0, // 간격 16
           backgroundColor: "#333", 
+          borderRadius: 12, // 둥글게 만들기
+          overflow: "hidden", // 이미지가 둥근 모서리를 벗어나지 않도록
         }}
       >
         <Image

@@ -22,17 +22,19 @@ import { COLORS, textStyles } from "../../constants/theme";
 import SearchBar from "../../components/SearchBar";
 import GridComponent, { ReviewItem } from "../../components/GridComponent";
 import Sidebar from "../../components/Sidebar";
+import MypageScreen from "../Mypage/MypageScreen";
 import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
 
 interface ReviewProps {
   userRole: "eater" | "maker";
   onLogout: () => void;
+  onMypage?: () => void;
 }
 
 // 나중에 위로 땡겼을 때 새로고침이 필요한지?
 
-export default function Reviews({ userRole, onLogout }: ReviewProps) {
+export default function Reviews({ userRole, onLogout, onMypage }: ReviewProps) {
   const { height } = useWindowDimensions();
   const screenHeight = Dimensions.get("window").height;
 
@@ -47,6 +49,10 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
 
   //상세보기 관리
   const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null);
+
+  // 페이지 네비게이션 관리
+  // 어느 페이지에 있는지 일일히 이렇게 설정하면 복잡해질 것 같은데... 어떻게 하면 좋을지 몰라서 일단 이렇게 둡니다..
+  const [currentPage, setCurrentPage] = useState<"reviewPage" | "mypage">("reviewPage");
 
   //상세보기 스크롤 및 비디오 관리
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -101,6 +107,22 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
       useNativeDriver: true,
     }).start();
   };
+
+  // 마이페이지로 이동하는 핸들러
+  const handleNavigateToMypage = () => {
+    setCurrentPage("mypage");
+    setIsSidebarOpen(false);
+  };
+
+  // 마이페이지 렌더링
+  if (currentPage === "mypage") {
+    return (
+      <MypageScreen 
+        userRole={userRole} 
+        onLogout={onLogout} 
+      />
+    );
+  }
 
   return (
     // 터치이벤트만 먹게끔 만듦
@@ -251,9 +273,10 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
         <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
-          userRole="eater"
+          userRole={userRole}
           onLogout={onLogout}
-          activePage="reviewPage"
+          onMypage={handleNavigateToMypage}
+          activePage={currentPage}
         />
       </SafeAreaView>
     </TouchableWithoutFeedback>

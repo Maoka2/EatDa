@@ -9,14 +9,15 @@ import {
 } from "react-native";
 
 // 사이드바에 사용될 숟가락, 포크 이미지
-import Spoon from "../../assets/sideSpoon.svg";
-import Fork from "../../assets/sideFork.svg";
+import Spoon from "../../assets/sidespoon.svg";
+import Fork from "../../assets/sidefork.svg";
 
 export interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   userRole: "eater" | "maker";
   onLogout: () => void;
+  onMypage: () => void;
   activePage: string;
   // onNavigate: (currentPage: string) => void;
 }
@@ -26,6 +27,7 @@ export default function Sidebar({
   onClose,
   userRole,
   onLogout,
+  onMypage,
   activePage,
 }: SidebarProps) {
   const { width, height } = useWindowDimensions();
@@ -91,7 +93,7 @@ export default function Sidebar({
           <TouchableOpacity style={styles.menuItem}>
             <Text>이벤트 게시판</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={onMypage}>
             <Text>마이페이지</Text>
           </TouchableOpacity>
           {/* <TouchableOpacity style={styles.menuItem}>
