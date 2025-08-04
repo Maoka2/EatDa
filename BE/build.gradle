@@ -53,6 +53,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'                                       // 보일러플레이트 코드 감소
     annotationProcessor 'org.projectlombok:lombok'                               // Lombok 어노테이션 처리
     developmentOnly 'org.springframework.boot:spring-boot-devtools'              // 개발 편의를 위한 도구
+    implementation 'commons-io:commons-io:2.20.0'                                // 파일 및 IO 작업을 위한 유틸리티 라이브러리
 
     // 모니터링 도구
     implementation 'org.springframework.boot:spring-boot-starter-actuator'      // 애플리케이션의 헬스 체크 및 메트릭 엔드포인트 제공
