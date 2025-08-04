@@ -8,4 +8,6 @@ public interface RedisRetryableMessage {
     int getRetryCount();
 
     LocalDateTime getNextRetryAt();
+
+    String getFailReason();
 }

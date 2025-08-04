@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.global.redis.constants.RedisStreamKey;
+import com.global.redis.constants.RetryFailReason;
 import com.global.redis.dto.RedisRetryableMessage;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -149,6 +150,11 @@ class RedisStreamPublisherTest {
         @Override
         public LocalDateTime getNextRetryAt() {
             return LocalDateTime.now();
+        }
+
+        @Override
+        public String getFailReason() {
+            return RetryFailReason.TIMEOUT.name();
         }
     }
 

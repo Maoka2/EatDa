@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.global.redis.constants.RedisStreamKey;
+import com.global.redis.constants.RetryFailReason;
 import com.global.redis.dto.RedisRetryableMessage;
 import com.global.redis.publisher.RedisStreamWriter;
 import java.time.Duration;
@@ -100,6 +101,11 @@ class RedisStreamRetryHandlerTest {
         @Override
         public LocalDateTime getNextRetryAt() {
             return nextRetryAt;
+        }
+
+        @Override
+        public String getFailReason() {
+            return RetryFailReason.TIMEOUT.name();
         }
 
         @Override
