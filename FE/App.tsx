@@ -10,7 +10,6 @@ import SplashScreenVideo from "./src/screens/SplashScreen";
 import StoreScreen from "./src/screens/Store/StoreScreen";
 // 네이티브 스플래시 자동 숨김 방지
 SplashScreen.preventAutoHideAsync();
-
 export default function App() {
   // 개발 중에만 화면 깨어있게 유지
   if (__DEV__) {

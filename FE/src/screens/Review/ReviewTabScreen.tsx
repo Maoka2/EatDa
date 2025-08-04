@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  StatusBar,
   Animated,
   FlatList,
   useWindowDimensions,
@@ -16,7 +15,9 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { Video, ResizeMode } from "expo-av";
+
 import { COLORS, textStyles } from "../../constants/theme";
 
 import SearchBar from "../../components/SearchBar";
@@ -24,39 +25,39 @@ import GridComponent, { ReviewItem } from "../../components/GridComponent";
 import Sidebar from "../../components/Sidebar";
 import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
-// 햄버거 버튼 컴포넌트로 분리
 import HamburgerButton from "../../components/Hamburger";
-
-// 헤더로고 컴포넌트로 분리
 import HeaderLogo from "../../components/HeaderLogo";
+import StoreScreen from "../Store/StoreScreen"; // 가게 화면 import
 
+// 북마크, 가게 가는 아이콘 import
+import BookMark from "../../../assets/bookMark.svg";
+import ColoredBookMark from "../../../assets/coloredBookMark.svg";
+import GoToStore from "../../../assets/goToStore.svg";
+import ColoredGoToStore from "../../../assets/coloredGoToStore.svg";
 interface ReviewProps {
   userRole: "eater" | "maker";
   onLogout: () => void;
 }
 
-// 나중에 위로 땡겼을 때 새로고침이 필요한지?
-
 export default function Reviews({ userRole, onLogout }: ReviewProps) {
   const { height } = useWindowDimensions();
   const screenHeight = Dimensions.get("window").height;
 
-  // 서치바 및 드롭다운 관리
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
-
   const [containerWidth, setContainerWidth] = useState(0);
-
-  //사이드바 관리
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  //상세보기 관리
   const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null);
-
-  //상세보기 스크롤 및 비디오 관리
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<ReviewItem>>(null);
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
+  const [showStoreScreen, setShowStoreScreen] = useState(false); // StoreScreen 띄우기
+
+  // 북마크 누르기용
+  const [isBookMarked, setIsBookMarked] = useState(false);
+
+  // 가게 가기 버튼
+  const [isGoToStoreClicked, setIsGoToStoreClicked] = useState(false);
 
   useEffect(() => {
     Object.keys(vdoRefs.current).forEach((key) => {
@@ -71,7 +72,6 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
     });
   }, [currentIndex]);
 
-  // 스크롤 시 1페이지씩만 이동
   const handleMomentumEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetY = e.nativeEvent.contentOffset.y;
@@ -96,7 +96,6 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
     viewAreaCoveragePercentThreshold: 80,
   }).current;
 
-  // 확대 애니메이션 (전체 그리드 레이아웃 -> 단일 그리드)
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const handleOpenDetail = (item: ReviewItem) => {
     setSelectedItem(item);
@@ -108,7 +107,6 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
   };
 
   return (
-    // 터치이벤트만 먹게끔 만듦
     <TouchableWithoutFeedback
       onPress={() => {
         if (showTypeDropdown || showDistanceDropdown) {
@@ -117,148 +115,185 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
         }
         Keyboard.dismiss();
       }}
-      // 드롭다운박스 열려있을 떄만.
       disabled={!(showTypeDropdown || showDistanceDropdown)}
     >
       <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-        {/* <StatusBar barStyle="dark-content" /> */}
-
-        {/* 헤더 */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity
-            onPress={() => {
-              if (showTypeDropdown || showDistanceDropdown) {
-                setShowTypeDropdown(false);
-                setShowDistanceDropdown(false);
-              }
-              setIsSidebarOpen(true);
+        {showStoreScreen ? (
+          <StoreScreen
+            onGoBack={() => {
+              setShowStoreScreen(false);
+              setIsGoToStoreClicked(false);
             }}
-          >
-            {/* 햄버거 아이콘 */}
-            <HamburgerButton
-              userRole="eater"
-              onLogout={onLogout}
-              activePage="review"
-            ></HamburgerButton>
-          </TouchableOpacity>
-          {/* 로고 */}
-          <HeaderLogo></HeaderLogo>
-        </View>
-        {/* 서치바 */}
-        <SearchBar
-          showTypeDropdown={showTypeDropdown}
-          setShowTypeDropdown={setShowTypeDropdown}
-          showDistanceDropdown={showDistanceDropdown}
-          setShowDistanceDropdown={setShowDistanceDropdown}
-        ></SearchBar>
-        {/* 상세보기 모드 */}
-        {selectedItem ? (
-          <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
-            <FlatList
-              key="detail"
-              ref={flatListRef}
-              data={reviewData}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item, index }) => (
-                <View style={{ height: screenHeight }}>
-                  {item.type === "image" ? (
-                    <Image
-                      source={{ uri: item.uri }}
-                      style={StyleSheet.absoluteFillObject}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <Video
-                      ref={(ref: Video | null) => {
-                        vdoRefs.current[index] = ref;
-                      }}
-                      source={{ uri: item.uri }}
-                      style={StyleSheet.absoluteFillObject}
-                      resizeMode={ResizeMode.COVER}
-                      shouldPlay={index === currentIndex}
-                      isLooping
-                      isMuted
-                    />
-                  )}
-
-                  {/* 닫기 버튼 */}
-                  <TouchableOpacity
-                    style={styles.closeBtn}
-                    onPress={() => {
-                      if (showTypeDropdown || showDistanceDropdown) {
-                        setShowTypeDropdown(false);
-                        setShowDistanceDropdown(false);
-                      }
-                      setSelectedItem(null);
-                    }}
-                  >
-                    <CloseBtn></CloseBtn>
-                  </TouchableOpacity>
-
-                  {/* 하단 텍스트 리뷰 오버레이 */}
-                  {/* 누르면 해당 가게 페이지로 넘어가게끔 수정필요 */}
-                  <View style={styles.textOverlay}>
-                    <Text style={styles.titleText}>#{item.title}</Text>
-                    <Text style={styles.descText}>{item.description}</Text>
-                  </View>
-                </View>
-              )}
-              pagingEnabled
-              decelerationRate="fast"
-              snapToInterval={screenHeight}
-              snapToAlignment="start"
-              initialScrollIndex={reviewData.findIndex(
-                (i) => i.id === selectedItem.id
-              )}
-              getItemLayout={(data, index) => ({
-                length: screenHeight,
-                offset: screenHeight * index,
-                index,
-              })}
-              onMomentumScrollEnd={handleMomentumEnd}
-              onViewableItemsChanged={onViewableItemsChanged}
-              viewabilityConfig={viewConfig}
-              windowSize={2}
-              initialNumToRender={1}
-              maxToRenderPerBatch={1}
-              removeClippedSubviews
-            />
-          </Animated.View>
+          ></StoreScreen>
         ) : (
-          // 전체 보기
-          <FlatList
-            key="grid"
-            data={reviewData}
-            onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-            renderItem={({ item, index }) => (
-              <GridComponent
-                item={item}
-                size={containerWidth / 3}
-                index={index}
-                totalLength={reviewData.length}
+          <>
+            {/* 헤더 */}
+            <View style={styles.headerContainer}>
+              <TouchableOpacity
                 onPress={() => {
                   if (showTypeDropdown || showDistanceDropdown) {
                     setShowTypeDropdown(false);
                     setShowDistanceDropdown(false);
                   }
-                  handleOpenDetail(item);
+                  setIsSidebarOpen(true);
                 }}
+              >
+                <HamburgerButton
+                  userRole="eater"
+                  onLogout={onLogout}
+                  activePage="review"
+                />
+              </TouchableOpacity>
+              <HeaderLogo />
+            </View>
+
+            {/* 서치바 */}
+            <SearchBar
+              showTypeDropdown={showTypeDropdown}
+              setShowTypeDropdown={setShowTypeDropdown}
+              showDistanceDropdown={showDistanceDropdown}
+              setShowDistanceDropdown={setShowDistanceDropdown}
+            />
+
+            {/* 상세보기 모드 */}
+            {selectedItem ? (
+              <Animated.View
+                style={{ flex: 1, transform: [{ scale: scaleAnim }] }}
+              >
+                <FlatList
+                  key="detail"
+                  ref={flatListRef}
+                  data={reviewData}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item, index }) => (
+                    <View style={{ height: screenHeight }}>
+                      {item.type === "image" ? (
+                        <Image
+                          source={{ uri: item.uri }}
+                          style={StyleSheet.absoluteFillObject}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <Video
+                          ref={(ref: Video | null) => {
+                            vdoRefs.current[index] = ref;
+                          }}
+                          source={{ uri: item.uri }}
+                          style={StyleSheet.absoluteFillObject}
+                          resizeMode={ResizeMode.COVER}
+                          shouldPlay={index === currentIndex}
+                          isLooping
+                          isMuted
+                        />
+                      )}
+
+                      {/* 닫기 버튼 */}
+                      <TouchableOpacity
+                        style={styles.closeBtn}
+                        onPress={() => {
+                          if (showTypeDropdown || showDistanceDropdown) {
+                            setShowTypeDropdown(false);
+                            setShowDistanceDropdown(false);
+                          }
+                          setSelectedItem(null);
+                        }}
+                      >
+                        <CloseBtn />
+                      </TouchableOpacity>
+                      {/*  */}
+                      {/* 텍스트 오버레이 (클릭 시 가게화면 띄움) */}
+                      <View style={[styles.textOverlay]}>
+                        <Text style={styles.titleText}>#{item.title}</Text>
+                        <Text style={styles.descText}>{item.description}</Text>
+                      </View>
+
+                      <View style={styles.goToStoreAndBookMarkContainer}>
+                        {/* 가게페이지로 이동 */}
+                        <TouchableOpacity
+                          style={styles.goToStore}
+                          onPress={() => {
+                            setIsGoToStoreClicked(true);
+                            setShowStoreScreen(true);
+                          }}
+                        >
+                          {isGoToStoreClicked ? (
+                            <ColoredGoToStore />
+                          ) : (
+                            <GoToStore />
+                          )}
+                        </TouchableOpacity>
+
+                        {/* 북마크 */}
+                        <TouchableOpacity
+                          onPress={() => setIsBookMarked((prev) => !prev)}
+                        >
+                          {isBookMarked ? (
+                            <ColoredBookMark style={styles.bookMark} />
+                          ) : (
+                            <BookMark style={styles.bookMark} />
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                  pagingEnabled
+                  decelerationRate="fast"
+                  snapToInterval={screenHeight}
+                  snapToAlignment="start"
+                  initialScrollIndex={reviewData.findIndex(
+                    (i) => i.id === selectedItem.id
+                  )}
+                  getItemLayout={(data, index) => ({
+                    length: screenHeight,
+                    offset: screenHeight * index,
+                    index,
+                  })}
+                  onMomentumScrollEnd={handleMomentumEnd}
+                  onViewableItemsChanged={onViewableItemsChanged}
+                  viewabilityConfig={viewConfig}
+                  windowSize={2}
+                  initialNumToRender={1}
+                  maxToRenderPerBatch={1}
+                  removeClippedSubviews
+                />
+              </Animated.View>
+            ) : (
+              // 전체 보기
+              <FlatList
+                key="grid"
+                data={reviewData}
+                onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+                renderItem={({ item, index }) => (
+                  <GridComponent
+                    item={item}
+                    size={containerWidth / 3}
+                    index={index}
+                    totalLength={reviewData.length}
+                    onPress={() => {
+                      if (showTypeDropdown || showDistanceDropdown) {
+                        setShowTypeDropdown(false);
+                        setShowDistanceDropdown(false);
+                      }
+                      handleOpenDetail(item);
+                    }}
+                  />
+                )}
+                keyExtractor={(item) => item.id}
+                numColumns={3}
+                removeClippedSubviews
               />
             )}
-            keyExtractor={(item) => item.id}
-            numColumns={3}
-            removeClippedSubviews
-          />
+
+            {/* 사이드바 */}
+            {/* <Sidebar
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+              userRole="eater"
+              onLogout={onLogout}
+              activePage="reviewPage"
+            /> */}
+          </>
         )}
-        {/* 사이드바 */}
-        <Sidebar
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          userRole="eater"
-          onLogout={onLogout}
-          activePage="reviewPage"
-          // onNavigate={}
-        />
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -269,12 +304,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingTop: 40,
   },
-
   closeBtn: {
     position: "absolute",
     top: 0,
     right: 0,
-    // backgroundColor: "rgba(0,0,0,0.4)",
     padding: 15,
     zIndex: 5,
   },
@@ -297,5 +330,16 @@ const styles = StyleSheet.create({
   descText: {
     color: "#fff",
     fontSize: 13,
+  },
+  goToStoreAndBookMarkContainer: {
+    flexDirection: "row",
+    position: "absolute",
+    bottom: 200,
+    right: 20,
+  },
+  goToStore: {},
+  bookMark: {
+    width: 10,
+    height: 10,
   },
 });

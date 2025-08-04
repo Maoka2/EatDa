@@ -43,9 +43,10 @@ interface StoreProps {
   //   storeName: string;
   //   storeAddress: string;
   // { storeId, storeName, storeAddress }: StoreProps
+  onGoBack: () => void;
 }
 
-export default function StoreScreen() {
+export default function StoreScreen({ onGoBack }: StoreProps) {
   // 탭스위쳐 관리
   const [activeTab, setActiveTab] = useState("menu");
 
@@ -70,6 +71,21 @@ export default function StoreScreen() {
         ></HamburgerButton>
         {/* 헤더 로고 */}
         <HeaderLogo></HeaderLogo>
+          {/* 가게 -> 전체 리뷰로 돌아가기 */}
+        <TouchableOpacity
+          onPress={onGoBack}
+          style={{
+            padding: 10,
+            alignSelf: "flex-end",
+            marginRight: 20,
+            marginTop: 10,
+            backgroundColor: "#eee",
+            borderRadius: 8,
+          }}
+        >
+          <Text>뒤로가기</Text>
+
+        </TouchableOpacity>
       </View>
 
       {/* 가게정보 파트 */}
