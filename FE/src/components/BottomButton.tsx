@@ -71,7 +71,6 @@ export default function BottomButton() {
 const styles = StyleSheet.create({
   bottomBtnContainer: {
     flexDirection: "row",
-    marginBottom: 60,
     backgroundColor: "#eeeeee",
     justifyContent: "center",
     alignItems: "center",
