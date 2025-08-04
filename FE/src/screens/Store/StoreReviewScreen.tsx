@@ -12,6 +12,7 @@ import {
   NativeScrollEvent,
   TouchableOpacity,
   StyleSheet,
+  useWindowDimensions,
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import GridComponent, { ReviewItem } from "../../components/GridComponent";
@@ -29,6 +30,7 @@ export default function StoreReviewScreen() {
   const [containerWidth, setContainerWidth] = useState(0);
   const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { height } = useWindowDimensions();
 
   const flatListRef = useRef<FlatList<ReviewItem>>(null);
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
@@ -110,7 +112,7 @@ export default function StoreReviewScreen() {
                 >
                   <CloseBtn></CloseBtn>
                 </TouchableOpacity>
-                <View style={styles.textOverlay}>
+                <View style={[styles.textOverlay, { bottom: height * 0.25 }]}>
                   <Text style={styles.titleText}>#{item.title}</Text>
                   <Text style={styles.descText}>{item.description}</Text>
                 </View>
@@ -167,7 +169,6 @@ const styles = StyleSheet.create({
   },
   textOverlay: {
     position: "absolute",
-    bottom: 200,
     left: 20,
     right: 20,
     backgroundColor: "rgba(0,0,0,0.3)",
