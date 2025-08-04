@@ -26,6 +26,7 @@ import HamburgerButton from "../../components/Hamburger";
 import Sidebar from "../../components/Sidebar";
 import HeaderLogo from "../../components/HeaderLogo";
 import TabSwitcher from "../../components/TabSwitcher";
+import BottomButton from "../../components/bottomButton";
 
 // 메뉴판 스타일 버튼 더미이미지
 import MenuStyleDummy1 from "../../data/menuStyleDummy/menuStyleDummy1.svg";
@@ -123,19 +124,8 @@ export default function StoreScreen() {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* 하단 탭버튼 3개 */}
-      <View style={styles.bottomBtnContainer}>
-        <TouchableOpacity style={styles.bottomTextWrapper}>
-          <Text style={styles.bottomText}>리뷰 작성하기</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomTextWrapper}>
-          <Text style={styles.bottomText}>찾아가기</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bottomTextWrapper}>
-          <Text style={styles.bottomText}>메뉴판 꾸미기</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 하단 버튼 3개 */}
+      <BottomButton></BottomButton>
 
       <Sidebar
         isOpen={isSidebarOpen}
@@ -185,19 +175,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
   } as ViewStyle,
 
-  bottomBtnContainer: {
-    flexDirection: "row",
-    marginBottom: 60,
-    paddingVertical: 20,
-    backgroundColor: "#eeeeee",
-  } as ViewStyle,
 
-  bottomTextWrapper: {
-    flex: 1,
-  } as ViewStyle,
-
-  bottomText: {
-    textAlign: "center",
-    fontSize: 18,
-  } as TextStyle,
 });
