@@ -57,7 +57,7 @@ public class RedisStreamRetryHandler<T extends RedisRetryableMessage> {
         log.warn(RETRY_MAX_COUNT_EXCEEDED_MESSAGE, message);
         dlqPublisher.publish(getDLQStreamKey(), message);
     }
-    
+
     /**
      * 재시도 메시지 발행 처리
      * <p>

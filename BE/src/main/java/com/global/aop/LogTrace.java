@@ -4,8 +4,8 @@ import static com.global.constants.Messages.LOG_COMPLETE_PREFIX;
 import static com.global.constants.Messages.LOG_EXCEPTION_PREFIX;
 import static com.global.constants.Messages.LOG_START_PREFIX;
 import static com.global.constants.Messages.LOG_UNSUPPORTED_LEVEL;
-import static com.global.utils.TimestampUtils.currentTimeMillis;
 
+import com.global.utils.TimestampUtils;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.logging.LogLevel;
@@ -35,7 +35,7 @@ public class LogTrace {
         String message = String.format(MESSAGE_PATTERN, traceId.getId(), formattedSpace, methodSignature);
 
         logByLevel(level, message, null);
-        return new TraceStatus(traceId, currentTimeMillis(), methodSignature);
+        return new TraceStatus(traceId, TimestampUtils.currentTimeMillis(), methodSignature);
     }
 
     /**
@@ -56,7 +56,7 @@ public class LogTrace {
      * 메서드 실행 추적을 완료하고 로깅합니다.
      */
     private void complete(final TraceStatus status, final Exception e, final LogLevel level) {
-        long duration = currentTimeMillis() - status.startTime();
+        long duration = TimestampUtils.currentTimeMillis() - status.startTime();
         TraceId traceId = status.traceId();
         String message = formatLogMessage(status, e, traceId, duration);
 
@@ -69,7 +69,8 @@ public class LogTrace {
      */
     private String formatLogMessage(final TraceStatus status, final Exception e, final TraceId traceId,
                                     final long duration) {
-        String prefix = Objects.isNull(e) ? LOG_COMPLETE_PREFIX.message() : LOG_EXCEPTION_PREFIX.message();
+        String prefix =
+                Objects.isNull(e) ? LOG_COMPLETE_PREFIX.message() : LOG_EXCEPTION_PREFIX.message();
         String formattedSpace = formatSpace(prefix, traceId.getLevel());
         String exceptionMessage = Objects.isNull(e) ? String.format(EXCEPTION_FORMAT, e.getMessage()) : "";
 
@@ -86,9 +87,9 @@ public class LogTrace {
      */
     private void logByLevel(final LogLevel level, final String message, final Exception e) {
         switch (level) {
-            case TRACE -> log.trace(message, e);
-            case DEBUG -> log.debug(message, e);
-            case INFO -> log.info(message, e);
+            case LogLevel.TRACE -> log.trace(message, e);
+            case LogLevel.DEBUG -> log.debug(message, e);
+            case LogLevel.INFO -> log.info(message, e);
             default -> log.warn(LOG_UNSUPPORTED_LEVEL.message(), level);
         }
     }

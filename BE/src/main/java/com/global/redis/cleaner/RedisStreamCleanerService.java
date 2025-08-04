@@ -8,8 +8,6 @@ import static com.global.redis.constants.RedisConstants.REDIS_STREAM_CLEANER_PAR
 import static com.global.redis.constants.RedisConstants.REDIS_STREAM_CLEANER_START_MESSAGE;
 import static com.global.redis.constants.RedisConstants.STREAM_FIELD_EXPIRE_AT;
 import static com.global.redis.constants.RedisConstants.STREAM_MESSAGE_BATCH_SIZE;
-import static org.springframework.data.domain.Range.unbounded;
-import static org.springframework.data.redis.connection.Limit.limit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.global.redis.constants.RedisStreamKey;
@@ -18,6 +16,8 @@ import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Range;
+import org.springframework.data.redis.connection.Limit;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class RedisStreamCleanerService {
-    
+
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
 
@@ -69,8 +69,8 @@ public class RedisStreamCleanerService {
     private List<MapRecord<String, Object, Object>> fetchStreamMessages(final String streamKey) {
         return redisTemplate.opsForStream().range(
                 streamKey,
-                unbounded(),
-                limit().count(STREAM_MESSAGE_BATCH_SIZE)
+                Range.unbounded(),
+                Limit.limit().count(STREAM_MESSAGE_BATCH_SIZE)
         );
     }
 

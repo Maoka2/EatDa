@@ -1,14 +1,14 @@
 package com.global.dto.response;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static com.global.utils.TimestampUtils.now;
-import static lombok.AccessLevel.PRIVATE;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.global.utils.TimestampUtils;
 import jakarta.validation.constraints.NotNull;
+import lombok.AccessLevel;
 import lombok.Builder;
 
-@Builder(access = PRIVATE) // 생성 일관성 유지 및 필드 검증을 위해 builder 접근 제한
+@Builder(access = AccessLevel.PRIVATE) // 생성 일관성 유지 및 필드 검증을 위해 builder 접근 제한
 public record ErrorResponse(
         @NotNull String code,
         @NotNull String message,
@@ -23,7 +23,7 @@ public record ErrorResponse(
                 .message(message)
                 .status(status)
                 .details(details)
-                .timestamp(now())
+                .timestamp(TimestampUtils.now())
                 .build();
     }
 
@@ -32,7 +32,7 @@ public record ErrorResponse(
                 .code(code)
                 .message(message)
                 .status(status)
-                .timestamp(now())
+                .timestamp(TimestampUtils.now())
                 .build();
     }
 }

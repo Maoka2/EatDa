@@ -5,7 +5,6 @@ import static com.global.constants.Messages.LOG_ARG_CONVERSION_FAILED;
 import static com.global.constants.Messages.LOG_EXCLUDED_VALUE;
 import static com.global.constants.Messages.SPRING_PACKAGE;
 import static com.global.constants.Messages.UTILITY_CLASS_ERROR;
-import static com.global.utils.MaskingUtils.mask;
 
 import com.global.annotation.ExcludeFromLogging;
 import java.lang.annotation.Annotation;
@@ -104,7 +103,7 @@ public final class MethodSignatureUtils {
     private static String convertArgToString(final Object arg) {
         try {
             // MaskingUtils를 통한 마스킹 처리
-            return mask(arg);
+            return MaskingUtils.mask(arg);
         } catch (Exception e) {
             return LOG_ARG_CONVERSION_FAILED.message();
         }

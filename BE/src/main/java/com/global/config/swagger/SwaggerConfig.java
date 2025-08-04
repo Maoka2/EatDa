@@ -8,7 +8,6 @@ import static com.global.constants.Messages.BEARER_SCHEME;
 import static com.global.constants.Messages.DEV_SERVER_URL;
 import static com.global.constants.Messages.LOCAL_SERVER_URL;
 import static com.global.constants.Messages.SECURITY_SCHEME_NAME;
-import static io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -41,7 +40,7 @@ public class SwaggerConfig {
     // JWT 보안 구성 설정 생성
     private SecurityScheme createJwtSecurityScheme() {
         return new SecurityScheme()
-                .type(HTTP)
+                .type(SecurityScheme.Type.HTTP)
                 .scheme(BEARER_SCHEME.message())
                 .bearerFormat(BEARER_FORMAT.message());
     }

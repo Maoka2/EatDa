@@ -97,13 +97,14 @@ public class GlobalExceptionHandler {
     /**
      * 필드 유효성 검증 오류 메시지 추출
      */
-    private Map<String, String> extractFieldErrors(MethodArgumentNotValidException e) {
+    private Map<String, String> extractFieldErrors(final MethodArgumentNotValidException e) {
         return e.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .collect(Collectors.toMap(
                         FieldError::getField,
-                        error -> Optional.ofNullable(error.getDefaultMessage()).orElse(INVALID_INPUT.message()),
+                        error -> Optional.ofNullable(error.getDefaultMessage())
+                                .orElse(INVALID_INPUT.message()),
                         (first, second) -> first // 중복 필드는 첫 번째 메시지 유지
                 ));
     }
@@ -111,7 +112,7 @@ public class GlobalExceptionHandler {
     /**
      * 제약조건 위반 오류 메시지 추출
      */
-    private Map<String, String> extractConstraintViolations(ConstraintViolationException e) {
+    private Map<String, String> extractConstraintViolations(final ConstraintViolationException e) {
         return e.getConstraintViolations()
                 .stream()
                 .collect(Collectors.toMap(

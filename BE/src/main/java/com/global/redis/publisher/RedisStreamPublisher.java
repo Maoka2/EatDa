@@ -12,12 +12,12 @@ import static com.global.redis.constants.RedisConstants.REDIS_PUBLISHER_SERIALIZ
 import static com.global.redis.constants.RedisConstants.REDIS_PUBLISHER_SUCCESS_MESSAGE;
 import static com.global.redis.constants.RedisConstants.REDIS_PUBLISHER_UNEXPECTED_ERROR;
 import static com.global.redis.constants.RedisConstants.REDIS_XADD_SCRIPT;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.global.redis.constants.RedisStreamKey;
 import com.global.redis.dto.RedisRetryableMessage;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -186,7 +186,7 @@ public abstract class RedisStreamPublisher<T extends RedisRetryableMessage> impl
     private void evalScript(final byte[][] keysAndArgs) {
         redisTemplate.execute((RedisCallback<Object>) connection -> {
             connection.scriptingCommands().eval(
-                    REDIS_XADD_SCRIPT.getBytes(UTF_8),
+                    REDIS_XADD_SCRIPT.getBytes(StandardCharsets.UTF_8),
                     ReturnType.VALUE,
                     1,
                     keysAndArgs

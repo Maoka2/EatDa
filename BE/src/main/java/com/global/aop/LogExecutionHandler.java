@@ -1,7 +1,6 @@
 package com.global.aop;
 
-import static com.global.utils.MethodSignatureUtils.formatMethodSignature;
-
+import com.global.utils.MethodSignatureUtils;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.springframework.boot.logging.LogLevel;
@@ -18,7 +17,7 @@ public class LogExecutionHandler {
     public Object executeWithLevel(final ProceedingJoinPoint joinPoint, final LogLevel level) throws Throwable {
         TraceStatus status = null;
         try {
-            String methodSignature = formatMethodSignature(joinPoint);
+            String methodSignature = MethodSignatureUtils.formatMethodSignature(joinPoint);
             status = logTrace.begin(methodSignature, level);
             Object result = joinPoint.proceed();
             logTrace.end(status, level);

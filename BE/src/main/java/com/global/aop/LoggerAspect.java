@@ -1,15 +1,12 @@
 package com.global.aop;
 
-import static org.springframework.boot.logging.LogLevel.DEBUG;
-import static org.springframework.boot.logging.LogLevel.INFO;
-import static org.springframework.boot.logging.LogLevel.TRACE;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.boot.logging.LogLevel;
 import org.springframework.stereotype.Component;
 
 
@@ -49,7 +46,7 @@ public class LoggerAspect {
      */
     @Around("controllerLayer()")
     public Object logController(final ProceedingJoinPoint joinPoint) throws Throwable {
-        return executionHandler.executeWithLevel(joinPoint, INFO);
+        return executionHandler.executeWithLevel(joinPoint, LogLevel.INFO);
     }
 
     /**
@@ -57,7 +54,7 @@ public class LoggerAspect {
      */
     @Around("serviceLayer()")
     public Object logService(final ProceedingJoinPoint joinPoint) throws Throwable {
-        return executionHandler.executeWithLevel(joinPoint, DEBUG);
+        return executionHandler.executeWithLevel(joinPoint, LogLevel.DEBUG);
     }
 
     /**
@@ -65,6 +62,6 @@ public class LoggerAspect {
      */
     @Around("repositoryLayer()")
     public Object logRepository(final ProceedingJoinPoint joinPoint) throws Throwable {
-        return executionHandler.executeWithLevel(joinPoint, TRACE);
+        return executionHandler.executeWithLevel(joinPoint, LogLevel.TRACE);
     }
 }
