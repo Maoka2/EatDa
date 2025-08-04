@@ -9,8 +9,8 @@ import {
 } from "react-native";
 
 // 사이드바에 사용될 숟가락, 포크 이미지
-import Spoon from "../../assets/sidespoon.svg";
-import Fork from "../../assets/sidefork.svg";
+import Spoon from "../../assets/sideSpoon.svg";
+import Fork from "../../assets/sideFork.svg";
 
 export interface SidebarProps {
   isOpen: boolean;
