@@ -55,15 +55,18 @@ export const menuData: menuItem[] = [
     id: "8",
     menuName: "화이트 소스 파스타",
     menuDescription: "크리미한 소스와 베이컨이 어우러진 파스타.",
+    uri: "https://picsum.photos/200/200?random=8",
   },
   {
     id: "9",
     menuName: "토마토 소스 파스타",
     menuDescription: "상큼한 토마토 소스가 매력적인 클래식 파스타.",
+    uri: "https://picsum.photos/200/200?random=9",
   },
   {
     id: "10",
     menuName: "갈릭 브레드",
     menuDescription: "버터와 마늘향 가득한 부드러운 식전빵.",
+    uri: "https://picsum.photos/200/200?random=10",
   },
 ];

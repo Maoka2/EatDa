@@ -42,8 +42,8 @@ const styles = StyleSheet.create({
   shadowWrapper: {
     backgroundColor: "#f7f8f9",
     borderRadius: 12,
-    marginHorizontal: 12,
-    marginVertical: 8,
+    marginHorizontal: 8,
+    marginBottom:8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
