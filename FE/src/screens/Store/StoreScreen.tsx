@@ -1,6 +1,4 @@
-// src/screens/Store/StroeScreen.tsx
-// 헤더(햄버거, 로고) -> 주소 -> 탭스위치 -> 누른거에 따라 Store(Event/Menu/Review) Screen 불러오기 -> 맨밑 버튼 3개
-
+// src/screens/Store/StoreScreen.tsx
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
@@ -34,21 +32,27 @@ import MenuStyleDummy2 from "../../data/menuStyleDummy/menuStyleDummy2.svg";
 import MenuStyleDummy3 from "../../data/menuStyleDummy/menuStyleDummy3.svg";
 import MenuStyleDummy4 from "../../data/menuStyleDummy/menuStyleDummy4.svg";
 import MenuStyleDummy5 from "../../data/menuStyleDummy/menuStyleDummy5.svg";
+
 import StoreMenuScreen from "./StoreMenuScreen";
 import StoreEventScreen from "./StoreEventScreen";
 import StoreReviewScreen from "./StoreReviewScreen";
+import ReviewWriteScreen from "./ReviewWriteScreen";
+import StoreMapScreen from "./StoreMapScreen";
+import MenuCustomScreen from "./MenuCustomScreen";
+
+// 새로 추가할 하단 버튼 화면들
 
 interface StoreProps {
-  //   storeId: string;
-  //   storeName: string;
-  //   storeAddress: string;
-  // { storeId, storeName, storeAddress }: StoreProps
   onGoBack: () => void;
 }
 
 export default function StoreScreen({ onGoBack }: StoreProps) {
   // 탭스위쳐 관리
   const [activeTab, setActiveTab] = useState("menu");
+  // 하단 버튼 화면 관리
+  const [bottomActiveScreen, setBottomActiveScreen] = useState<string | null>(
+    null
+  );
 
   const tabs = [
     { key: "menu", label: "메뉴" },
@@ -56,22 +60,41 @@ export default function StoreScreen({ onGoBack }: StoreProps) {
     { key: "review", label: "리뷰" },
   ];
 
+  // 하단 버튼 핸들러
+  const handleBottomButtonPress = (screen: string) => {
+    setBottomActiveScreen(screen);
+  };
+
+  const handleCloseBottomScreen = () => {
+    setBottomActiveScreen(null);
+  };
+
+  // 하단 버튼 화면이 활성화된 경우 해당 화면 렌더링
+  if (bottomActiveScreen) {
+    switch (bottomActiveScreen) {
+      case "review":
+        return <ReviewWriteScreen onClose={handleCloseBottomScreen} />;
+      case "map":
+        return <StoreMapScreen onClose={handleCloseBottomScreen} />;
+      case "menu":
+        return <MenuCustomScreen onClose={handleCloseBottomScreen} />;
+      default:
+        return null;
+    }
+  }
+
   return (
-    //  아래에서 부터 화면 구성 코드
     <SafeAreaView style={[{ backgroundColor: "#F7F8F9", flex: 1 }]}>
       {/* 헤더 */}
       <View style={styles.headerContainer}>
-        {/* 햄버거 버튼 */}
         <HamburgerButton
           userRole="eater"
           onLogout={() => {
             console.log("로그아웃");
           }}
           activePage="storePage"
-        ></HamburgerButton>
-        {/* 헤더 로고 */}
-        <HeaderLogo></HeaderLogo>
-          {/* 가게 -> 전체 리뷰로 돌아가기 */}
+        />
+        <HeaderLogo />
         <TouchableOpacity
           onPress={onGoBack}
           style={{
@@ -84,20 +107,15 @@ export default function StoreScreen({ onGoBack }: StoreProps) {
           }}
         >
           <Text>뒤로가기</Text>
-
         </TouchableOpacity>
       </View>
 
       {/* 가게정보 파트 */}
       <View style={styles.storeInfo}>
-        {/* 가게명 */}
         <Text style={styles.storeName}>햄찌네 피자</Text>
-        {/* <Text style={styles.storeName}>{storeName}</Text> */}
-        {/* 가게 주소 */}
         <Text style={styles.storeAddress}>
           📍서울특별시 강남구 테헤란로 212
         </Text>
-        {/* <Text style={styles.storeAddress}>{storeAddress}</Text> */}
       </View>
 
       {/* 탭스위치 */}
@@ -107,40 +125,38 @@ export default function StoreScreen({ onGoBack }: StoreProps) {
         onChange={(key) => {
           setActiveTab(key);
         }}
-      ></TabSwitcher>
+      />
+
       <View style={{ flex: 1 }}>
         {/* 활성화 탭에 따라 화면 가져오기 */}
-        {activeTab === "menu" && <StoreMenuScreen></StoreMenuScreen>}
-        {activeTab === "event" && <StoreEventScreen></StoreEventScreen>}
-        {activeTab === "review" && <StoreReviewScreen></StoreReviewScreen>}
+        {activeTab === "menu" && <StoreMenuScreen />}
+        {activeTab === "event" && <StoreEventScreen />}
+        {activeTab === "review" && <StoreReviewScreen />}
       </View>
 
       {/* 메뉴판 스타일 탭, 메뉴 볼 때만 활성화 되도록 */}
       {activeTab === "menu" && (
         <View style={styles.menuStyleContainer}>
           <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy1></MenuStyleDummy1>
+            <MenuStyleDummy1 />
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy2></MenuStyleDummy2>
+            <MenuStyleDummy2 />
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy3></MenuStyleDummy3>
+            <MenuStyleDummy3 />
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy4></MenuStyleDummy4>
+            <MenuStyleDummy4 />
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy5></MenuStyleDummy5>
+            <MenuStyleDummy5 />
           </TouchableOpacity>
         </View>
       )}
+
       {/* 하단 버튼 3개 */}
-      <BottomButton></BottomButton>
+      <BottomButton onPress={handleBottomButtonPress} />
     </SafeAreaView>
   );
 }
@@ -153,27 +169,22 @@ const styles = StyleSheet.create({
   storeInfo: {
     flexDirection: "row",
     paddingHorizontal: 20,
-
     marginVertical: 10,
   } as ViewStyle,
-
   storeName: {
     fontSize: 20,
-    fontWeight: 500,
+    fontWeight: "500",
     marginRight: 12,
   } as TextStyle,
-
   storeAddress: {
     marginTop: 9,
     fontSize: 12,
     letterSpacing: -0.3,
   } as TextStyle,
-
   menuStyleContainer: {
     flexDirection: "row",
     paddingVertical: 10,
   } as ViewStyle,
-
   menuStyleBtn: {
     flex: 1,
     alignItems: "center",
