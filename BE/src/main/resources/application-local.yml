@@ -12,3 +12,15 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+app:
+  poi:
+    distance:
+      max-radius: 2000
+      geohash-precision: 8
+      search-distances:
+        - 300
+        - 500
+        - 700
+        - 1000
+        - 2000
