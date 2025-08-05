@@ -17,11 +17,9 @@ import org.mapstruct.ReportingPolicy;
 )
 public interface EaterMapper {
 
-    // @formatter:off
     /**
      * role 필드는 고정 값 "EATER"로 설정
      */
-    // @formatter:on
     @Mapping(target = "role", constant = "EATER")
     User toEntity(EaterSignUpRequest request);
 
