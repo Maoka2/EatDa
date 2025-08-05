@@ -1,15 +1,15 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from "react-native";
 import { COLORS, SPACING } from "../constants/theme";
 
 interface CategoryCardProps {
-  icon: any; // 아이콘 파일
+  icon: React.FC<any>; // SVG 컴포넌트
   title: string; // 제목 (예: "내가 남긴 리뷰")
   count: number; // 개수
   onPress?: () => void;
 }
 
-export default function CategoryCard({ icon, title, count, onPress }: CategoryCardProps) {
+export default function CategoryCard({ icon: IconComponent, title, count, onPress }: CategoryCardProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const width = screenWidth * 0.08;  // 화면 너비의 8%
   const height = screenHeight * 0.04; // 화면 높이의 4%
@@ -18,11 +18,10 @@ export default function CategoryCard({ icon, title, count, onPress }: CategoryCa
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.iconContainer}>
-                 <Image 
-           source={icon} 
-           style={[styles.icon, { width: width * 2, height: height * 2 }]} 
-           resizeMode="contain" 
-         />
+        <IconComponent 
+          width={width * 2} 
+          height={height * 2}
+        />
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.title}>{title}</Text>
@@ -70,6 +69,7 @@ const styles = StyleSheet.create({
   },
   count: {
     fontSize: 10,
-    color: "#333333",
+    color: "#868688",
+    fontWeight: "600",
   },
 }); 
