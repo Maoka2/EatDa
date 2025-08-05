@@ -164,9 +164,9 @@ export default function WriteStep({
         visible={showCompleteModal}
         onClose={handleModalCancel}
         generatedContent={generatedContent}
+        onConfirm={onNext}
         reviewText={text}
         contentType="video"
-        onConfirm={handleModalConfirm}
         onCancel={handleModalCancel}
       />
     </SafeAreaView>
