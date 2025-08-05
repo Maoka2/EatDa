@@ -15,13 +15,6 @@ import HeaderLogo from "../../components/HeaderLogo";
 import TabSwitcher from "../../components/TabSwitcher";
 import BottomButton from "../../components/BottomButton";
 
-// 메뉴판 스타일 버튼 더미이미지
-import MenuStyleDummy1 from "../../data/menuStyleDummy/menuStyleDummy1.svg";
-import MenuStyleDummy2 from "../../data/menuStyleDummy/menuStyleDummy2.svg";
-import MenuStyleDummy3 from "../../data/menuStyleDummy/menuStyleDummy3.svg";
-import MenuStyleDummy4 from "../../data/menuStyleDummy/menuStyleDummy4.svg";
-import MenuStyleDummy5 from "../../data/menuStyleDummy/menuStyleDummy5.svg";
-
 import StoreMenuScreen from "./StoreMenuScreen";
 import StoreEventScreen from "./StoreEventScreen";
 import StoreReviewScreen from "./StoreReviewScreen";
@@ -123,27 +116,6 @@ export default function StoreScreen({ onGoBack }: StoreProps) {
         {activeTab === "review" && <StoreReviewScreen />}
       </View>
 
-      {/* 메뉴판 스타일 탭, 메뉴 볼 때만 활성화 되도록 */}
-      {activeTab === "menu" && (
-        <View style={styles.menuStyleContainer}>
-          <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy1 />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy2 />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy3 />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy4 />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuStyleBtn}>
-            <MenuStyleDummy5 />
-          </TouchableOpacity>
-        </View>
-      )}
-
       {/* 하단 버튼 3개 */}
       <BottomButton onPress={handleBottomButtonPress} />
     </SafeAreaView>
@@ -170,12 +142,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: -0.3,
   } as TextStyle,
-  menuStyleContainer: {
-    flexDirection: "row",
-    paddingVertical: 10,
-  } as ViewStyle,
-  menuStyleBtn: {
-    flex: 1,
-    alignItems: "center",
-  } as ViewStyle,
 });
