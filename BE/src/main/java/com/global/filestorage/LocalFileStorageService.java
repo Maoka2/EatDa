@@ -2,6 +2,9 @@ package com.global.filestorage;
 
 import static com.global.constants.ErrorCode.FILE_UPLOAD_ERROR;
 import static com.global.constants.ErrorCode.INVALID_FILE_TYPE;
+import static com.global.filestorage.constants.FileStorageConstants.EMPTY;
+import static com.global.filestorage.constants.FileStorageConstants.HYPHEN;
+import static com.global.filestorage.constants.FileStorageConstants.MIME_TO_EXT;
 
 import com.global.config.FileStorageProperties;
 import com.global.exception.GlobalException;
@@ -9,7 +12,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -22,20 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @RequiredArgsConstructor
 public class LocalFileStorageService implements FileStorageService {
-
-    // UUID 파일명 생성 시 사용할 문자열 상수
-    private static final String EMPTY = "";
-    private static final String HYPHEN = "-";
-
-    // MIME 타입에 따른 확장자 매핑 (저장 시 사용)
-    private static final Map<String, String> MIME_TO_EXT = Map.ofEntries(
-            Map.entry("image/jpeg", ".jpg"),
-            Map.entry("image/png", ".png"),
-            Map.entry("image/webp", ".webp"),
-            Map.entry("image/avif", ".avif"),
-            Map.entry("video/mp4", ".mp4"),
-            Map.entry("video/webm", ".webm")
-    );
 
     private final FileStorageProperties properties;
 
