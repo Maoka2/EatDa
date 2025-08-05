@@ -6,22 +6,11 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  Image,
-  Dimensions,
-  StatusBar,
-  Animated,
-  FlatList,
-  useWindowDimensions,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  TouchableWithoutFeedback,
-  Keyboard,
   ViewStyle,
   TextStyle,
 } from "react-native";
 
 import HamburgerButton from "../../components/Hamburger";
-import Sidebar from "../../components/Sidebar";
 import HeaderLogo from "../../components/HeaderLogo";
 import TabSwitcher from "../../components/TabSwitcher";
 import BottomButton from "../../components/BottomButton";
@@ -36,9 +25,9 @@ import MenuStyleDummy5 from "../../data/menuStyleDummy/menuStyleDummy5.svg";
 import StoreMenuScreen from "./StoreMenuScreen";
 import StoreEventScreen from "./StoreEventScreen";
 import StoreReviewScreen from "./StoreReviewScreen";
-import StoreMapScreen from "./StoreMapScreen";
-import MenuCustomScreen from "./MenuCustomScreen";
 import ReviewWriteScreen from "./Review/ReviewWriteScreen";
+import MapScreen from "./Map/MapScreen";
+import MenuCustomScreen from "./Menu/MenuCustomScreen";
 
 // 새로 추가할 하단 버튼 화면들
 
@@ -75,7 +64,7 @@ export default function StoreScreen({ onGoBack }: StoreProps) {
       case "review":
         return <ReviewWriteScreen onClose={handleCloseBottomScreen} />;
       case "map":
-        return <StoreMapScreen onClose={handleCloseBottomScreen} />;
+        return <MapScreen onClose={handleCloseBottomScreen} />;
       case "menu":
         return <MenuCustomScreen onClose={handleCloseBottomScreen} />;
       default:
