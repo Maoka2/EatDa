@@ -10,8 +10,8 @@ import {
 import { useNavigation } from "@react-navigation/native";
 
 // 사이드바에 사용될 숟가락, 포크 이미지
-import Spoon from "../../assets/sideSpoon.svg";
-import Fork from "../../assets/sideFork.svg";
+import Spoon from "../../assets/sidespoon.svg";
+import Fork from "../../assets/sidefork.svg";
 
 export interface SidebarProps {
   isOpen: boolean;
@@ -19,6 +19,7 @@ export interface SidebarProps {
   userRole: "eater" | "maker";
   onLogout: () => void;
   activePage: string;
+  onMypage: () => void; // 팀원이 추가한 마이페이지 prop
 }
 
 export default function Sidebar({
@@ -26,6 +27,7 @@ export default function Sidebar({
   onClose,
   onLogout,
   activePage,
+  onMypage, // 팀원이 추가한 마이페이지 prop
 }: SidebarProps) {
   const { width, height } = useWindowDimensions();
   const navigation = useNavigation();
@@ -117,15 +119,8 @@ export default function Sidebar({
             </Text>
           </TouchableOpacity>
 
-          {/* 마이페이지 - 사용자 역할에 따라 다른 화면으로 이동 */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              // userRole에 따라 다른 화면으로 이동
-              // 예시: 일반적인 마이페이지가 있다면
-              handleNavigation("MyPageScreen");
-            }}
-          >
+          {/* 마이페이지 - 팀원이 추가한 onMypage 함수 사용 */}
+          <TouchableOpacity style={styles.menuItem} onPress={onMypage}>
             <Text style={styles.menuText}>마이페이지</Text>
           </TouchableOpacity>
 

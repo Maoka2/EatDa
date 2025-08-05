@@ -19,13 +19,13 @@ import Sidebar from "./Sidebar";
 export interface Props {
   userRole: "eater" | "maker";
   onLogout: () => void;
-  activePage: string;
+  onMypage: () => void;
 }
 
 export default function HamburgerButton({
   userRole,
   onLogout,
-  activePage,
+  onMypage,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -42,7 +42,8 @@ export default function HamburgerButton({
           onClose={() => setIsOpen(false)}
           userRole={userRole}
           onLogout={onLogout}
-          activePage={activePage}
+          activePage="reviewPage"
+          onMypage={onMypage}
         />
       </Modal>
     </>

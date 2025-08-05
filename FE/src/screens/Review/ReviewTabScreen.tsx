@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, ReactElement } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,8 @@ import { Video, ResizeMode } from "expo-av";
 
 import SearchBar from "../../components/SearchBar";
 import GridComponent, { ReviewItem } from "../../components/GridComponent";
+import Sidebar from "../../components/Sidebar";
+import MypageScreen from "../Mypage/MypageScreen";
 import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
 import HamburgerButton from "../../components/Hamburger";
@@ -33,9 +35,10 @@ import ColoredGoToStore from "../../../assets/coloredGoToStore.svg";
 interface ReviewProps {
   userRole: "eater" | "maker";
   onLogout: () => void;
+  onMypage?: () => void;
 }
 
-export default function Reviews({ userRole, onLogout }: ReviewProps) {
+export default function Reviews({ userRole, onLogout, onMypage }: ReviewProps) {
   const { height } = useWindowDimensions();
   const screenHeight = Dimensions.get("window").height;
 
@@ -44,6 +47,12 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
   const [containerWidth, setContainerWidth] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null);
+
+  // 페이지 네비게이션 관리
+  // 어느 페이지에 있는지 일일히 이렇게 설정하면 복잡해질 것 같은데... 어떻게 하면 좋을지 몰라서 일단 이렇게 둡니다..
+  const [currentPage, setCurrentPage] = useState<"reviewPage" | "mypage">("reviewPage");
+
+  //상세보기 스크롤 및 비디오 관리
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<ReviewItem>>(null);
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
@@ -101,6 +110,22 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
       useNativeDriver: true,
     }).start();
   };
+
+  // 마이페이지로 이동하는 핸들러
+  const handleNavigateToMypage = () => {
+    setCurrentPage("mypage");
+    setIsSidebarOpen(false);
+  };
+
+  // 마이페이지 렌더링
+  if (currentPage === "mypage") {
+    return (
+      <MypageScreen 
+        userRole={userRole} 
+        onLogout={onLogout}
+      />
+    );
+  }
 
   return (
     <TouchableWithoutFeedback
