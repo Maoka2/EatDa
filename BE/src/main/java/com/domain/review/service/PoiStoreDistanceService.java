@@ -6,6 +6,7 @@ import com.domain.review.entity.PoiDistance;
 import com.domain.review.entity.Store;
 import com.domain.review.repository.PoiDistanceRepository;
 import com.domain.review.repository.PoiRepository;
+import com.domain.review.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,302 +23,185 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PoiStoreDistanceService {
 
+    private final H3Service h3Service;
     private final PoiRepository poiRepository;
-    private final PoiDistanceRepository poiDistanceRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final GeohashService geohashService;
+    private final StoreRepository storeRepository;
     private final HaversineCalculator haversineCalculator;
 
-    @Value("${app.poi.distance.max-radius}")
-    private int maxDistanceRadius;  // 2000m
-
-    @Value("${app.poi.distance.geohash-precision}")
-    private int geohashPrecision;  // 8
-
-    @Value("${app.poi.distance.search-distances}")
-    private List<Integer> searchDistances;  // [300, 500, 700, 1000, 2000]
+// ===== Public APIs =====
 
     /**
-     * 새로운 가게 등록 시 주변 POI와의 거리 계산 및 저장
+     * 1. 사용자 위치에서 가장 가까운 POI 찾기
      */
-    @Transactional
-    public void calculateAndSaveDistance(final Store store) {
-        log.info("Starting distance calculation for store: {} at ({}, {})",
-                store.getId(), store.getLatitude(), store.getLongitude());
-
-        try {
-            // 1. 가게 위치의 geohash 계산 (8자리)
-            String storeGeohash = geohashService.encode(
-                    store.getLatitude(),
-                    store.getLongitude(),
-                    geohashPrecision
-            );
-
-            // 2. 주변 POI 조회
-            List<Poi> nearbyPois = findNearbyPoisByGeohash(
-                    storeGeohash,
-                    store.getLatitude(),
-                    store.getLongitude()
-            );
-
-            log.debug("Found {} nearby POIs", nearbyPois.size());
-
-            // 3. 각 POI와의 거리 계산
-            List<PoiDistance> distances = calculateDistances(store, nearbyPois);
-
-            // 4. DB에 저장
-            saveDistances(distances);
-
-            // 5. Redis 캐시 업데이트 (거리별로)
-            updateMultiLevelRedisCache(distances);
-
-            log.info("Completed. Saved {} POI-Store distances", distances.size());
-
-        } catch (Exception e) {
-            log.error("Error calculating distances for store: {}", store.getId(), e);
-            throw new RuntimeException("거리 계산 중 오류 발생", e);
-        }
-    }
+    public Poi findNearestPoi(double userLat, double userLon);
 
     /**
-     * 특정 POI에서 가까운 가게 목록 조회
+     * 2. POI 기준으로 거리별 Store 목록 조회 (메인 API)
+     * - Redis 캐시 우선 확인
+     * - 캐시 미스 시 H3 기반 실시간 검색
      */
-    @Transactional(readOnly = true)
-    public List<StoreDistanceResult> getNearbyStores(final Long poiId,
-                                                     final int requestedDistance) {
-        // 1. 요청 거리에 맞는 캐시 거리 찾기
-        int cacheDistance = findCacheDistance(requestedDistance);
-        String cacheKey = generateCacheKey(poiId, cacheDistance);
+    public List<StoreDistanceResult> getNearbyStores(Long poiId, int requestedDistance);
 
-        // 2. Redis 조회
-        Set<Object> cachedStoreIds = redisTemplate.opsForZSet()
-                .rangeByScore(cacheKey, 0, requestedDistance);
+    /**
+     * 3. Store 등록/업데이트 시 캐시 갱신 (선택적)
+     * - 자주 조회되는 POI들에 대해서만 미리 계산
+     */
+    public void updateCacheForStore(Store store);
 
-        if (cachedStoreIds != null && !cachedStoreIds.isEmpty()) {
-            log.debug("Cache hit for POI: {} at distance: {}", poiId, requestedDistance);
-            return convertToStoreDistanceResults(poiId, cachedStoreIds, cacheKey);
-        }
+    /**
+     * 4. Store 삭제 시 캐시에서 제거
+     */
+    public void removeStoreFromCache(Long storeId);
 
-        // 3. Cache miss - DB 조회
-        log.debug("Cache miss for POI: {} at distance: {}", poiId, requestedDistance);
-        List<PoiDistance> distances = poiDistanceRepository
-                .findByPoiIdAndDistanceLessThanEqualOrderByDistanceAsc(poiId, cacheDistance);
+    /**
+     * H3를 사용해 사용자 주변 POI들 찾기
+     */
+    private List<Poi> findNearbyPoisByH3(double lat, double lon, int maxDistance) {
+        H3SearchStrategy strategy = determineH3Strategy(maxDistance);
+        log.debug("Finding POIs within {}m using H3 strategy: resolution={}, kRing={}",
+                maxDistance, strategy.resolution(), strategy.kRing());
 
-        // 4. 캐시 업데이트
-        if (!distances.isEmpty()) {
-            updateMultiLevelCache(poiId, distances);
-        }
+        long centerH3 = h3Service.encode(lat, lon, strategy.resolution());
 
-        // 5. 요청 거리로 필터링하여 반환
-        return distances.stream()
-                .filter(d -> d.getDistance() <= requestedDistance)
-                .map(d -> StoreDistanceResult.builder()
-                        .storeId(d.getStoreId())
-                        .distance(d.getDistance())
-                        .build())
+        List<Long> h3Cells = h3Service.getKRing(centerH3, strategy.kRing());
+
+        List<Poi> candidatePois = switch (strategy.resolution()) {
+            case 7 -> poiRepository.findByH3Index7In(h3Cells);
+            case 8 -> poiRepository.findByH3Index8In(h3Cells);
+            case 9 -> poiRepository.findByH3Index9In(h3Cells);
+            case 10 -> poiRepository.findByH3Index10In(h3Cells);
+            default -> throw new IllegalArgumentException("Unsupported H3 resolution: " + strategy.resolution());
+        };
+
+        log.debug("Found {} candidate POIs from H3 cells", candidatePois.size());
+
+        // 5. 실제 거리 계산으로 정확한 필터링 및 정렬
+        return candidatePois.stream()
+                .map(poi -> {
+                    int distance = haversineCalculator.calculate(lat, lon, poi.getLatitude(), poi.getLongitude());
+                    return Map.entry(poi, distance);
+                })
+                .filter(entry -> entry.getValue() <= maxDistance)
+                .sorted(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
     }
 
     /**
-     * 가게 삭제 시 관련 거리 정보 제거
+     * H3를 사용해 POI 주변 Store들 찾기
+     *
+     * @param lat 중심점(POI) 위도
+     * @param lon 중심점(POI) 경도
+     * @param searchDistance 검색 거리 (미터)
+     * @return 거리 내의 Store 목록
      */
-    @Transactional
-    public void removeStoreDistances(final Long storeId) {
-        // 1. 해당 가게의 모든 거리 정보 조회
-        List<PoiDistance> distances = poiDistanceRepository.findByStoreId(storeId);
+    private List<Store> findNearbyStoresByH3(double lat, double lon, int searchDistance) {
+        // 1. 거리에 따른 H3 검색 전략 결정
+        H3SearchStrategy strategy = determineH3Strategy(searchDistance);
+        log.debug("Finding Stores within {}m using H3 strategy: resolution={}, kRing={}",
+                searchDistance, strategy.resolution(), strategy.kRing());
 
-        // 2. Redis에서 제거
-        distances.forEach(d -> {
-            for (int distance : searchDistances) {
-                String cacheKey = generateCacheKey(d.getPoiId(), distance);
-                redisTemplate.opsForZSet().remove(cacheKey, storeId);
-            }
-        });
+        // 2. 중심점의 H3 인덱스 계산
+        long centerH3 = h3Service.encode(lat, lon, strategy.resolution());
 
-        // 3. DB에서 제거
-        poiDistanceRepository.deleteByStoreId(storeId);
+        // 3. k-ring으로 주변 셀들의 H3 인덱스 가져오기
+        List<Long> h3Cells = h3Service.getKRing(centerH3, strategy.kRing());
 
-        log.info("Removed all distance data for store: {}", storeId);
-    }
+        // 4. 해상도에 따라 적절한 컬럼으로 Store 조회
+        List<Store> candidateStores = switch (strategy.resolution()) {
+            case 7 -> storeRepository.findByH3Index7In(h3Cells);
+            case 8 -> storeRepository.findByH3Index8In(h3Cells);
+            case 9 -> storeRepository.findByH3Index9In(h3Cells);
+            case 10 -> storeRepository.findByH3Index10In(h3Cells);
+            default -> throw new IllegalArgumentException("Unsupported H3 resolution: " + strategy.resolution());
+        };
 
-    // ===== Private Methods =====
+        log.debug("Found {} candidate Stores from H3 cells", candidateStores.size());
 
-    /**
-     * Geohash를 활용한 주변 POI 조회
-     */
-    private List<Poi> findNearbyPoisByGeohash(final String centerGeohash,
-                                              final double centerLat,
-                                              final double centerLon) {
-        // 검색 거리에 맞는 geohash precision 결정
-        int searchPrecision = determineSearchPrecision(maxDistanceRadius);
-        String searchGeohash = centerGeohash.substring(0, searchPrecision);
-
-        // 중심 + 인접 8개 격자
-        Set<String> geohashPrefixes = geohashService.getNeighbors(searchGeohash);
-        geohashPrefixes.add(searchGeohash);
-
-        // 모든 격자에서 POI 조회
-        List<Poi> allNearbyPois = new ArrayList<>();
-        for (String prefix : geohashPrefixes) {
-            List<Poi> pois = poiRepository.findByGeohashStartingWith(prefix);
-            allNearbyPois.addAll(pois);
-        }
-
-        // 중복 제거 및 실제 거리로 필터링
-        return allNearbyPois.stream()
-                .distinct()
-                .filter(poi -> {
+        // 5. 실제 거리 계산으로 정확한 필터링
+        return candidateStores.stream()
+                .filter(store -> {
                     int distance = haversineCalculator.calculate(
-                            centerLat, centerLon,
-                            poi.getLatitude(), poi.getLongitude()
+                            lat, lon,
+                            store.getLatitude(), store.getLongitude()
                     );
-                    return distance <= maxDistanceRadius;
+                    return distance <= searchDistance;
                 })
                 .collect(Collectors.toList());
     }
 
     /**
-     * 검색 거리에 따른 최적 geohash precision 결정
+     * 거리에 따른 H3 검색 전략 결정
      */
-    private int determineSearchPrecision(int distanceMeters) {
-        if (distanceMeters <= 100) return 8;       // 38m 격자
-        else if (distanceMeters <= 300) return 7;  // 152m 격자
-        else if (distanceMeters <= 1000) return 6; // 1.22km 격자
-        else if (distanceMeters <= 3000) return 5; // 4.8km 격자
-        else return 4;                              // 40km 격자
+    private H3SearchStrategy determineH3Strategy(int distanceMeters) {
+        if (distanceMeters <= 300) {
+            // Res 10, k=2: 중심에서 약 76m × 2.5 ≈ 190m 커버
+            // 300m를 커버하려면 k=3~4 필요
+            return new H3SearchStrategy(10, 4);
+        } else if (distanceMeters <= 500) {
+            // Res 9, k=2: 중심에서 약 201m × 2.5 ≈ 502m 커버
+            return new H3SearchStrategy(9, 2);
+        } else if (distanceMeters <= 700) {
+            // Res 9, k=3: 중심에서 약 201m × 3.5 ≈ 703m 커버
+            return new H3SearchStrategy(9, 3);
+        } else if (distanceMeters <= 1000) {
+            // Res 8, k=2: 중심에서 약 531m × 2 ≈ 1062m 커버
+            return new H3SearchStrategy(8, 2);
+        } else {
+            // Res 8, k=3: 중심에서 약 531m × 3.5 ≈ 1858m 커버
+            // 또는 Res 7 사용 고려
+            return new H3SearchStrategy(8, 4);   // 2000m까지 안전하게 커버
+        }
     }
 
     /**
-     * Store와 POI 목록 간의 거리 계산
+     * 실제 거리 계산 및 필터링
      */
-    private List<PoiDistance> calculateDistances(final Store store, final List<Poi> pois) {
-        return pois.stream()
-                .map(poi -> {
+    /**
+     * 실제 거리 계산 및 필터링
+     *
+     * @param centerLat 중심점(POI) 위도
+     * @param centerLon 중심점(POI) 경도
+     * @param stores H3로 필터링된 Store 목록
+     * @param maxDistance 최대 거리 제한 (미터)
+     * @return 거리 정보를 포함한 Store 결과 목록 (거리순 정렬)
+     */
+    private List<StoreDistanceResult> calculateAndFilterDistances(
+            double centerLat, double centerLon, List<Store> stores, int maxDistance) {
+
+        log.debug("Calculating distances for {} stores within {}m", stores.size(), maxDistance);
+
+        return stores.stream()
+                // 1. 각 Store와의 거리 계산
+                .map(store -> {
                     int distance = haversineCalculator.calculate(
-                            store.getLatitude(), store.getLongitude(),
-                            poi.getLatitude(), poi.getLongitude()
+                            centerLat, centerLon,
+                            store.getLatitude(), store.getLongitude()
                     );
 
-                    return PoiDistance.builder()
-                            .poiId(poi.getId())
+                    return StoreDistanceResult.builder()
                             .storeId(store.getId())
                             .distance(distance)
                             .build();
                 })
-                .filter(pd -> pd.getDistance() <= maxDistanceRadius)
-                .sorted(Comparator.comparingInt(PoiDistance::getDistance))
+                // 2. 요청된 거리 내의 Store만 필터링
+                .filter(result -> result.distance() <= maxDistance)
+                // 3. 거리순으로 정렬 (가까운 순)
+                .sorted(Comparator.comparingInt(StoreDistanceResult::distance))
+                // 4. 결과 수집
                 .collect(Collectors.toList());
     }
 
     /**
-     * 거리 정보를 DB에 저장
+     * Redis 캐시 업데이트
      */
-    private void saveDistances(final List<PoiDistance> distances) {
-        if (distances.isEmpty()) {
-            return;
-        }
-
-        Long storeId = distances.get(0).getStoreId();
-        poiDistanceRepository.deleteByStoreId(storeId);
-        poiDistanceRepository.saveAll(distances);
-    }
-
-    /**
-     * 다단계 Redis 캐시 업데이트 (가게 등록 시)
-     */
-    private void updateMultiLevelRedisCache(final List<PoiDistance> distances) {
-        Map<Long, List<PoiDistance>> groupedByPoi = distances.stream()
-                .collect(Collectors.groupingBy(PoiDistance::getPoiId));
-
-        groupedByPoi.forEach((poiId, poiDistances) -> {
-            // 각 거리별로 캐시 생성
-            for (int distanceThreshold : searchDistances) {
-                String cacheKey = generateCacheKey(poiId, distanceThreshold);
-
-                // 기존 데이터 제거
-                poiDistances.forEach(pd -> {
-                    redisTemplate.opsForZSet().remove(cacheKey, pd.getStoreId());
-                });
-
-                // 거리 임계값 이내의 가게만 추가
-                poiDistances.stream()
-                        .filter(pd -> pd.getDistance() <= distanceThreshold)
-                        .forEach(pd -> {
-                            redisTemplate.opsForZSet().add(
-                                    cacheKey,
-                                    pd.getStoreId(),
-                                    pd.getDistance()
-                            );
-                        });
-
-                redisTemplate.expire(cacheKey, Duration.ofDays(1));
-            }
-        });
-    }
-
-    /**
-     * 다단계 캐시 업데이트 (조회 시)
-     */
-    private void updateMultiLevelCache(Long poiId, List<PoiDistance> allDistances) {
-        for (int distance : searchDistances) {
-            String cacheKey = generateCacheKey(poiId, distance);
-
-            allDistances.stream()
-                    .filter(d -> d.getDistance() <= distance)
-                    .forEach(d -> {
-                        redisTemplate.opsForZSet().add(
-                                cacheKey,
-                                d.getStoreId(),
-                                d.getDistance()
-                        );
-                    });
-
-            redisTemplate.expire(cacheKey, Duration.ofDays(1));
-        }
-    }
-
-    /**
-     * 요청 거리에 맞는 캐시 거리 찾기
-     */
-    private int findCacheDistance(int requestedDistance) {
-        return searchDistances.stream()
-                .filter(d -> d >= requestedDistance)
-                .findFirst()
-                .orElse(maxDistanceRadius);
-    }
+    private void updateRedisCache(Long poiId, List<StoreDistanceResult> results);
 
     /**
      * 캐시 키 생성
      */
-    private String generateCacheKey(Long poiId, Integer maxDistance) {
-        if (maxDistance == null) {
-            return String.format("poi:distance:%d:all", poiId);
-        }
-        return String.format("poi:distance:%d:%dm", poiId, maxDistance);
-    }
+    private String generateCacheKey(Long poiId, int distance);
 
-    /**
-     * Redis 캐시 데이터를 StoreDistanceResult로 변환
-     */
-    private List<StoreDistanceResult> convertToStoreDistanceResults(Long poiId,
-                                                                    Set<Object> storeIds,
-                                                                    String cacheKey) {
-        if (storeIds == null || storeIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        return storeIds.stream()
-                .map(storeId -> {
-                    Double distance = redisTemplate.opsForZSet()
-                            .score(cacheKey, storeId);
-
-                    return StoreDistanceResult.builder()
-                            .storeId(Long.valueOf(storeId.toString()))
-                            .distance(distance != null ? distance.intValue() : 0)
-                            .build();
-                })
-                .filter(result -> result.distance() > 0)
-                .sorted(Comparator.comparingInt(StoreDistanceResult::distance))
-                .collect(Collectors.toList());
-    }
+    // H3 검색 전략 record
+    private record H3SearchStrategy(int resolution, int kRing) {}
 }
