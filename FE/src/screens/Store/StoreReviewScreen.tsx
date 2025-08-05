@@ -12,11 +12,13 @@ import {
   NativeScrollEvent,
   TouchableOpacity,
   StyleSheet,
+  useWindowDimensions,
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import GridComponent, { ReviewItem } from "../../components/GridComponent";
 import CloseBtn from "../../../assets/closeBtn.svg";
 import { reviewData } from "../../data/reviewData";
+import NoDataScreen from "../../components/NoDataScreen";
 
 interface StoreReviewScreenProps {
   //   storeId: string;
@@ -28,6 +30,7 @@ export default function StoreReviewScreen() {
   const [containerWidth, setContainerWidth] = useState(0);
   const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { height } = useWindowDimensions();
 
   const flatListRef = useRef<FlatList<ReviewItem>>(null);
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
@@ -66,7 +69,11 @@ export default function StoreReviewScreen() {
     Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
   };
 
-  return (
+  const isEmpty = !reviewData || reviewData.length === 0;
+
+  return isEmpty ? (
+    <NoDataScreen></NoDataScreen>
+  ) : (
     <View style={{ flex: 1 }}>
       {selectedItem ? (
         <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
@@ -105,7 +112,7 @@ export default function StoreReviewScreen() {
                 >
                   <CloseBtn></CloseBtn>
                 </TouchableOpacity>
-                <View style={styles.textOverlay}>
+                <View style={[styles.textOverlay, { bottom: height * 0.25 }]}>
                   <Text style={styles.titleText}>#{item.title}</Text>
                   <Text style={styles.descText}>{item.description}</Text>
                 </View>
@@ -162,7 +169,6 @@ const styles = StyleSheet.create({
   },
   textOverlay: {
     position: "absolute",
-    bottom: 200,
     left: 20,
     right: 20,
     backgroundColor: "rgba(0,0,0,0.3)",

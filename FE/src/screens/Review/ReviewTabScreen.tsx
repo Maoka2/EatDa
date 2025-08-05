@@ -202,7 +202,7 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
                       </TouchableOpacity>
                       {/*  */}
                       {/* 텍스트 오버레이 (클릭 시 가게화면 띄움) */}
-                      <View style={[styles.textOverlay]}>
+                      <View style={[styles.textOverlay, {bottom:height*0.25}]}>
                         <Text style={styles.titleText}>#{item.title}</Text>
                         <Text style={styles.descText}>{item.description}</Text>
                       </View>
@@ -313,7 +313,6 @@ const styles = StyleSheet.create({
   },
   textOverlay: {
     position: "absolute",
-    bottom: 200,
     left: 20,
     right: 20,
     backgroundColor: "rgba(0,0,0,0.3)",
