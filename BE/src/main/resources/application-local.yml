@@ -17,7 +17,6 @@ app:
   poi:
     distance:
       max-radius: 2000
-      geohash-precision: 8
       search-distances:
         - 300
         - 500
