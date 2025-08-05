@@ -1,15 +1,15 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from "react-native";
 import { COLORS, SPACING } from "../constants/theme";
 
 interface ActivityCardProps {
-  icon: any; // 아이콘 파일
+  icon: React.FC<any>; // SVG 컴포넌트
   text: string; // 활동 내용 텍스트
   time: string; // 시간 (예: "2시간 전")
   onPress?: () => void;
 }
 
-export default function ActivityCard({ icon, text, time, onPress }: ActivityCardProps) {
+export default function ActivityCard({ icon: IconComponent, text, time, onPress }: ActivityCardProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const width = screenWidth * 0.08;  // 화면 너비의 8%
   const height = screenHeight * 0.04; // 화면 높이의 4%
@@ -17,10 +17,9 @@ export default function ActivityCard({ icon, text, time, onPress }: ActivityCard
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.iconContainer}>
-        <Image 
-          source={icon} 
-          style={[styles.icon, { width: width * 2, height: height * 2 }]} 
-          resizeMode="contain" 
+        <IconComponent 
+          width={width * 2} 
+          height={height * 2}
         />
       </View>
       <View style={styles.textContainer}>
@@ -69,6 +68,7 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: 10,
-    color: "#333333",
+    color: "#868688",
+    fontWeight: "600",
   },
 }); 
