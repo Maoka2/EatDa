@@ -22,19 +22,18 @@ import CloseBtn from "../../../assets/closeBtn.svg";
 
 interface DetailEventScreenProps {
   events: eventItem[];
-  initialIndex: number;
+  selectedIndex: number;
   onClose: () => void;
   // storeName: string;
 }
 
 export default function ({
   events,
-  initialIndex,
+  selectedIndex,
   onClose,
 }: DetailEventScreenProps) {
   const { width, height } = useWindowDimensions();
   const screenHeight = Dimensions.get("window").height;
-  const flatListRef = useRef<FlatList<eventItem>>(null);
 
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   useEffect(() => {
@@ -44,14 +43,7 @@ export default function ({
     }).start();
   }, []);
 
-  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetY = e.nativeEvent.contentOffset.y;
-    const page = Math.round(offsetY / screenHeight);
-    flatListRef.current?.scrollToOffset({
-      offset: page * screenHeight,
-      animated: false,
-    });
-  };
+  const event = events[selectedIndex];
 
   return (
     // 클릭 시 확대 애니메이션
@@ -63,46 +55,21 @@ export default function ({
         </TouchableOpacity>
         {/* <Text style={styles.storeName}>{storeName}</Text>*/}
         <Text style={styles.storeName}>햄찌네 가게</Text>
-        <FlatList
-          ref={flatListRef}
-          data={events}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={[{ flex: 1 }, { height: screenHeight }]}>
-              <View style={styles.ImageContainer}>
-                <Image
-                  source={item.uri}
-                  style={[
-                    styles.eventImage,
-                    { width: width * 0.8, height: height * 0.4 },
-                  ]}
-                  resizeMode="cover"
-                ></Image>
-              </View>
-              <View style={styles.eventTextContainer}>
-                <Text style={styles.eventTitle}>{item.eventName}</Text>
-                <Text style={styles.eventDescription}>
-                  {item.eventDescription}
-                </Text>
-              </View>
-            </View>
-          )}
-          pagingEnabled
-          decelerationRate="fast"
-          snapToInterval={screenHeight}
-          snapToAlignment="start"
-          initialScrollIndex={initialIndex}
-          getItemLayout={(data, index) => ({
-            length: screenHeight,
-            offset: screenHeight * index,
-            index,
-          })}
-          onMomentumScrollEnd={handleMomentumEnd}
-          windowSize={2}
-          initialNumToRender={1}
-          maxToRenderPerBatch={1}
-          removeClippedSubviews
-        ></FlatList>
+
+        <View style={styles.ImageContainer}>
+          <Image
+            source={event.uri}
+            style={[
+              styles.eventImage,
+              { width: width * 0.8, height: height * 0.4 },
+            ]}
+            resizeMode="cover"
+          ></Image>
+        </View>
+        <View style={styles.eventTextContainer}>
+          <Text style={styles.eventTitle}>{event.eventName}</Text>
+          <Text style={styles.eventDescription}>{event.eventDescription}</Text>
+        </View>
       </View>
     </Animated.View>
   );
@@ -112,14 +79,13 @@ const styles = StyleSheet.create({
   eventDetailContainer: {
     flex: 1,
     backgroundColor: "#F7F8F9",
-    marginTop: 15,
   } as ViewStyle,
 
   closeBtn: {
     position: "absolute",
     top: 0,
     right: 0,
-    padding: 15,
+    paddingRight: 15,
     zIndex: 5,
   },
 
@@ -127,7 +93,7 @@ const styles = StyleSheet.create({
     fontWeight: 500,
     textAlign: "center",
     fontSize: 20,
-    paddingVertical: 20,
+    paddingVertical:15,
   } as TextStyle,
 
   ImageContainer: {
@@ -141,7 +107,7 @@ const styles = StyleSheet.create({
   eventTextContainer: {
     marginTop: 20,
     alignItems: "center",
-    backgroundColor: "white",
+    backgroundColor: "#F7F8F9",
   } as ViewStyle,
 
   eventTitle: {
