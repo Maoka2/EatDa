@@ -67,8 +67,11 @@ public class ImageOptimizer {
      * BufferedImage → ImmutableImage로 리사이징 변환
      */
     private ImmutableImage resize(final BufferedImage image) {
-        return ImmutableImage.fromAwt(image)
-                .scaleToWidth(DEFAULT_IMAGE_WIDTH);
+        int width = image.getWidth();
+        if (width <= DEFAULT_IMAGE_WIDTH) {
+            return ImmutableImage.fromAwt(image); // 리사이징 생략
+        }
+        return ImmutableImage.fromAwt(image).scaleToWidth(DEFAULT_IMAGE_WIDTH);
     }
 
     /**
