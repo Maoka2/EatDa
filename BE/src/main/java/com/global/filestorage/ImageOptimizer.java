@@ -5,7 +5,10 @@ import static com.global.filestorage.constants.FileStorageConstants.DEFAULT_IMAG
 import static com.global.filestorage.constants.FileStorageConstants.EXCEPTION_DECODING_FAILED;
 import static com.global.filestorage.constants.FileStorageConstants.FORMAT_WEBP;
 import static com.global.filestorage.constants.FileStorageConstants.IMAGE_OPTIMIZER_DECODING_FAILED;
+import static com.global.filestorage.constants.FileStorageConstants.IMAGE_OPTIMIZER_SKIP_RESIZE;
+import static com.global.filestorage.constants.FileStorageConstants.IMAGE_OPTIMIZER_SKIP_WEBP_SAME_SIZE;
 import static com.global.filestorage.constants.FileStorageConstants.IMAGE_OPTIMIZER_UNEXPECTED_ERROR;
+import static com.global.filestorage.constants.FileStorageConstants.MIME_TYPE_WEBP;
 import static com.global.filestorage.constants.FileStorageConstants.WEBP_COMPRESSION_LEVEL;
 import static com.global.filestorage.constants.FileStorageConstants.WEBP_COMPRESSION_METHOD;
 import static com.global.filestorage.constants.FileStorageConstants.WEBP_QUALITY;
@@ -24,25 +27,39 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 이미지 최적화 컴포넌트 - 리사이징 및 WebP 포맷 변환
+ * 이미지 최적화 컴포넌트 - 업로드된 이미지에 대해 리사이징 및 WebP 포맷 변환 처리
  */
 @Slf4j
 @Component
 public class ImageOptimizer {
 
     /**
-     * 이미지를 리사이징하고 WebP 형식으로 변환합니다.
-     *
-     * @param file 원본 MultipartFile 이미지
-     * @return WebP 포맷으로 변환된 이미지의 InputStream
+     * 이미지 최적화 메인 진입점 - WebP + 크기 동일 → 변환 생략 - WebP + 작음 → 리사이징만 생략, 인코딩도 생략 - WebP + 큼  → 리사이징 + 인코딩 - WebP 아님 → 리사이징
+     * 조건 판단 후 무조건 인코딩
      */
     public InputStream optimize(final MultipartFile file) {
         try {
-            BufferedImage original = decode(file);             // 이미지 디코딩
-            ImmutableImage resized = resize(original);             // 리사이징 후
-            byte[] webpBytes = encodeToWebp(resized);             // WebP 변환
+            BufferedImage original = decode(file);
+            int width = original.getWidth();
+            boolean isWebp = isWebp(file);
 
-            return new ByteArrayInputStream(webpBytes);
+            // WebP + 이미 최적화된 사이즈라면 그대로 반환
+            if (isWebp && width == DEFAULT_IMAGE_WIDTH) {
+                log.debug(IMAGE_OPTIMIZER_SKIP_WEBP_SAME_SIZE, file.getOriginalFilename());
+                return file.getInputStream();
+            }
+
+            // 리사이징 필요 여부 확인
+            ImmutableImage image = prepareImage(original, width, file.getOriginalFilename());
+
+            // 인코딩 여부 판단
+            if (!isWebp || width > DEFAULT_IMAGE_WIDTH) {
+                return encodeAsStream(image);
+            }
+
+            // WebP이고 리사이징도 안 한 경우
+            return file.getInputStream();
+
         } catch (IOException e) {
             log.error(IMAGE_OPTIMIZER_UNEXPECTED_ERROR, FORMAT_WEBP, file.getOriginalFilename(), e.getMessage());
             throw new GlobalException(IMAGE_PROCESSING_FAILED,
@@ -50,9 +67,8 @@ public class ImageOptimizer {
         }
     }
 
-
     /**
-     * MultipartFile에서 BufferedImage 디코딩
+     * MultipartFile을 BufferedImage로 디코딩 유효하지 않은 이미지면 예외 발생
      */
     private BufferedImage decode(final MultipartFile file) throws IOException {
         BufferedImage original = ImageIO.read(file.getInputStream());
@@ -64,25 +80,35 @@ public class ImageOptimizer {
     }
 
     /**
-     * BufferedImage → ImmutableImage로 리사이징 변환
+     * MIME 타입이 WebP인지 확인
      */
-    private ImmutableImage resize(final BufferedImage image) {
-        int width = image.getWidth();
-        if (width <= DEFAULT_IMAGE_WIDTH) {
-            return ImmutableImage.fromAwt(image); // 리사이징 생략
-        }
-        return ImmutableImage.fromAwt(image).scaleToWidth(DEFAULT_IMAGE_WIDTH);
+    private boolean isWebp(MultipartFile file) {
+        String contentType = file.getContentType();
+        return contentType != null && contentType.equalsIgnoreCase(MIME_TYPE_WEBP);
     }
 
     /**
-     * ImmutableImage → WebP 인코딩
+     * 이미지 리사이징 여부 판단 후 ImmutableImage 생성
      */
-    private byte[] encodeToWebp(final ImmutableImage image) throws IOException {
-        WebpWriter webpWriter = WebpWriter.DEFAULT
+    private ImmutableImage prepareImage(BufferedImage image, int width, String filename) {
+        ImmutableImage immutable = ImmutableImage.fromAwt(image);
+        if (width > DEFAULT_IMAGE_WIDTH) {
+            return immutable.scaleToWidth(DEFAULT_IMAGE_WIDTH);
+        }
+        log.debug(IMAGE_OPTIMIZER_SKIP_RESIZE, filename);
+        return immutable;
+    }
+
+    /**
+     * ImmutableImage를 WebP로 인코딩하고 InputStream으로 반환
+     */
+    private InputStream encodeAsStream(ImmutableImage image) throws IOException {
+        WebpWriter writer = WebpWriter.DEFAULT
                 .withQ(WEBP_QUALITY)
                 .withM(WEBP_COMPRESSION_METHOD)
                 .withZ(WEBP_COMPRESSION_LEVEL);
 
-        return image.bytes(webpWriter);
+        byte[] bytes = image.bytes(writer);
+        return new ByteArrayInputStream(bytes);
     }
 }

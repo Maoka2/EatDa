@@ -28,7 +28,7 @@ public final class FileStorageConstants {
     public static final int WEBP_QUALITY = 80;     // WebP 품질 설정 (0 = 낮음, 100 = 최고)
     public static final int WEBP_COMPRESSION_METHOD = 4;     // WebP 압축 알고리즘 단계 (0~6, 높을수록 느리지만 압축률 높음)
     public static final int WEBP_COMPRESSION_LEVEL = 6;     // WebP 압축 수준 (0~9, 높을수록 용량 감소)
-    
+
     // ===== 이미지 포맷 상수 =====
     public static final String FORMAT_WEBP = "WEBP"; // WEBP 포맷 문자열
 
@@ -40,17 +40,20 @@ public final class FileStorageConstants {
             "[LocalFileStorageService] MIME 타입 미지원: {}"; // 지원하지 않는 MIME 타입
 
     // ===== 이미지 최적화 관련 로그 메시지 =====
+    public static final String IMAGE_OPTIMIZER_SKIP_WEBP_SAME_SIZE =
+            "[ImageOptimizer] WebP + 사이즈 동일 → 최적화 생략: {}";
+
+    public static final String IMAGE_OPTIMIZER_SKIP_RESIZE =
+            "[ImageOptimizer] 리사이징 생략: {}";
+
     public static final String IMAGE_OPTIMIZER_DECODING_FAILED =
             "[ImageOptimizer] 유효하지 않은 이미지 파일입니다: {}"; // 파일명 포함
 
-    public static final String IMAGE_OPTIMIZER_ENCODER_NOT_FOUND =
-            "[ImageOptimizer] ImageIO 인코더가 등록되지 않음 - 포맷: {}"; // 포맷 포함
-
-    public static final String IMAGE_OPTIMIZER_ENCODING_FAILED =
-            "[ImageOptimizer] 이미지 인코딩 실패 - 포맷: {}, 파일명: {}"; // 포맷, 파일명 포함
-
     public static final String IMAGE_OPTIMIZER_UNEXPECTED_ERROR =
             "[ImageOptimizer] 이미지 최적화 실패 - 포맷: {}, 파일명: {}, 원인: {}"; // 포맷, 파일명, 예외 메시지 포함
+
+    // ===== Content-Type 검사용 문자열 상수 추가 =====
+    public static final String MIME_TYPE_WEBP = "image/webp";
 
     // ===== 이미지 최적화 관련 예외 메시지 =====
     public static final String EXCEPTION_ENCODER_NOT_FOUND = "지원하지 않는 이미지 포맷입니다: %s";
