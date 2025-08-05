@@ -1,3 +1,5 @@
+// src/screens/EventMaking/EventMakingScreen.tsx
+
 import React, { useState } from "react";
 import {
   View,
@@ -11,7 +13,6 @@ import {
   ScrollView,
   TextInput,
   KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import HamburgerButton from "../../components/Hamburger";
