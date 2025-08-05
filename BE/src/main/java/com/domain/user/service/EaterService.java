@@ -4,5 +4,5 @@ import com.domain.user.dto.request.EaterSignUpRequest;
 import com.domain.user.entity.User;
 
 public interface EaterService {
-    User register(EaterSignUpRequest request);
+    User registerEater(EaterSignUpRequest request);
 }

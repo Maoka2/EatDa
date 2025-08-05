@@ -28,7 +28,7 @@ public class EaterController {
     )
     @PostMapping("/")
     public BaseResponse signUp(@RequestBody EaterSignUpRequest request) {
-        User user = eaterService.register(request);
+        User user = eaterService.registerEater(request);
         return SuccessResponse.of(SuccessCode.EATERS_SIGNUP, eaterMapper.toResponse(user));
     }
 }

@@ -16,7 +16,7 @@ public class EaterServiceImpl implements EaterService {
     private final EaterMapper eaterMapper;
 
     @Override
-    public User register(final EaterSignUpRequest request) {
+    public User registerEater(final EaterSignUpRequest request) {
         return eaterRepository.save(eaterMapper.toEntity(request));
     }
 }
