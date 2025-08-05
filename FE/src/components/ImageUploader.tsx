@@ -11,17 +11,17 @@ import {
 } from "react-native";
 
 interface ImageUploaderProps {
-  images: string[];
+  images: (string | null)[]; // null을 허용하여 빈 슬롯 표현
   maxImages?: number;
-  onAddImage: (imageUrl: string) => void;
+  onAddImage: (index: number, imageUrl: string) => void; // index 추가
   onRemoveImage?: (index: number) => void;
   accentColor?: string;
 }
 
 // 더미 이미지 URL들
 const DUMMY_IMAGES = [
-  "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=400&fit=crop",
   "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=400&fit=crop",
   "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=400&fit=crop",
 ];
 
@@ -32,54 +32,51 @@ export default function ImageUploader({
   onRemoveImage,
   accentColor = "#FF69B4",
 }: ImageUploaderProps) {
-  const canAddMore = images.length < maxImages;
-
-  // 더미 이미지 추가 함수
-  const handleAddImage = () => {
-    // 현재 이미지 개수에 따라 더미 이미지 선택
-    const dummyImageIndex = images.length % DUMMY_IMAGES.length;
+  // 더미 이미지 추가 함수 - 특정 인덱스에 추가
+  const handleAddImage = (index: number) => {
+    // 랜덤하게 더미 이미지 선택 (또는 인덱스 기반)
+    const dummyImageIndex = index % DUMMY_IMAGES.length;
     const dummyImageUrl = DUMMY_IMAGES[dummyImageIndex];
 
-    // 실제로는 onAddImage 콜백을 호출하되,
-    // 부모 컴포넌트에서 더미 데이터를 추가하도록 알림
-    onAddImage(dummyImageUrl);
+    onAddImage(index, dummyImageUrl);
   };
 
-  // 총 3개의 슬롯을 보여주되, 빈 슬롯은 추가 버튼으로 표시
+  // 각 슬롯을 개별적으로 렌더링
   const renderSlots = (): React.JSX.Element[] => {
     const slots: React.JSX.Element[] = [];
 
-    // 업로드된 이미지들
-    for (let i = 0; i < images.length; i++) {
-      slots.push(
-        <View key={`image-${i}`} style={styles.imageWrapper}>
-          <Image source={{ uri: images[i] }} style={styles.uploadedImage} />
-          {onRemoveImage && (
-            <TouchableOpacity
-              style={[styles.removeButton, { backgroundColor: accentColor }]}
-              onPress={() => onRemoveImage(i)}
-            >
-              <Text style={styles.removeButtonText}>×</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      );
-    }
+    for (let i = 0; i < maxImages; i++) {
+      const imageUrl = images[i];
 
-    // 빈 슬롯들 (추가 버튼으로 표시)
-    for (let i = images.length; i < maxImages; i++) {
-      slots.push(
-        <TouchableOpacity
-          key={`add-${i}`}
-          style={[styles.addButton, { borderColor: accentColor }]}
-          onPress={handleAddImage}
-          disabled={!canAddMore}
-        >
-          <View style={[styles.addIcon, { backgroundColor: accentColor }]}>
-            <Text style={styles.addIconText}>+</Text>
+      if (imageUrl) {
+        // 이미지가 있는 슬롯
+        slots.push(
+          <View key={`slot-${i}`} style={styles.imageWrapper}>
+            <Image source={{ uri: imageUrl }} style={styles.uploadedImage} />
+            {onRemoveImage && (
+              <TouchableOpacity
+                style={[styles.removeButton, { backgroundColor: accentColor }]}
+                onPress={() => onRemoveImage(i)}
+              >
+                <Text style={styles.removeButtonText}>×</Text>
+              </TouchableOpacity>
+            )}
           </View>
-        </TouchableOpacity>
-      );
+        );
+      } else {
+        // 빈 슬롯 (추가 버튼)
+        slots.push(
+          <TouchableOpacity
+            key={`slot-${i}`}
+            style={[styles.addButton, { borderColor: accentColor }]}
+            onPress={() => handleAddImage(i)}
+          >
+            <View style={[styles.addIcon, { backgroundColor: accentColor }]}>
+              <Text style={styles.addIconText}>+</Text>
+            </View>
+          </TouchableOpacity>
+        );
+      }
     }
 
     return slots;
