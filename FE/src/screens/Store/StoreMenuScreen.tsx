@@ -1,6 +1,6 @@
 // src/screens/Store/StoreMenuScreen.tsx
 
-import React, { useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -12,22 +12,9 @@ import {
 } from "react-native";
 
 import { menuData } from "../../data/menuData";
-import NoDataScreen from "../../components/NoDataScreen";
 
-interface StoreMenuScreenProps {
-  onDataCheck: (hasData: boolean) => void;
-}
-
-export default function StoreMenuScreen({ onDataCheck }: StoreMenuScreenProps) {
-  const isEmpty = !menuData || menuData.length === 0;
-
-  useEffect(() => {
-    onDataCheck(!isEmpty);
-  }, []);
-
-  return isEmpty ? (
-    <NoDataScreen />
-  ) : (
+export default function StoreMenuScreen() {
+  return (
     <FlatList
       data={menuData}
       renderItem={({ item }) => (
@@ -46,7 +33,7 @@ export default function StoreMenuScreen({ onDataCheck }: StoreMenuScreenProps) {
         </View>
       )}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={{ paddingTop: 10, paddingBottom:70, }}
+      contentContainerStyle={{ paddingVertical: 10 }}
     />
   );
 }
@@ -55,8 +42,8 @@ const styles = StyleSheet.create({
   shadowWrapper: {
     backgroundColor: "#f7f8f9",
     borderRadius: 12,
-    marginHorizontal: 8,
-    marginBottom: 8,
+    marginHorizontal: 12,
+    marginVertical: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,

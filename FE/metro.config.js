@@ -14,4 +14,7 @@ config.resolver.assetExts = config.resolver.assetExts.filter(
 // sourceExts에 svg 추가
 config.resolver.sourceExts.push("svg");
 
+// JSON 파일을 asset으로 인식하도록 추가
+config.resolver.assetExts.push("json");
+
 module.exports = config;

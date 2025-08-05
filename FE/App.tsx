@@ -73,7 +73,6 @@ export default function App() {
       />
       <NavigationContainer>
         <AuthNavigator />
-        {/* <StoreScreen></StoreScreen> */}
       </NavigationContainer>
     </View>
   );

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-
 import {
   View,
   TouchableOpacity,
@@ -9,14 +8,16 @@ import {
   TextStyle,
 } from "react-native";
 
-export default function BottomButton() {
-  // 눌린 버튼 상태
-  const [clickedBtn, setClickedBtn] = useState<string | null>(null);
+interface BottomButtonProps {
+  onPress: (screen: string) => void;
+}
 
-  // 눌렀을 때 해당 페이지로 이동하는 기능 추가 필요 ***
+export default function BottomButton({ onPress }: BottomButtonProps) {
+  const [clickedBtn, setClickedBtn] = useState<string | null>(null);
 
   const handlePress = (btn: string) => {
     setClickedBtn(btn);
+    onPress(btn); // 부모 컴포넌트로 화면 전환 요청
   };
 
   return (
@@ -68,6 +69,7 @@ export default function BottomButton() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   bottomBtnContainer: {
     flexDirection: "row",
@@ -75,27 +77,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   } as ViewStyle,
-
   bottomTextWrapper: {
     flex: 1,
     paddingVertical: 20,
   } as ViewStyle,
-
   bottomText: {
     textAlign: "center",
     fontSize: 14,
     color: "#333333",
   } as TextStyle,
-
   selectedBtn: {
     textAlign: "center",
     fontSize: 14,
     color: "#FFFFFF",
   } as TextStyle,
-
   selectedWrapper: {
     flex: 1,
     backgroundColor: "#53A3DA",
     paddingVertical: 20,
-  },
+  } as ViewStyle,
 });
