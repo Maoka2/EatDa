@@ -26,7 +26,7 @@ export default function MypageProfile({ userRole, nickname }: MypageProfileProps
       {/* [userRole].secondary
       Eater: 핑크색 (#fc6fae) / Maker: 노란색 (#fec566) */}
       <View style={styles.profileText}>
-        <Text style={textStyles.logo}>
+        <Text style={[textStyles.logo, styles.helloText]}>
           Hello, <Text style={{ color: THEME_COLORS[userRole].secondary }}>{nickname}</Text> !
         </Text>
         <Text style={styles.userType}>{userTypeText}</Text>
@@ -65,18 +65,15 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     justifyContent: "center",
   },
-  greeting: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: SPACING.xs,
+  helloText: {
+    fontSize: 18, // 원하는 크기로 조절하세요
   },
   userType: {
-    fontSize: 10,
+    fontSize: 9,
     color: "#fff",
     backgroundColor: "rgba(80, 62, 80, 0.25)",
-    paddingHorizontal: SPACING.sm, //pill-shaped로 잡기 위함
-    paddingVertical: SPACING.xs, //pill-shaped로 잡기 위함
+    paddingHorizontal: 14, //pill-shaped로 잡기 위함 (가로)
+    paddingVertical: 2, //pill-shaped로 잡기 위함 (세로)
     borderRadius: 12,
     alignSelf: "flex-start",
   },
