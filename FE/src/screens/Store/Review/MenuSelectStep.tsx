@@ -11,13 +11,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { menuData } from "../../../data/menuData";
-import LoginButton from "../../../components/LoginButton";
 
 interface MenuSelectStepProps {
   selected: string[];
   onToggle: (id: string) => void;
   onBack: () => void;
-  onNext: () => void; // 확인 버튼 핸들러 prop 추가
+  onNext: () => void;
 }
 
 export default function MenuSelectStep({
@@ -75,18 +74,16 @@ export default function MenuSelectStep({
         }}
       />
 
-      {/* LoginButton을 사용한 확인 버튼 */}
+      {/* 확인 버튼 */}
       <View style={styles.absoluteBottom}>
-        <LoginButton
-          title="확인"
-          onPress={onNext}
-          role="eater"
-          style={[
-            styles.confirmButton,
-            !selected.length && styles.disabledButton,
-          ]}
-          textStyle={!selected.length && styles.disabledText}
-        />
+        <TouchableOpacity
+          style={[styles.button, !selected.length && styles.buttonDisabled]}
+          onPress={selected.length > 0 ? onNext : () => {}}
+          disabled={!selected.length}
+          activeOpacity={selected.length > 0 ? 0.7 : 1}
+        >
+          <Text style={styles.buttonText}>확인</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -201,14 +198,25 @@ const styles = StyleSheet.create({
     borderTopColor: "#F0F0F0",
     zIndex: 10,
   },
-  confirmButton: {
-    // LoginButton의 기본 스타일을 그대로 사용
+  button: {
+    backgroundColor: "#FF69B4",
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    shadowColor: "#FF69B4",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  disabledButton: {
+  buttonDisabled: {
     backgroundColor: "#D1D5DB",
-    opacity: 0.6,
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  disabledText: {
-    color: "#9CA3AF",
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
