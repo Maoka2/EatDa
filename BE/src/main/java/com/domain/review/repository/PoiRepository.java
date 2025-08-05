@@ -12,19 +12,57 @@ import java.util.Set;
 @Repository
 public interface PoiRepository extends JpaRepository<Poi, Long> {
 
-    // Geohash prefix로 검색 (인덱스 활용)
-    @Query("SELECT p FROM Poi p WHERE p.geohash LIKE :prefix%")
-    List<Poi> findByGeohashStartingWith(@Param("prefix") String prefix);
+    /**
+     * 해상도 7에서 H3 인덱스로 POI 조회
+     */
+    @Query("SELECT p FROM Poi p WHERE p.h3Index7 = :h3Index")
+    List<Poi> findByH3Index7(@Param("h3Index") Long h3Index);
 
-    // 특정 거리 내 POI 검색을 위한 추가 메서드
-    @Query(value = "SELECT p.* FROM poi p " +
-            "WHERE LEFT(p.geohash, :precision) IN :geohashPrefixes " +
-            "AND ST_Distance_Sphere(POINT(p.longitude, p.latitude), " +
-            "POINT(:lng, :lat)) <= :distance",
-            nativeQuery = true)
-    List<Poi> findNearbyPois(@Param("lat") double lat,
-                             @Param("lng") double lng,
-                             @Param("distance") int distance,
-                             @Param("geohashPrefixes") Set<String> geohashPrefixes,
-                             @Param("precision") int precision);
+    /**
+     * 해상도 8에서 H3 인덱스로 POI 조회
+     */
+    @Query("SELECT p FROM Poi p WHERE p.h3Index8 = :h3Index")
+    List<Poi> findByH3Index8(@Param("h3Index") Long h3Index);
+
+    /**
+     * 해상도 9에서 H3 인덱스로 POI 조회
+     */
+    @Query("SELECT p FROM Poi p WHERE p.h3Index9 = :h3Index")
+    List<Poi> findByH3Index9(@Param("h3Index") Long h3Index);
+
+    /**
+     * 해상도 10에서 H3 인덱스로 POI 조회
+     */
+    @Query("SELECT p FROM Poi p WHERE p.h3Index10 = :h3Index")
+    List<Poi> findByH3Index10(@Param("h3Index") Long h3Index);
+
+    /**
+     * 해상도 7에서 여러 H3 인덱스로 POI 조회 (IN 절)
+     */
+    @Query("SELECT p FROM Poi p WHERE p.h3Index7 IN :h3Indexes")
+    List<Poi> findByH3Index7In(@Param("h3Indexes") List<Long> h3Indexes);
+
+    /**
+     * 해상도 8에서 여러 H3 인덱스로 POI 조회 (IN 절)
+     */
+    @Query("SELECT p FROM Poi p WHERE p.h3Index8 IN :h3Indexes")
+    List<Poi> findByH3Index8In(@Param("h3Indexes") List<Long> h3Indexes);
+
+    /**
+     * 해상도 9에서 여러 H3 인덱스로 POI 조회 (IN 절)
+     */
+    @Query("SELECT p FROM Poi p WHERE p.h3Index9 IN :h3Indexes")
+    List<Poi> findByH3Index9In(@Param("h3Indexes") List<Long> h3Indexes);
+
+    /**
+     * 해상도 10에서 여러 H3 인덱스로 POI 조회 (IN 절)
+     */
+    @Query("SELECT p FROM Poi p WHERE p.h3Index10 IN :h3Indexes")
+    List<Poi> findByH3Index10In(@Param("h3Indexes") List<Long> h3Indexes);
+
+    /**
+     * 여러 해상도별 H3 인덱스로 POI 조회 (IN 절 사용)
+     */
+    @Query("SELECT p FROM Poi p WHERE p.h3Index7 IN :h3Indexes OR p.h3Index8 IN :h3Indexes OR p.h3Index9 IN :h3Indexes OR p.h3Index10 IN :h3Indexes")
+    List<Poi> findByH3IndexIn(@Param("h3Indexes") List<Long> h3Indexes);
 }
