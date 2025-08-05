@@ -23,8 +23,8 @@ export interface eventItem {
   eventDescription: string;
   uri: number;
   // storeId:string; 
-  // eventStartDate:Date;
-  // eventEndDate:Date;
+  start_date:Date;
+  end_date:Date;
 }
 
 interface GridProps {
