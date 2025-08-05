@@ -16,6 +16,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -56,4 +57,16 @@ public class User extends BaseEntity {
     // 연관관계 매핑 - 사용자 태그 목록
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserFoodTag> userFoodTags;
+
+    @Builder
+    public User(String email, String password, String nickname, Role role, Provider provider, String providerId,
+                List<UserFoodTag> userFoodTags) {
+        this.email = email;
+        this.password = password;
+        this.nickname = nickname;
+        this.role = role;
+        this.provider = provider;
+        this.providerId = providerId;
+        this.userFoodTags = userFoodTags;
+    }
 }
