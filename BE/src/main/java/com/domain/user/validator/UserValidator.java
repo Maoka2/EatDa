@@ -1,6 +1,7 @@
 package com.domain.user.validator;
 
 import com.global.constants.ErrorCode;
+import com.global.exception.ApiException;
 import java.util.Objects;
 
 public class UserValidator {
@@ -19,10 +20,10 @@ public class UserValidator {
     // @formatter:on
     public static void validateEmail(String email) {
         if (Objects.isNull(email) || email.isBlank()) {
-            throw new IllegalArgumentException(ErrorCode.EMAIL_REQUIRED.getMessage());
+            throw new ApiException(ErrorCode.EMAIL_REQUIRED, email);
         }
         if (!email.matches(EMAIL_REGEX)) {
-            throw new IllegalArgumentException(ErrorCode.EMAIL_INVALID_FORMAT.getMessage());
+            throw new ApiException(ErrorCode.EMAIL_INVALID_FORMAT, email);
         }
     }
 
@@ -36,16 +37,16 @@ public class UserValidator {
     // @formatter:on
     public static void validatePassword(String password, String confirmPassword) {
         if (Objects.isNull(password) || password.isBlank()) {
-            throw new IllegalArgumentException(ErrorCode.PASSWORD_REQUIRED.getMessage());
-        }
-        if (Objects.isNull(confirmPassword) || confirmPassword.isBlank()) {
-            throw new IllegalArgumentException(ErrorCode.CONFIRM_PASSWORD_REQUIRED.getMessage());
-        }
-        if (!password.equals(confirmPassword)) {
-            throw new IllegalArgumentException(ErrorCode.PASSWORD_MISMATCH.getMessage());
+            throw new ApiException(ErrorCode.PASSWORD_REQUIRED, password);
         }
         if (password.length() < PASSWORD_MIN_LENGTH) {
-            throw new IllegalArgumentException(ErrorCode.PASSWORD_TOO_SHORT.getMessage());
+            throw new ApiException(ErrorCode.PASSWORD_TOO_SHORT, password);
+        }
+        if (Objects.isNull(confirmPassword) || confirmPassword.isBlank()) {
+            throw new ApiException(ErrorCode.CONFIRM_PASSWORD_REQUIRED, confirmPassword);
+        }
+        if (!password.equals(confirmPassword)) {
+            throw new ApiException(ErrorCode.CONFIRM_PASSWORD_MISMATCH, confirmPassword);
         }
     }
 
@@ -54,7 +55,7 @@ public class UserValidator {
      */
     public static void validateNickname(String nickname) {
         if (Objects.isNull(nickname) || nickname.isBlank()) {
-            throw new IllegalArgumentException(ErrorCode.NICKNAME_REQUIRED.getMessage());
+            throw new ApiException(ErrorCode.NICKNAME_REQUIRED, nickname);
         }
     }
 }

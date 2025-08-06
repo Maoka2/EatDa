@@ -7,6 +7,7 @@ import com.domain.user.repository.EaterRepository;
 import com.domain.user.service.EaterService;
 import com.domain.user.validator.UserValidator;
 import com.global.constants.ErrorCode;
+import com.global.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,13 +32,13 @@ public class EaterServiceImpl implements EaterService {
 
     private void validateDuplicateEmail(String email) {
         if (eaterRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException(ErrorCode.EMAIL_DUPLICATED.getMessage());
+            throw new ApiException(ErrorCode.EMAIL_DUPLICATED, email);
         }
     }
 
     private void validateDuplicateNickname(String nickname) {
         if (eaterRepository.existsByNickname(nickname)) {
-            throw new IllegalArgumentException(ErrorCode.NICKNAME_DUPLICATED.getMessage());
+            throw new ApiException(ErrorCode.NICKNAME_DUPLICATED, nickname);
         }
     }
 }

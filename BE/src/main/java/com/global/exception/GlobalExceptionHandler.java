@@ -26,7 +26,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     /**
-     * 비즈니스 예외 처리
+     * 전역 비즈니스 예외 처리
+     */
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<BaseResponse> handleApiException(final ApiException e) {
+        return buildErrorResponse(e.getErrorCode(), e.getDetails());
+    }
+
+    /**
+     * 전역 비즈니스 예외 처리
      */
     @ExceptionHandler(GlobalException.class)
     public ResponseEntity<BaseResponse> handleGlobalException(final GlobalException e) {

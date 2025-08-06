@@ -23,8 +23,8 @@ public enum ErrorCode {
     EMAIL_INVALID_FORMAT("EMAIL_INVALID_FORMAT", "유효하지 않은 이메일 형식입니다.", HttpStatus.BAD_REQUEST.value()),
     PASSWORD_REQUIRED("PASSWORD_REQUIRED", "비밀번호는 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
     PASSWORD_TOO_SHORT("PASSWORD_TOO_SHORT", "비밀번호는 최소 8자 이상 작성해야 합니다.", HttpStatus.BAD_REQUEST.value()),
-    PASSWORD_MISMATCH("PASSWORD_MISMATCH", "비밀번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST.value()),
     CONFIRM_PASSWORD_REQUIRED("CONFIRM_PASSWORD_REQUIRED", "비밀번호 확인은 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
+    CONFIRM_PASSWORD_MISMATCH("CONFIRM_PASSWORD_MISMATCH", "비밀번호와 비밀번호 확인이 일치하지 않습니다.", HttpStatus.BAD_REQUEST.value()),
     NICKNAME_REQUIRED("NICKNAME_REQUIRED", "닉네임은 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
     NICKNAME_DUPLICATED("NICKNAME_DUPLICATED", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT.value()),
 
