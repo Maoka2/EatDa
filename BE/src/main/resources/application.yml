@@ -17,3 +17,7 @@ redis:
   port: 6370
   password: test
   timeout: 2000
+
+filestorage: # 파일 저장소 설정
+  image-root: /data/images  # 이미지 파일 저장 루트 경로
+  video-root: /data/videos  # 비디오 파일 저장 루트 경로

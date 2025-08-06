@@ -47,6 +47,8 @@ public enum ErrorCode {
     FILE_UPLOAD_ERROR("FILE_UPLOAD_ERROR", "파일 업로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
     INVALID_FILE_TYPE("INVALID_FILE_TYPE", "지원하지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST.value()),
     FILE_SIZE_EXCEEDED("FILE_SIZE_EXCEEDED", "파일 크기가 제한을 초과했습니다.", HttpStatus.BAD_REQUEST.value()),
+    IMAGE_PROCESSING_FAILED("IMAGE_PROCESSING_FAILED", "이미지 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+    VIDEO_PROCESSING_FAILED("VIDEO_PROCESSING_FAILED", "비디오 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
     // 외부 서비스 통신 관련
     EXTERNAL_SERVICE_ERROR("EXTERNAL_SERVICE_ERROR", "외부 서비스 연동 중 오류가 발생했습니다.",
