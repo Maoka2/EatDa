@@ -30,6 +30,7 @@ import StoreEventScreen from "./StoreEventScreen";
 import StoreReviewScreen from "./StoreReviewScreen";
 import ReviewWriteScreen from "./Review/ReviewWriteScreen";
 import MapScreen from "./Map/MapScreen";
+// import MapScreen from "./Map/MapScreen";
 import MenuCustomScreen from "./Menu/MenuCustomScreen";
 
 type NavigationProp = NativeStackNavigationProp<
