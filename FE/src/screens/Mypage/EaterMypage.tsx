@@ -28,7 +28,10 @@ interface EaterMypageProps {
   setHeaderVisible?: (visible: boolean) => void;
 }
 
-export default function EaterMypage({ onLogout, setHeaderVisible }: EaterMypageProps) {
+export default function EaterMypage({
+  onLogout,
+  setHeaderVisible,
+}: EaterMypageProps) {
   const [showDetail, setShowDetail] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("myReviews");
 
@@ -36,16 +39,16 @@ export default function EaterMypage({ onLogout, setHeaderVisible }: EaterMypageP
   const tabData = {
     myReviews: {
       data: reviewData.slice(0, 6),
-      label: "내가 남긴 리뷰"
+      label: "내가 남긴 리뷰",
     },
     scrappedReviews: {
       data: reviewData.slice(6, 10),
-      label: "스크랩 한 리뷰"
+      label: "스크랩 한 리뷰",
     },
     myMenuBoard: {
       data: [],
-      label: "내가 만든 메뉴판"
-    }
+      label: "내가 만든 메뉴판",
+    },
   };
 
   // Eater 전용 설정
@@ -65,7 +68,7 @@ export default function EaterMypage({ onLogout, setHeaderVisible }: EaterMypageP
   // Detail 화면 표시
   if (showDetail) {
     return (
-      <EaterMypageDetail 
+      <EaterMypageDetail
         userRole="eater"
         onLogout={onLogout}
         initialTab={activeTab}
@@ -77,35 +80,24 @@ export default function EaterMypage({ onLogout, setHeaderVisible }: EaterMypageP
 
   return (
     <View style={styles.container}>
-
       <ScrollView style={styles.content}>
         {/* 프로필 섹션 (핑크색 배경) */}
         <View style={styles.profileSection}>
           <Image source={backgroundImage} style={styles.backgroundImage} />
-          
+
           <View style={styles.profileContent}>
-            <MypageProfile 
-              userRole="eater"
-              nickname="Sol"
-            />
+            <MypageProfile userRole="eater" nickname="Sol" />
           </View>
 
           {/* 통계 카드들 - 타입으로 라벨 결정 */}
           <View style={styles.statsContainer}>
-            <StatsCard
-              type="리뷰"
-              count={tabData.myReviews.data.length}
-            />
+            <StatsCard type="리뷰" count={tabData.myReviews.data.length} />
             <StatsCard
               type="스크랩"
               count={tabData.scrappedReviews.data.length}
             />
-            <StatsCard
-              type="메뉴판"
-              count={tabData.myMenuBoard.data.length}
-            />
+            <StatsCard type="메뉴판" count={tabData.myMenuBoard.data.length} />
           </View>
-          
         </View>
 
         {/* 카테고리 섹션 - TabKey에 따른 내용 */}
@@ -133,13 +125,13 @@ export default function EaterMypage({ onLogout, setHeaderVisible }: EaterMypageP
         {/* 최근 활동 섹션 - userRole에 따라 다른 텍스트 */}
         <View style={styles.activitySection}>
           <Text style={styles.sectionTitle}>최근 활동</Text>
-          
+
           <ActivityCard
             icon={ReviewIcon}
             text="리뷰 등록이 완료되었습니다"
             time="2시간 전"
           />
-          
+
           <ActivityCard
             icon={MenuIcon}
             text="내가 만든 메뉴판이 고정되었습니다"
@@ -166,11 +158,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   backgroundImage: {
+    ...StyleSheet.absoluteFillObject, // 컨테이너 전체를 덮는다
     position: "absolute",
-    top: 0,    
-    left: 0,   
+    top: 0,
+    left: 0,
     right: SPACING.md, // 전체 영역을 잡기 위한 코드
-    bottom: SPACING.md, // 전체 영역을 잡기 위한 코드 
+    bottom: SPACING.md, // 전체 영역을 잡기 위한 코드
+    resizeMode: "cover",
   },
   profileContent: {
     justifyContent: "space-between",
@@ -184,16 +178,16 @@ const styles = StyleSheet.create({
   categorySection: {
     paddingTop: SPACING.xs, // paddingtop 조정
     padding: SPACING.lg,
-    gap: 10
+    gap: 10,
   },
   activitySection: {
-    backgroundColor: '#eee', 
+    backgroundColor: "#eee",
     paddingTop: SPACING.md, // paddingtop 조정
     padding: SPACING.lg,
-    gap: 10
+    gap: 10,
   },
   sectionTitle: {
-    color : "#333333",
+    color: "#333333",
     fontSize: 13,
     fontWeight: "bold",
     marginBottom: SPACING.xs,

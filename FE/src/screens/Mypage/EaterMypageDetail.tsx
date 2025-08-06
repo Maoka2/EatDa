@@ -13,11 +13,12 @@ import {
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import { COLORS, SPACING, RADIUS } from "../../constants/theme";
-import MypageGridComponent, { ReviewItem } from "../../components/MypageGridComponent";
+import MypageGridComponent, {
+  ReviewItem,
+} from "../../components/MypageGridComponent";
 import TabNavigation from "../../components/TabNavigation";
 import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
-
 
 // 빈 상태 아이콘 import
 const EmptyIcon = require("../../../assets/blue-box-with-red-button-that-says-x-it 1.png");
@@ -35,12 +36,20 @@ type TabKey = "myReviews" | "scrappedReviews" | "myMenuBoard";
 // 빈 상태 컴포넌트
 const EmptyState = ({ message, icon }: { message: string; icon?: any }) => (
   <View style={styles.emptyContent}>
-    {icon && <Image source={icon} style={styles.emptyIcon} resizeMode="contain" />}
+    {icon && (
+      <Image source={icon} style={styles.emptyIcon} resizeMode="contain" />
+    )}
     <Text style={styles.emptyText}>{message}</Text>
   </View>
 );
 
-export default function EaterMypage({ userRole, onLogout, initialTab = "myReviews", onBack, setHeaderVisible }: EaterMypageProps) {
+export default function EaterMypage({
+  userRole,
+  onLogout,
+  initialTab = "myReviews",
+  onBack,
+  setHeaderVisible,
+}: EaterMypageProps) {
   const { width, height } = useWindowDimensions();
   const screenHeight = Dimensions.get("window").height;
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
@@ -52,7 +61,7 @@ export default function EaterMypage({ userRole, onLogout, initialTab = "myReview
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<ReviewItem>>(null);
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
-  
+
   useEffect(() => {
     Object.keys(vdoRefs.current).forEach((key) => {
       const idx = parseInt(key, 10);
@@ -65,18 +74,18 @@ export default function EaterMypage({ userRole, onLogout, initialTab = "myReview
       }
     });
   }, [currentIndex]);
-  
+
   // 확대 애니메이션 (전체 그리드 레이아웃 -> 단일 그리드)
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const handleOpenDetail = (item: ReviewItem) => {
-      setSelectedItem(item);
-      setHeaderVisible?.(false); // 헤더 숨기기
-      scaleAnim.setValue(0.8);
-      Animated.spring(scaleAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-      }).start();
-      };
+    setSelectedItem(item);
+    setHeaderVisible?.(false); // 헤더 숨기기
+    scaleAnim.setValue(0.8);
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length > 0) {
@@ -89,16 +98,15 @@ export default function EaterMypage({ userRole, onLogout, initialTab = "myReview
     viewAreaCoveragePercentThreshold: 80,
   }).current;
 
-  // 데이터 
+  // 데이터
   const myReviewsData = reviewData.slice(0, 6);
-  const scrappedReviewsData = reviewData.slice(6, 10); 
+  const scrappedReviewsData = reviewData.slice(6, 10);
 
   // 그리드 사이즈 계산 - 넓힘
   const gridSize = (width - SPACING.md * 2 - 16) / 2; // 2열 그리드, 간격 8px씩 총 16px 고려
 
   return (
     <View style={styles.container}>
-
       {/* 상세보기 모드 */}
       {selectedItem ? (
         <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
@@ -151,9 +159,10 @@ export default function EaterMypage({ userRole, onLogout, initialTab = "myReview
             decelerationRate="fast"
             snapToInterval={screenHeight}
             snapToAlignment="start"
-            initialScrollIndex={Math.max(0, myReviewsData.findIndex(
-              (i) => i.id === selectedItem.id
-            ))}
+            initialScrollIndex={Math.max(
+              0,
+              myReviewsData.findIndex((i) => i.id === selectedItem.id)
+            )}
             getItemLayout={(data, index) => ({
               length: screenHeight,
               offset: screenHeight * index,
@@ -179,8 +188,8 @@ export default function EaterMypage({ userRole, onLogout, initialTab = "myReview
 
           {/* 탭 콘텐츠 */}
           <View style={styles.tabContent}>
-            {activeTab === "myReviews" && (
-              myReviewsData.length > 0 ? (
+            {activeTab === "myReviews" &&
+              (myReviewsData.length > 0 ? (
                 <View style={styles.gridContainer}>
                   {myReviewsData.map((item, index) => (
                     <MypageGridComponent
@@ -196,16 +205,15 @@ export default function EaterMypage({ userRole, onLogout, initialTab = "myReview
                   ))}
                 </View>
               ) : (
-                <EmptyState 
-                  message="내가 남긴 리뷰가 없습니다" 
+                <EmptyState
+                  message="내가 남긴 리뷰가 없습니다"
                   icon={EmptyIcon}
                 />
-              )
-            )}
+              ))}
 
             {/* 스크랩한 리뷰 */}
-            {activeTab === "scrappedReviews" && (
-              scrappedReviewsData.length > 0 ? (
+            {activeTab === "scrappedReviews" &&
+              (scrappedReviewsData.length > 0 ? (
                 <View style={styles.gridContainer}>
                   {scrappedReviewsData.map((item, index) => (
                     <MypageGridComponent
@@ -221,16 +229,15 @@ export default function EaterMypage({ userRole, onLogout, initialTab = "myReview
                   ))}
                 </View>
               ) : (
-                <EmptyState 
-                  message="스크랩한 리뷰가 없습니다" 
+                <EmptyState
+                  message="스크랩한 리뷰가 없습니다"
                   icon={EmptyIcon}
                 />
-              )
-            )}
+              ))}
 
             {activeTab === "myMenuBoard" && (
-              <EmptyState 
-                message="내가 만든 메뉴판이 없습니다" 
+              <EmptyState
+                message="내가 만든 메뉴판이 없습니다"
                 icon={EmptyIcon}
               />
             )}
@@ -268,7 +275,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xl * 2,
   },
   emptyIcon: {
-    width: '20%',  // 부모 기준 비율
+    width: "20%", // 부모 기준 비율
     aspectRatio: 1, // 정사각형
     marginBottom: SPACING.lg,
   },

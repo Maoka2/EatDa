@@ -7,6 +7,8 @@ import {
   useWindowDimensions,
   TouchableOpacity,
 } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../../navigation/AuthNavigator"; // 경로 수정 필요
 import HamburgerButton from "../../components/Hamburger";
 import HeaderLogo from "../../components/HeaderLogo";
 import EaterMypage from "./EaterMypage";
@@ -15,16 +17,27 @@ import { COLORS } from "../../constants/theme";
 
 type TabKey = "eater" | "maker";
 
-interface MypageScreenProps {
-  userRole: "eater" | "maker";
-  onLogout: () => void;
-}
+// Navigation Props 타입 정의
+type Props = NativeStackScreenProps<AuthStackParamList, "MypageScreen">;
 
-export default function MypageScreen({ userRole, onLogout }: MypageScreenProps) {
+export default function MypageScreen({ navigation, route }: Props) {
   const { width, height } = useWindowDimensions();
-  const [activeTab, setActiveTab] = useState<TabKey>(userRole || "eater");
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 
+  // 사용자 역할을 어떻게 가져올지에 따라 다음 중 하나를 선택:
+  // 1. route params에서 가져오기 (추천)
+  // const userRole = route.params?.userRole || "eater";
+
+  // 2. 전역 상태나 Context에서 가져오기 (추천)
+  // const { userRole } = useUserContext();
+
+  // 3. AsyncStorage나 다른 저장소에서 가져오기
+  // const [userRole, setUserRole] = useState<"eater" | "maker">("eater");
+
+  // 임시로 기본값 설정 (실제로는 위의 방법 중 하나 사용)
+  const [userRole, setUserRole] = useState<"eater" | "maker">("eater");
+
+  const [activeTab, setActiveTab] = useState<TabKey>(userRole);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 
   const primaryColor =
     activeTab === "eater" ? COLORS.primaryEater : COLORS.primaryMaker;
@@ -34,24 +47,30 @@ export default function MypageScreen({ userRole, onLogout }: MypageScreenProps) 
     setActiveTab(tab);
   };
 
+  // 로그아웃 핸들러
+  const handleLogout = () => {
+    // 로그아웃 로직 수행 (토큰 삭제, 상태 초기화 등)
+    // ...로그아웃 로직...
+
+    // 로그인 화면으로 이동
+    navigation.navigate("Login");
+  };
 
   return (
     <View style={styles.container}>
       {/* 헤더 - 조건부 렌더링 */}
       {isHeaderVisible && (
         <View style={styles.headerContainer}>
-          <TouchableOpacity
-            style={styles.hamburgerButton}
-          >
+          <TouchableOpacity style={styles.hamburgerButton}>
             {/* 햄버거 아이콘 */}
             <HamburgerButton
               userRole={activeTab}
-              onLogout={onLogout}
-              onMypage = {() => {}}
+              onLogout={handleLogout}
+              onMypage={() => {}}
             />
           </TouchableOpacity>
           {/* 로고 */}
-          <HeaderLogo></HeaderLogo>
+          <HeaderLogo />
         </View>
       )}
 
@@ -60,14 +79,17 @@ export default function MypageScreen({ userRole, onLogout }: MypageScreenProps) 
         pointerEvents="box-none"
       >
         {/* 마이페이지 컨텐츠 */}
-        <View
-          style={{ flex: 1 }}
-          pointerEvents="box-none"
-        >
+        <View style={{ flex: 1 }} pointerEvents="box-none">
           {activeTab === "eater" ? (
-            <EaterMypage onLogout={onLogout} setHeaderVisible={setIsHeaderVisible} />
+            <EaterMypage
+              onLogout={handleLogout}
+              setHeaderVisible={setIsHeaderVisible}
+            />
           ) : (
-            <MakerMypage onLogout={onLogout} setHeaderVisible={setIsHeaderVisible} />
+            <MakerMypage
+              onLogout={handleLogout}
+              setHeaderVisible={setIsHeaderVisible}
+            />
           )}
         </View>
       </SafeAreaView>
@@ -91,5 +113,4 @@ const styles = StyleSheet.create({
   hamburgerButton: {
     zIndex: 1,
   },
-
-}); 
+});
