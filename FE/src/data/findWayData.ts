@@ -21,7 +21,6 @@ export type PublicRoute = {
   subPaths: SubPath[];
 };
 
-
 export const FindWayData: PublicRoute[] = [
   {
     price: 1250,
@@ -60,17 +59,6 @@ export const FindWayData: PublicRoute[] = [
     totalWalkTime: 5,
     subPaths: [
       {
-        type: 2,
-        startName: "서울역버스환승센터",
-        endName: "강남역12번출구",
-        distance: 8000,
-        time: 30,
-        subwayName: null,
-        subwayColor: null,
-        busNum: "140",
-        busColor: "#3B80EF",
-      },
-      {
         type: 3,
         startName: null,
         endName: null,
@@ -80,6 +68,17 @@ export const FindWayData: PublicRoute[] = [
         subwayColor: null,
         busNum: null,
         busColor: null,
+      },
+      {
+        type: 2,
+        startName: "서울역버스환승센터",
+        endName: "강남역12번출구",
+        distance: 8000,
+        time: 30,
+        subwayName: null,
+        subwayColor: null,
+        busNum: "140",
+        busColor: "#3B80EF",
       },
     ],
   },
