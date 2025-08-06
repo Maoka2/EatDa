@@ -49,6 +49,7 @@ services:
       - TZ=Asia/Seoul
     volumes:
       - /srv/mysql:/var/lib/mysql
+      - /srv/mysql/conf.d:/etc/mysql/conf.d
     command:
       - "mysqld"
       - "--character-set-server=utf8mb4"
