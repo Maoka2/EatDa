@@ -9,27 +9,28 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import TabSwitcher from "../../components/TabSwitcher";
 import EaterLoginScreen from "./EaterLoginScreen";
 import MakerLoginScreen from "./MakerLoginScreen";
-import RoleSelectionScreen from "../Register/RoleSelectionScreen";
-import RegisterScreen from "../Register/RegisterScreen";
-import ReviewTabScreen from "../Review/ReviewTabScreen";
+// RoleSelectionScreen과 RegisterScreen import 제거 (Navigation으로 처리)
+// import RoleSelectionScreen from "../Register/RoleSelectionScreen";
+// import RegisterScreen from "../Register/RegisterScreen";
+// import ReviewTabScreen from "../Review/ReviewTabScreen";
 import ResultModal from "../../components/ResultModal";
 import { COLORS, textStyles } from "../../constants/theme";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
 
 type TabKey = "eater" | "maker";
 
+// Navigation 타입 정의
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList, "Login">;
+
 export default function LoginScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const { width, height } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState<TabKey>("eater");
-  const [showRegister, setShowRegister] = useState(false);
-  const [registerRole, setRegisterRole] = useState<"eater" | "maker" | null>(
-    null
-  );
-  const [showRoleSelection, setShowRoleSelection] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState<"eater" | "maker" | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<"success" | "failure">("success");
   const [modalMessage, setModalMessage] = useState("");
@@ -46,7 +47,7 @@ export default function LoginScreen() {
       `${role === "eater" ? "냠냠이" : "사장님"} 로그인에 성공했습니다!`
     );
     setShowModal(true);
-    setUserRole(role);
+    // userRole state 제거 - navigation으로 처리
   };
 
   // 로그인 실패 핸들러
@@ -60,72 +61,18 @@ export default function LoginScreen() {
   // 모달 닫기 핸들러
   const handleModalClose = () => {
     setShowModal(false);
-    if (modalType === "success" && userRole) {
-      setIsLoggedIn(true);
+    if (modalType === "success") {
+      // Navigation을 사용해서 메인 화면으로 이동
+      navigation.navigate("ReviewTabScreen" as any);
     }
   };
 
-  // 회원가입 네비게이션 핸들러들
+  // 회원가입 네비게이션 핸들러 - Navigation 사용
   const handleNavigateToRegister = () => {
-    setShowRoleSelection(true);
+    navigation.navigate("RoleSelectionScreen");
   };
 
-  const handleSelectRole = (role: "eater" | "maker") => {
-    setRegisterRole(role);
-    setShowRoleSelection(false);
-    setShowRegister(true);
-  };
-
-  const handleBackToLogin = () => {
-    setShowRegister(false);
-    setShowRoleSelection(false);
-    setRegisterRole(null);
-  };
-
-  const handleBackToRoleSelection = () => {
-    setShowRegister(false);
-    setShowRoleSelection(true);
-  };
-
-  const handleRegisterComplete = () => {
-    // 회원가입 완료 후 로직 (예: 성공 메시지 표시)
-    console.log("회원가입 완료!");
-    handleBackToLogin();
-  };
-
-  // 로그아웃 핸들러
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUserRole(null);
-  };
-
-  // 로그인 성공 후 리뷰 탭 화면 표시
-  if (isLoggedIn && userRole) {
-    return <ReviewTabScreen userRole={userRole} onLogout={handleLogout} />;
-  }
-
-  // 역할 선택 화면 표시
-  if (showRoleSelection) {
-    return (
-      <RoleSelectionScreen
-        onSelectRole={handleSelectRole}
-        onBack={handleBackToLogin}
-      />
-    );
-  }
-
-  // 회원가입 화면 표시
-  if (showRegister && registerRole) {
-    return (
-      <RegisterScreen
-        role={registerRole}
-        onBack={handleBackToRoleSelection}
-        onComplete={handleRegisterComplete}
-      />
-    );
-  }
-
-  // 기본 로그인 화면
+  // 기본 로그인 화면만 렌더링 (조건부 렌더링 제거)
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -195,7 +142,7 @@ export default function LoginScreen() {
               styles.finger,
               {
                 bottom: height * 0.001,
-                width: height < 700 ? width * 0.4 : width * 0.5, // 작은 화면에서 크기 감소
+                width: height < 700 ? width * 0.4 : width * 0.5,
                 height:
                   height < 700
                     ? (width * 0.4 * 228) / 190

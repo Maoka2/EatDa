@@ -25,11 +25,10 @@ import ResultModal from "../../components/ResultModal";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { API_KEYS } from "../../../config/apiKeys";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
 
-type Props = {
-  onBack: () => void;
-  onComplete: () => void;
-};
+type Props = NativeStackScreenProps<AuthStackParamList, "MakerRegisterScreen">;
 
 type MenuItemType = {
   id: string;
@@ -75,7 +74,7 @@ const GOOGLE_VISION_API_KEY = API_KEYS.GOOGLE_VISION; // 실제 API 키로 교�
 const NAVER_CLOVA_API_KEY = ""; // 사용하지 않으므로 빈 문자열
 const NAVER_CLOVA_SECRET = ""; // 사용하지 않으므로 빈 문자열
 
-export default function MakerRegisterScreen({ onBack, onComplete }: Props) {
+export default function MakerRegisterScreen({ navigation }: Props) {
   const { width, height } = useWindowDimensions();
   const scrollViewRef = useRef<ScrollView>(null);
   const totalSteps = 4;
@@ -192,7 +191,8 @@ export default function MakerRegisterScreen({ onBack, onComplete }: Props) {
   };
 
   const handleBack = () =>
-    currentStep > 1 ? setCurrentStep((s) => s - 1) : onBack();
+    currentStep > 1 ? setCurrentStep((s) => s - 1) : navigation.goBack();
+
   const handlePrevStep = () => {
     setCurrentStep((s) => s - 1);
     // 이전 단계로 이동 시 맨 위로 스크롤
@@ -202,7 +202,8 @@ export default function MakerRegisterScreen({ onBack, onComplete }: Props) {
   };
   const handleModalClose = () => {
     setModalVisible(false);
-    onComplete();
+    // 회원가입 완료 후 로그인 화면으로 이동하거나 다른 적절한 화면으로 이동
+    navigation.navigate("Login"); // 또는 적절한 화면으로
   };
 
   // Form data update

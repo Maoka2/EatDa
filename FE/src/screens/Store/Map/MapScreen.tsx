@@ -11,6 +11,8 @@ import {
   ViewStyle,
   TextStyle,
 } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../../../navigation/AuthNavigator"; // 경로 수정 필요
 
 import HamburgerButton from "../../../components/Hamburger";
 import HeaderLogo from "../../../components/HeaderLogo";

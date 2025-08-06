@@ -8,9 +8,11 @@ import {
   ScrollView,
   TextInput,
   StyleSheet,
-  Modal,
+  useWindowDimensions,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
+import CompleteModal from "./CompleteModal";
 
 interface WriteProps {
   isGenerating: boolean;
@@ -31,144 +33,142 @@ export default function WriteStep({
   onBack,
   onClose,
 }: WriteProps) {
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
-  const [generatedText, setGeneratedText] = useState("");
+  const { width } = useWindowDimensions();
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
 
-  // aiDone이 true가 되면 모달 표시
+  // AI 생성이 완료되면 더미 콘텐츠 설정
   useEffect(() => {
-    if (aiDone && !showCompletionModal) {
-      // 더미 리뷰 텍스트 생성
-      const dummyReview = `햄찌네 피자에서 정말 맛있는 피자를 먹었어요! 🍕
-
-치즈가 정말 진하고 도우도 바삭바삭해서 너무 좋았습니다. 특히 페퍼로니 피자는 정말 최고였어요. 토핑도 신선하고 양도 충분했습니다.
-
-분위기도 아늑하고 직원분들도 정말 친절하셨어요. 가격대비 양과 맛 모두 만족스러웠습니다.
-
-다음에도 또 오고 싶은 곳이에요! 강력 추천합니다 👍`;
-
-      setGeneratedText(dummyReview);
-      onChange(dummyReview);
-      setShowCompletionModal(true);
+    if (aiDone && !generatedContent) {
+      // 더미 AI 생성 결과 (햄스터 요리사 영상)
+      setGeneratedContent(
+        "https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=400&h=300&fit=crop"
+      );
     }
-  }, [aiDone]);
+  }, [aiDone, generatedContent]);
+
+  // AI 생성 완료 & 텍스트 리뷰 작성 완료 체크
+  const canComplete = aiDone && text.trim().length > 0;
+
+  const handleComplete = () => {
+    if (canComplete) {
+      setShowCompleteModal(true);
+    }
+  };
 
   const handleModalConfirm = () => {
-    setShowCompletionModal(false);
+    setShowCompleteModal(false);
+    onNext(); // 최종 완료
   };
 
   const handleModalCancel = () => {
-    setShowCompletionModal(false);
-    onBack(); // 이전 단계로 돌아가기
+    setShowCompleteModal(false);
+    // 모달만 닫고 현재 화면 유지
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.navButton}>
-          <Text style={styles.nav}>←</Text>
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={width * 0.06} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>햄찌네 피자</Text>
-        <TouchableOpacity onPress={onClose} style={styles.navButton}>
-          <Text style={styles.nav}>×</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="close" size={width * 0.06} color="#333" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
-        {isGenerating && (
-          <View style={styles.status}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* AI 생성 상태 섹션 */}
+        <View style={styles.aiSection}>
+          <Text style={styles.sectionTitle}>AI 리뷰 생성</Text>
+
+          {isGenerating && (
             <View style={styles.loadingContainer}>
               <LottieView
                 source={require("../../../../assets/AI-loading.json")}
                 autoPlay
                 loop
                 style={styles.lottie}
+                duration={5000}
               />
-              <Text style={styles.statusText}>AI가 리뷰를 생성중입니다...</Text>
-              <Text style={styles.statusSubText}>잠시만 기다려주세요</Text>
+              <Text style={styles.loadingText}>AI 리뷰를 생성중입니다...</Text>
+              <Text style={styles.loadingSubText}>
+                약간의 시간이 소요됩니다
+              </Text>
             </View>
-          </View>
-        )}
+          )}
 
-        {aiDone && (
-          <View style={styles.inputWrap}>
-            <Text style={styles.label}>텍스트 리뷰를 작성해주세요</Text>
-            <TextInput
-              style={styles.input}
-              multiline
-              placeholder="리뷰 내용이 여기에 표시됩니다..."
-              placeholderTextColor="#999999"
-              textAlignVertical="top"
-              value={text}
-              onChangeText={onChange}
-            />
+          {aiDone && (
+            <View style={styles.aiCompleteContainer}>
+              <View style={styles.aiCompleteIcon}>
+                <Text style={styles.checkIcon}>✓</Text>
+              </View>
+              <Text style={styles.aiCompleteText}>
+                AI 리뷰 생성이 완료되었습니다!
+              </Text>
+              <Text style={styles.aiCompleteSubText}>
+                리뷰가 완성되면 결과를 확인할 수 있습니다
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* 텍스트 리뷰 작성 섹션 */}
+        <View style={styles.textSection}>
+          <Text style={styles.sectionTitle}>텍스트 리뷰 작성</Text>
+          <TextInput
+            style={styles.textInput}
+            multiline
+            placeholder={`가게 음식에 대한 리뷰를 자유롭게 작성해주세요!
+텍스트 리뷰는 AI 생성 리뷰 위에 투명하게 표시될 예정입니다.
+텍스트 리뷰 작성과 AI 리뷰 생성이 모두 완료되면 
+완료 버튼을 눌러주세요!`}
+            placeholderTextColor="#999999"
+            textAlignVertical="top"
+            value={text}
+            onChangeText={onChange}
+            maxLength={500}
+          />
+
+          <View style={styles.textCounter}>
+            <Text style={styles.counterText}>{text.length}/500</Text>
           </View>
-        )}
+        </View>
       </ScrollView>
 
-      {aiDone && (
-        <View style={styles.bottom}>
-          <TouchableOpacity
-            style={[styles.btn, !text.trim() && styles.btnOff]}
-            onPress={onNext}
-            disabled={!text.trim()}
-          >
-            <Text style={styles.btnText}>완료</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* 하단 완료 버튼 */}
+      <View style={styles.bottom}>
+        <TouchableOpacity
+          style={[
+            styles.completeButton,
+            !canComplete && styles.completeButtonDisabled,
+          ]}
+          onPress={handleComplete}
+          disabled={!canComplete}
+          activeOpacity={canComplete ? 0.7 : 1}
+        >
+          <Text style={styles.completeButtonText}>
+            {!aiDone
+              ? "AI 리뷰 생성 중..."
+              : !text.trim()
+              ? "텍스트 리뷰를 작성해주세요"
+              : "완료"}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* 리뷰 생성 완료 모달 */}
-      <Modal
-        visible={showCompletionModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowCompletionModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.videoPlaceholder}>
-              <Text style={styles.videoTitle}>어딘가 많이 이상한</Text>
-              <Text style={styles.videoSubtitle}>햄스터 요리사.mp4</Text>
-              <View style={styles.videoContent}>
-                {/* 햄스터 이미지 영역 */}
-                <View style={styles.hamsterContainer}>
-                  <Text style={styles.hamsterEmoji}>🐹</Text>
-                </View>
-                {/* 비디오 컨트롤 */}
-                <View style={styles.videoControls}>
-                  <Text style={styles.videoTime}>0:0</Text>
-                  <View style={styles.progressBar}>
-                    <View style={styles.progressIndicator} />
-                  </View>
-                  <Text style={styles.videoTime}>0:0</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>리뷰 생성 완료!</Text>
-              <Text style={styles.modalSubtitle}>
-                생성된 리뷰를 리뷰 게시판에 게시하시겠습니까?
-              </Text>
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={styles.confirmButton}
-                  onPress={handleModalConfirm}
-                >
-                  <Text style={styles.confirmButtonText}>게시하기</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={handleModalCancel}
-                >
-                  <Text style={styles.cancelButtonText}>취소</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* 완료 모달 */}
+      <CompleteModal
+        visible={showCompleteModal}
+        onClose={handleModalCancel}
+        generatedContent={generatedContent}
+        onConfirm={onNext}
+        reviewText={text}
+        contentType="video"
+        onCancel={handleModalCancel}
+      />
     </SafeAreaView>
   );
 }
@@ -182,85 +182,134 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     paddingTop: 60,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
-  navButton: {
-    width: 40,
-    height: 40,
+  backButton: {
+    width: 44,
+    height: 44,
     justifyContent: "center",
     alignItems: "center",
-  },
-  nav: {
-    fontSize: 24,
-    color: "#1A1A1A",
-    fontWeight: "400",
   },
   title: {
     fontSize: 18,
     fontWeight: "700",
     color: "#1A1A1A",
   },
+  closeButton: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
   content: {
     flex: 1,
+    backgroundColor: "#F7F8F9",
+  },
+
+  // AI 섹션
+  aiSection: {
     backgroundColor: "#FFFFFF",
-  },
-  status: {
-    flex: 1,
-    justifyContent: "center",
+    marginBottom: 12,
     paddingHorizontal: 20,
+    paddingVertical: 24,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 10,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: "#666666",
+    marginBottom: 20,
+  },
+
   loadingContainer: {
     alignItems: "center",
+    paddingVertical: 20,
   },
-  statusText: {
-    fontSize: 18,
-    color: "#1A1A1A",
+  lottie: {
+    width: 200,
+    height: 200,
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 16,
     fontWeight: "600",
-    textAlign: "center",
+    color: "#333",
+    marginBottom: 4,
   },
-  statusSubText: {
+  loadingSubText: {
+    fontSize: 14,
+    color: "#666666",
+  },
+
+  aiCompleteContainer: {
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  aiCompleteIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#ffe2f0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  checkIcon: {
+    fontSize: 24,
+    color: "#FF69B4",
+    fontWeight: "bold",
+  },
+  aiCompleteText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  aiCompleteSubText: {
     fontSize: 14,
     color: "#666666",
     textAlign: "center",
-    marginTop: 8,
-  },
-  lottie: {
-    width: 120,
-    height: 120,
-    marginBottom: 24,
   },
 
-  inputWrap: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+  // 텍스트 섹션
+  textSection: {
     backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingVertical: 24,
     marginBottom: 100,
   },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1A1A1A",
-    marginBottom: 16,
-  },
-  input: {
+  textInput: {
     minHeight: 200,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#E8E8E8",
     borderRadius: 12,
     padding: 16,
-    backgroundColor: "#FAFAFA",
-    color: "#1A1A1A",
-    fontSize: 15,
+    backgroundColor: "#fff",
+    color: "#333",
+    fontSize: 12,
     lineHeight: 22,
     textAlignVertical: "top",
   },
+  textCounter: {
+    alignItems: "flex-end",
+    marginTop: 8,
+  },
+  counterText: {
+    fontSize: 12,
+    color: "#999999",
+  },
 
+  // 하단 버튼
   bottom: {
     position: "absolute",
     bottom: 0,
@@ -272,131 +321,23 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#F0F0F0",
   },
-  btn: {
+  completeButton: {
     backgroundColor: "#FF69B4",
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
+    shadowColor: "#FF69B4",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  btnOff: {
+  completeButtonDisabled: {
     backgroundColor: "#D1D5DB",
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  btnText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  modalContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    width: "100%",
-    maxWidth: 340,
-    overflow: "hidden",
-  },
-  videoPlaceholder: {
-    backgroundColor: "#000000",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
-  videoTitle: {
-    color: "#FFFF00",
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  videoSubtitle: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  videoContent: {
-    alignItems: "center",
-  },
-  hamsterContainer: {
-    width: 200,
-    height: 150,
-    backgroundColor: "#F5E6D3",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  hamsterEmoji: {
-    fontSize: 60,
-  },
-  videoControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    paddingHorizontal: 10,
-  },
-  videoTime: {
-    color: "#FFFFFF",
-    fontSize: 12,
-  },
-  progressBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: "#333333",
-    borderRadius: 2,
-    marginHorizontal: 10,
-  },
-  progressIndicator: {
-    width: "30%",
-    height: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 2,
-  },
-  modalContent: {
-    padding: 24,
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: "#666666",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  modalButtons: {
-    width: "100%",
-    gap: 12,
-  },
-  confirmButton: {
-    backgroundColor: "#FF69B4",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  confirmButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  cancelButton: {
-    backgroundColor: "#9CA3AF",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  cancelButtonText: {
+  completeButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",

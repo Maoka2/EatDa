@@ -13,6 +13,9 @@ import {
   FlatList,
   Animated,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 
 // 더미데이터
 import { eventData } from "../../data/eventData";
@@ -25,8 +28,21 @@ import CloseButton from "../../../assets/closeBtn.svg";
 // 날짜 비교용, npm install dayjs 필요
 import dayjs from "dayjs";
 
+type NavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  "ActiveEventScreen"
+>;
+
 export default function ActiveEventScreen() {
   const { width, height } = useWindowDimensions();
+  const navigation = useNavigation<NavigationProp>();
+
+  // 마이페이지 이동 함수
+  const handleMypage = () => {
+    // 여기서 마이페이지로 이동하는 로직 구현
+    console.log("마이페이지로 이동");
+    // navigation.navigate('MyPageScreen'); // 실제 마이페이지 화면 이름으로 변경
+  };
 
   // 진행중인 이벤튼 눌렀을 때 날짜안에 들어있는거만 보여주기
   const [selectedEvent, setSelectedEvent] = useState<eventItem | null>(null);
@@ -44,8 +60,8 @@ export default function ActiveEventScreen() {
   // 전체보기 -> 상세보기 클릭 시 애니메이션
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   useEffect(() => {
-    if(selectedEvent){
-        scaleAnim.setValue(0.8);
+    if (selectedEvent) {
+      scaleAnim.setValue(0.8);
     }
     Animated.spring(scaleAnim, {
       toValue: 1,
@@ -118,7 +134,8 @@ export default function ActiveEventScreen() {
         <HamburgerButton
           userRole="maker"
           onLogout={() => console.log("logout")}
-          activePage="activeEventPage"
+          onMypage={handleMypage}
+          // activePage prop 제거
         ></HamburgerButton>
 
         <HeaderLogo></HeaderLogo>

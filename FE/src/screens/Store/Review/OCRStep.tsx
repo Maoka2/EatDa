@@ -11,20 +11,44 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { COLORS } from "../../../constants/theme";
+import ResultModal from "../../../components/ResultModal";
+import { Ionicons } from "@expo/vector-icons";
 
 interface BusinessLicenseUploadProps {
   onSuccess: (imageUri: string) => void;
   onFailure: () => void;
+  onBack: () => void; // onBack prop 추가
 }
 
 export default function OCRStep({
   onSuccess,
   onFailure,
+  onBack, // onBack prop 받기
 }: BusinessLicenseUploadProps) {
   const { width, height } = useWindowDimensions();
   const [businessLicenseUri, setBusinessLicenseUri] = useState<string | null>(
     null
   );
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"success" | "failure">("success");
+  const [modalMessage, setModalMessage] = useState("");
+
+  // 모달 확인 버튼 핸들러
+  const handleModalClose = () => {
+    setModalVisible(false);
+    if (modalType === "success" && businessLicenseUri) {
+      onSuccess(businessLicenseUri);
+    } else {
+      onFailure();
+    }
+  };
+
+  // 업로드 후 모달 띄우기
+  const showResultModal = (type: "success" | "failure", message: string) => {
+    setModalType(type);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
 
   // 영수증 업로드
   const handleBusinessLicenseUpload = async () => {
@@ -56,12 +80,16 @@ export default function OCRStep({
             if (!result.canceled) {
               const uri = result.assets[0].uri;
               setBusinessLicenseUri(uri);
-              Alert.alert("업로드 완료", "영수증이 업로드되었습니다", [
-                {
-                  text: "확인",
-                  onPress: () => onSuccess(uri),
-                },
-              ]);
+              // TODO: 실제 OCR 검증 로직 호출 후 성공/실패 분기
+              const ocrSucceeded = true; // 예시
+              if (ocrSucceeded) {
+                showResultModal("success", "영수증 인증이 완료되었습니다");
+              } else {
+                showResultModal(
+                  "failure",
+                  "영수증 인증에 실패했습니다. 다시 시도해주세요"
+                );
+              }
             }
           },
         },
@@ -77,12 +105,16 @@ export default function OCRStep({
             if (!result.canceled) {
               const uri = result.assets[0].uri;
               setBusinessLicenseUri(uri);
-              Alert.alert("업로드 완료", "영수증이 업로드되었습니다", [
-                {
-                  text: "확인",
-                  onPress: () => onSuccess(uri),
-                },
-              ]);
+              // TODO: 실제 OCR 검증 로직 호출 후 성공/실패 분기
+              const ocrSucceeded = true; // 예시
+              if (ocrSucceeded) {
+                showResultModal("success", "영수증 인증이 완료되었습니다");
+              } else {
+                showResultModal(
+                  "failure",
+                  "영수증 인증에 실패했습니다. 다시 시도해주세요"
+                );
+              }
             }
           },
         },
@@ -93,46 +125,67 @@ export default function OCRStep({
       ]);
     } catch (error) {
       console.error("Business license upload error:", error);
-      Alert.alert("오류", "영수증 업로드 중 오류가 발생했습니다");
-      onFailure();
+      showResultModal("failure", "영수증 업로드 중 오류가 발생했습니다");
     }
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { fontSize: width * 0.045 }]}>
-          영수증 인증
-        </Text>
-        <Text style={[styles.description, { fontSize: width * 0.035 }]}>
-          영수증 인증을 먼저 하셔야{"\n"}AI 리뷰를 생성할 수 있습니다
-        </Text>
-      </View>
+      {/* 뒤로가기 버튼 - navigation.goBack() 대신 onBack() 사용 */}
+      <TouchableOpacity
+        onPress={onBack} // onBack prop 사용
+        style={styles.backButton}
+      >
+        <Ionicons name="chevron-back" size={width * 0.06} color={COLORS.text} />
+      </TouchableOpacity>
 
       <View style={styles.content}>
-        <TouchableOpacity
-          style={[styles.uploadArea, { height: height * 0.35 }]}
-          onPress={handleBusinessLicenseUpload}
-        >
-          {businessLicenseUri ? (
-            <Image
-              source={{ uri: businessLicenseUri }}
-              style={styles.uploadedImage}
-              resizeMode="contain"
-            />
-          ) : (
-            <View style={styles.uploadPlaceholder}>
-              <Text style={styles.uploadIcon}>📄</Text>
-              <Text style={[styles.uploadText, { fontSize: width * 0.04 }]}>
-                영수증을 업로드하세요
-              </Text>
-              <Text style={[styles.uploadSubtext, { fontSize: width * 0.03 }]}>
-                JPG, PNG 파일만 업로드 가능합니다
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        {/* 제목 및 설명 */}
+        <View style={styles.titleContainer}>
+          <Text style={[styles.title, { fontSize: width * 0.045 }]}>
+            영수증 인증
+          </Text>
+          <Text style={[styles.description, { fontSize: width * 0.035 }]}>
+            영수증 인증을 먼저 하셔야{`\n`}AI 리뷰를 생성할 수 있습니다
+          </Text>
+        </View>
+
+        {/* 업로드 영역 */}
+        <View style={styles.uploadContainer}>
+          <TouchableOpacity
+            style={[styles.uploadArea, { height: height * 0.35 }]}
+            onPress={handleBusinessLicenseUpload}
+          >
+            {businessLicenseUri ? (
+              <Image
+                source={{ uri: businessLicenseUri }}
+                style={styles.uploadedImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={styles.uploadPlaceholder}>
+                <Text style={styles.uploadIcon}>📄</Text>
+                <Text style={[styles.uploadText, { fontSize: width * 0.04 }]}>
+                  영수증을 업로드하세요
+                </Text>
+                <Text
+                  style={[styles.uploadSubtext, { fontSize: width * 0.03 }]}
+                >
+                  JPG, PNG 파일만 업로드 가능합니다
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* 결과 모달 */}
+      <ResultModal
+        visible={modalVisible}
+        type={modalType}
+        message={modalMessage}
+        onClose={handleModalClose}
+      />
     </View>
   );
 }
@@ -142,27 +195,36 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F7F8F9",
   },
-  header: {
-    paddingTop: 60,
-    paddingBottom: 30,
+  backButton: {
+    position: "absolute",
+    top: 40,
+    left: 16,
+    zIndex: 10,
+  },
+  content: {
+    flex: 1,
     paddingHorizontal: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  titleContainer: {
+    marginBottom: 40,
     alignItems: "center",
   },
   title: {
     fontWeight: "700",
     color: "#333",
-    marginBottom: 10,
     textAlign: "center",
   },
   description: {
     color: COLORS.inactive,
     textAlign: "center",
     lineHeight: 20,
+    marginTop: 8,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    justifyContent: "center",
+  uploadContainer: {
+    width: "100%",
+    alignItems: "center",
   },
   uploadArea: {
     width: "100%",

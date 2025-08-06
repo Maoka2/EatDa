@@ -10,11 +10,12 @@ import {
   ViewStyle,
   TextStyle,
 } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../../../navigation/AuthNavigator"; // 경로 수정 필요
 import LoadingSpinner from "../../../components/LoadingSpinner";
 
-interface MenuCustomScreenProps {
-  onClose: () => void;
-}
+// Navigation Props 타입 정의
+type Props = NativeStackScreenProps<AuthStackParamList, "MenuCustomScreen">;
 
 interface MenuStyle {
   id: string;
@@ -22,7 +23,7 @@ interface MenuStyle {
   preview: string;
 }
 
-export default function MenuCustomScreen({ onClose }: MenuCustomScreenProps) {
+export default function MenuCustomScreen({ navigation }: Props) {
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -32,6 +33,11 @@ export default function MenuCustomScreen({ onClose }: MenuCustomScreenProps) {
     { id: "casual", name: "카페 메뉴", preview: "🍰" },
     { id: "formal", name: "Menu", preview: "🍽️" },
   ];
+
+  const handleClose = () => {
+    // 이전 화면으로 돌아가기
+    navigation.goBack();
+  };
 
   const handleStyleSelect = (styleId: string) => {
     setSelectedStyle(styleId);
@@ -54,7 +60,7 @@ export default function MenuCustomScreen({ onClose }: MenuCustomScreenProps) {
 
   const handleSave = () => {
     alert("메뉴판이 저장되었습니다!");
-    onClose();
+    handleClose();
   };
 
   if (isGenerating) {
@@ -70,7 +76,7 @@ export default function MenuCustomScreen({ onClose }: MenuCustomScreenProps) {
             <Text style={styles.backButton}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>메뉴판 생성 완료</Text>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={handleClose}>
             <Text style={styles.closeButton}>×</Text>
           </TouchableOpacity>
         </View>
@@ -150,7 +156,7 @@ export default function MenuCustomScreen({ onClose }: MenuCustomScreenProps) {
     <SafeAreaView style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose}>
+        <TouchableOpacity onPress={handleClose}>
           <Text style={styles.closeButton}>×</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>메뉴판 꾸미기</Text>

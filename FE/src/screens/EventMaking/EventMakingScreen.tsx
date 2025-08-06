@@ -23,16 +23,6 @@ export default function EventMakingScreen() {
   const { width, height } = useWindowDimensions();
   const horizonMargin = width * 0.04;
 
-  // interface EventProps{
-  //     id:
-  //     store_id:
-  //     title:
-  //     description:
-  //     start_at:
-  //     end_at:
-  //     created_at?:
-  //     updated_at?:
-  // }
   const guidePlaceHolder = [
     "1. 한글 텍스트가 깨질 수 있어요",
     "일부 AI 모델은 한글을 완벽하게 인식하지 못해",
@@ -125,6 +115,17 @@ export default function EventMakingScreen() {
     }
   };
 
+  // 핸들러 함수들 추가
+  const handleLogout = () => {
+    console.log("logout");
+    // 로그아웃 로직 구현
+  };
+
+  const handleMypage = () => {
+    console.log("mypage");
+    // 마이페이지 이동 로직 구현
+  };
+
   return (
     // 2번째 TextInput 입력하려고 했을 때 모바일 자판이 입력창 가리는 것 방지
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="height">
@@ -133,11 +134,12 @@ export default function EventMakingScreen() {
         <View style={styles.headerContainer}>
           <HamburgerButton
             userRole="maker"
-            onLogout={() => console.log("logout")}
+            onLogout={handleLogout}
+            onMypage={handleMypage}
             activePage="eventMaking"
-          ></HamburgerButton>
+          />
 
-          <HeaderLogo></HeaderLogo>
+          <HeaderLogo />
         </View>
         <ScrollView>
           {/* 가게 정보 */}
@@ -172,7 +174,7 @@ export default function EventMakingScreen() {
               style={{ paddingHorizontal: horizonMargin, fontSize: 12 }}
               placeholder="이벤트 이름을 입력해주세요."
               placeholderTextColor="#b3b3b3"
-            ></TextInput>
+            />
           </View>
 
           {/* 이미지 첨부 */}
@@ -206,7 +208,7 @@ export default function EventMakingScreen() {
             onDayPress={onDayPress}
             markedDates={markedDate}
             markingType={"period"}
-          ></Calendar>
+          />
 
           {/* 포스터 생성 프롬프트 */}
           <Text
@@ -238,23 +240,21 @@ export default function EventMakingScreen() {
               multiline={true}
               scrollEnabled
               placeholderTextColor="#b3b3b3"
-            ></TextInput>
+            />
           </View>
         </ScrollView>
         {/* 버튼 */}
-        {/* <View> */}
-          <TouchableOpacity
-            style={[
-              styles.createButton,
-              {
-                marginHorizontal: horizonMargin,
-                paddingVertical: height * 0.02,
-              },
-            ]}
-          >
-            <Text style={styles.createButtonText}>이벤트 생성하기</Text>
-          </TouchableOpacity>
-        {/* </View> */}
+        <TouchableOpacity
+          style={[
+            styles.createButton,
+            {
+              marginHorizontal: horizonMargin,
+              paddingVertical: height * 0.02,
+            },
+          ]}
+        >
+          <Text style={styles.createButtonText}>이벤트 생성하기</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

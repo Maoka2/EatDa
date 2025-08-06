@@ -7,6 +7,7 @@ import {
   View,
   Text,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
 // 사이드바에 사용될 숟가락, 포크 이미지
 import Spoon from "../../assets/sideSpoon.svg";
@@ -18,7 +19,7 @@ export interface SidebarProps {
   userRole: "eater" | "maker";
   onLogout: () => void;
   activePage: string;
-  // onNavigate: (currentPage: string) => void;
+  onMypage: () => void; // 팀원이 추가한 마이페이지 prop
 }
 
 export default function Sidebar({
@@ -26,13 +27,13 @@ export default function Sidebar({
   onClose,
   onLogout,
   activePage,
-}: // onNavigate,
-SidebarProps) {
+  onMypage, // 팀원이 추가한 마이페이지 prop
+}: SidebarProps) {
   const { width, height } = useWindowDimensions();
+  const navigation = useNavigation();
 
   // 사이드바 내에서 숟가락, 포크 위치 결정용
   const sidebarWidth = width * 0.8;
-  // const sidebarHeight = Dimensions.get("screen").height;
 
   const slideAnim = useRef(new Animated.Value(-width * 0.8)).current;
   const [visible, setVisible] = useState(false);
@@ -54,6 +55,12 @@ SidebarProps) {
     }
   }, [isOpen]);
 
+  // 네비게이션 핸들러
+  const handleNavigation = (screenName: string) => {
+    navigation.navigate(screenName as never);
+    onClose();
+  };
+
   if (!visible) return null;
 
   return (
@@ -71,38 +78,69 @@ SidebarProps) {
           styles.sideMenu,
           {
             width: width * 0.8,
-            // height: sidebarHeight,
             transform: [{ translateX: slideAnim }],
           },
         ]}
       >
         <View style={styles.menuItems}>
+          {/* 고객 리뷰 - Review 폴더의 ReviewTabScreen */}
           <TouchableOpacity
             style={[
               styles.menuItem,
-              activePage === "reviewPage" && styles.active,
+              activePage === "ReviewTabScreen" && styles.active,
             ]}
-            onPress={() => {
-              if (activePage !== "reviewPage") {
-                // onNavigate("reviewPage");
-                onClose();
-              }
-            }}
+            onPress={() => handleNavigation("ReviewTabScreen")}
           >
-            <Text style={activePage === "reviewPage" && styles.activeText}>
+            <Text
+              style={[
+                styles.menuText,
+                activePage === "ReviewTabScreen" && styles.activeText,
+              ]}
+            >
               고객 리뷰
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text>이벤트 게시판</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text>마이페이지</Text>
+
+          {/* 이벤트 게시판 - Eventmaking 폴더의 ActiveEventScreen 또는 EventMakingScreen */}
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              activePage === "ActiveEventScreen" && styles.active,
+            ]}
+            onPress={() => handleNavigation("ActiveEventScreen")}
+          >
+            <Text
+              style={[
+                styles.menuText,
+                activePage === "ActiveEventScreen" && styles.activeText,
+              ]}
+            >
+              이벤트 게시판
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={onLogout}>
-            <Text>로그아웃</Text>
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              activePage === "MypageScreen" && styles.active,
+            ]}
+            onPress={() => handleNavigation("MypageScreen")}
+          >
+            <Text
+              style={[
+                styles.menuText,
+                activePage === "MypageScreen" && styles.activeText,
+              ]}
+            >
+              마이페이지
+            </Text>
           </TouchableOpacity>
+
+          {/* 로그아웃 */}
+          <TouchableOpacity style={styles.menuItem} onPress={onLogout}>
+            <Text style={styles.menuText}>로그아웃</Text>
+          </TouchableOpacity>
+
           <View style={styles.characterContainer}>
             <Spoon
               style={{
@@ -114,7 +152,7 @@ SidebarProps) {
               }}
               width={sidebarWidth * 1.5}
               height={sidebarWidth * 1.5}
-            ></Spoon>
+            />
             <Fork
               style={{
                 position: "absolute",
@@ -125,7 +163,7 @@ SidebarProps) {
               }}
               width={sidebarWidth * 1.5}
               height={sidebarWidth * 1.5}
-            ></Fork>
+            />
           </View>
         </View>
       </Animated.View>
@@ -150,30 +188,8 @@ const styles = StyleSheet.create({
     left: 0,
     backgroundColor: "white",
     zIndex: 30,
-    // paddingTop: 30,
     overflow: "hidden",
   },
-  header: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  // profileImage: {
-  //   width: 60,
-  //   height: 60,
-  //   borderRadius: 30,
-  //   justifyContent: "center",
-  //   alignItems: "center",
-  //   marginBottom: 10,
-  // },
-  // profileInitial: {
-  //   color: "#fff",
-  //   fontWeight: "bold",
-  //   fontSize: 18,
-  // },
-  // profileName: {
-  //   fontSize: 16,
-  //   fontWeight: "bold",
-  // },
   menuItems: {
     marginTop: 10,
   },
@@ -181,21 +197,22 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
   },
-
+  menuText: {
+    fontSize: 16,
+    color: "#333",
+  },
   active: {
     backgroundColor: "#FEC566",
     opacity: 0.7,
   },
-
   activeText: {
-    fontWeight: 700,
+    fontWeight: "700",
+    color: "#000",
   },
-
   characterContainer: {
     position: "absolute",
     bottom: 0,
     width: "100%",
     height: 300,
-    // pointerEvents: "none",
   },
 });

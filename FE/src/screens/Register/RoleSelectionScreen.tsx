@@ -11,22 +11,36 @@ import {
   Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { COLORS, textStyles } from "../../constants/theme";
 import EaterProfileIcon from "../../../assets/eater-profile.svg";
 import MakerProfileIcon from "../../../assets/maker-profile.svg";
 
-type Props = {
-  onSelectRole: (role: "eater" | "maker") => void;
-  onBack: () => void;
-};
+// Navigation Hook 타입 정의
+type NavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  "RoleSelectionScreen"
+>;
 
 // 글리터 파티클 컴포넌트
 const GlitterParticle = ({ style }: { style: any }) => (
   <View style={[styles.glitterParticle, style]} />
 );
 
-export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
+export default function RoleSelectionScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const { width, height } = useWindowDimensions();
+
+  // Navigation 상태 확인
+  useEffect(() => {
+    console.log("Navigation object:", navigation);
+    if (!navigation) {
+      console.error("Navigation is undefined!");
+    }
+  }, [navigation]);
+
   const [eaterPressed, setEaterPressed] = useState(false);
   const [makerPressed, setMakerPressed] = useState(false);
 
@@ -53,6 +67,53 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
     );
 
     Animated.parallel(animations).start();
+  };
+
+  const handleSelectRole = (role: "eater" | "maker") => {
+    console.log("handleSelectRole called with:", role);
+    console.log("Navigation object:", navigation);
+
+    if (!navigation) {
+      console.error("Navigation is undefined in handleSelectRole");
+      return;
+    }
+
+    try {
+      // 선택한 역할에 따라 해당 회원가입 화면으로 이동
+      if (role === "eater") {
+        navigation.navigate("EaterRegisterScreen");
+      } else {
+        navigation.navigate("MakerRegisterScreen");
+      }
+    } catch (error) {
+      console.error("Navigation error in handleSelectRole:", error);
+    }
+  };
+
+  const handleBack = () => {
+    console.log("handleBack called");
+    console.log("Navigation object:", navigation);
+
+    if (!navigation) {
+      console.error("Navigation is undefined in handleBack");
+      return;
+    }
+
+    try {
+      // 로그인 화면으로 직접 이동 (스택 리셋)
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    } catch (error) {
+      console.error("Navigation error in handleBack:", error);
+      // 실패 시 navigate로 시도
+      try {
+        navigation.navigate("Login");
+      } catch (fallbackError) {
+        console.error("Fallback navigation also failed:", fallbackError);
+      }
+    }
   };
 
   return (
@@ -99,7 +160,7 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
             {/* 냠냠이 카드 */}
             <TouchableOpacity
               style={[styles.roleCard, { marginBottom: height * 0.025 }]}
-              onPress={() => onSelectRole("eater")}
+              onPress={() => handleSelectRole("eater")}
               onPressIn={() => {
                 setEaterPressed(true);
                 startGlitterAnimation(true);
@@ -200,7 +261,7 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
             {/* 사장님 카드 */}
             <TouchableOpacity
               style={styles.roleCard}
-              onPress={() => onSelectRole("maker")}
+              onPress={() => handleSelectRole("maker")}
               onPressIn={() => {
                 setMakerPressed(true);
                 startGlitterAnimation(false);
@@ -302,7 +363,7 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
           {/* 뒤로가기 */}
           <TouchableOpacity
             style={[styles.backButton, { marginTop: height * 0.035 }]}
-            onPress={onBack}
+            onPress={handleBack}
           >
             <Text style={[styles.backText, { fontSize: width * 0.033 }]}>
               로그인으로 돌아가기
@@ -314,6 +375,7 @@ export default function RoleSelectionScreen({ onSelectRole, onBack }: Props) {
   );
 }
 
+// 기존 스타일은 그대로 유지
 const styles = StyleSheet.create({
   container: {
     flex: 1,

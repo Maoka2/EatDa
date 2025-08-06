@@ -9,6 +9,9 @@ import {
   ViewStyle,
   TextStyle,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 
 import HamburgerButton from "../../components/Hamburger";
 import HeaderLogo from "../../components/HeaderLogo";
@@ -30,13 +33,35 @@ import MapScreen from "./Map/MapScreen";
 // import MapScreen from "./Map/MapScreen";
 import MenuCustomScreen from "./Menu/MenuCustomScreen";
 
-// 새로 추가할 하단 버튼 화면들
+type NavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  "StoreScreen"
+>;
 
 interface StoreProps {
-  onGoBack: () => void;
+  onGoBack?: () => void;
 }
 
-export default function StoreScreen({ onGoBack }: StoreProps) {
+export default function StoreScreen(props?: StoreProps) {
+  const navigation = useNavigation<NavigationProp>();
+
+  // 내장 네비게이션 함수들
+  const handleGoBack = () => {
+    navigation.goBack();
+  };
+
+  const handleLogout = () => {
+    navigation.navigate("Login");
+  };
+
+  const handleMypage = () => {
+    console.log("마이페이지로 이동");
+    // navigation.navigate('MyPageScreen'); // 실제 마이페이지 화면으로 변경
+  };
+
+  // props가 있으면 props 함수 사용, 없으면 내장 함수 사용
+  const goBack = props?.onGoBack || handleGoBack;
+
   // 탭스위쳐 관리
   const [activeTab, setActiveTab] = useState("menu");
   // 하단 버튼 화면 관리
@@ -59,19 +84,24 @@ export default function StoreScreen({ onGoBack }: StoreProps) {
     setBottomActiveScreen(null);
   };
 
-  // 하단 버튼 화면이 활성화된 경우 해당 화면 렌더링
-  if (bottomActiveScreen) {
-    switch (bottomActiveScreen) {
-      case "review":
-        return <ReviewWriteScreen onClose={handleCloseBottomScreen} />;
-      case "map":
-        return <MapScreen onClose={handleCloseBottomScreen} />;
-      case "menu":
-        return <MenuCustomScreen onClose={handleCloseBottomScreen} />;
-      default:
-        return null;
+  // useEffect로 네비게이션 처리 (렌더링 중이 아닌 사이드 이펙트로 처리)
+  useEffect(() => {
+    if (bottomActiveScreen) {
+      switch (bottomActiveScreen) {
+        case "review":
+          navigation.navigate("ReviewWriteScreen");
+          break;
+        case "map":
+          navigation.navigate("MapScreen");
+          break;
+        case "menu":
+          navigation.navigate("MenuCustomScreen");
+          break;
+      }
+      // 상태 초기화
+      setBottomActiveScreen(null);
     }
-  }
+  }, [bottomActiveScreen, navigation]);
 
   return (
     <SafeAreaView style={[{ backgroundColor: "#F7F8F9", flex: 1 }]}>
@@ -79,25 +109,10 @@ export default function StoreScreen({ onGoBack }: StoreProps) {
       <View style={styles.headerContainer}>
         <HamburgerButton
           userRole="eater"
-          onLogout={() => {
-            console.log("로그아웃");
-          }}
-          activePage="storePage"
+          onLogout={handleLogout}
+          onMypage={handleMypage}
         />
         <HeaderLogo />
-        <TouchableOpacity
-          onPress={onGoBack}
-          style={{
-            padding: 10,
-            alignSelf: "flex-end",
-            marginRight: 20,
-            marginTop: 10,
-            backgroundColor: "#eee",
-            borderRadius: 8,
-          }}
-        >
-          <Text>뒤로가기</Text>
-        </TouchableOpacity>
       </View>
 
       {/* 가게정보 파트 */}

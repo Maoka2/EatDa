@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  ReactElement,
+} from "react";
 import {
   View,
   Text,
@@ -16,13 +22,14 @@ import {
   Keyboard,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { Video, ResizeMode } from "expo-av";
-
-import { COLORS, textStyles } from "../../constants/theme";
 
 import SearchBar from "../../components/SearchBar";
 import GridComponent, { ReviewItem } from "../../components/GridComponent";
 import Sidebar from "../../components/Sidebar";
+import MypageScreen from "../Mypage/MypageScreen";
 import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
 import HamburgerButton from "../../components/Hamburger";
@@ -34,20 +41,50 @@ import BookMark from "../../../assets/bookMark.svg";
 import ColoredBookMark from "../../../assets/coloredBookMark.svg";
 import GoToStore from "../../../assets/goToStore.svg";
 import ColoredGoToStore from "../../../assets/coloredGoToStore.svg";
+
+type NavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  "ReviewTabScreen"
+>;
+
 interface ReviewProps {
-  userRole: "eater" | "maker";
-  onLogout: () => void;
+  userRole?: "eater" | "maker";
+  onLogout?: () => void;
+  onMypage?: () => void;
 }
 
-export default function Reviews({ userRole, onLogout }: ReviewProps) {
+export default function Reviews(props?: ReviewProps) {
+  const navigation = useNavigation<NavigationProp>();
   const { height } = useWindowDimensions();
   const screenHeight = Dimensions.get("window").height;
+
+  // 내장 네비게이션 함수들
+  const handleLogout = () => {
+    navigation.navigate("Login");
+  };
+
+  const handleMypage = () => {
+    setCurrentPage("mypage");
+    setIsSidebarOpen(false);
+  };
+
+  // props가 있으면 props 함수 사용, 없으면 내장 함수 사용
+  const userRole = props?.userRole || "eater";
+  const onLogout = props?.onLogout || handleLogout;
+  const onMypage = props?.onMypage || handleMypage;
 
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null);
+
+  // 페이지 네비게이션 관리
+  const [currentPage, setCurrentPage] = useState<"reviewPage" | "mypage">(
+    "reviewPage"
+  );
+
+  //상세보기 스크롤 및 비디오 관리
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<ReviewItem>>(null);
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
@@ -106,6 +143,13 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
     }).start();
   };
 
+  // 마이페이지 렌더링
+  if (currentPage === "mypage") {
+    // MypageScreen으로 네비게이션 이동
+    navigation.navigate("MypageScreen");
+    return null; // 또는 로딩 컴포넌트
+  }
+
   return (
     <TouchableWithoutFeedback
       onPress={() => {
@@ -124,7 +168,7 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
               setShowStoreScreen(false);
               setIsGoToStoreClicked(false);
             }}
-          ></StoreScreen>
+          />
         ) : (
           <>
             {/* 헤더 */}
@@ -139,9 +183,9 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
                 }}
               >
                 <HamburgerButton
-                  userRole="eater"
+                  userRole={userRole}
                   onLogout={onLogout}
-                  activePage="review"
+                  onMypage={onMypage}
                 />
               </TouchableOpacity>
               <HeaderLogo />
@@ -200,9 +244,11 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
                       >
                         <CloseBtn />
                       </TouchableOpacity>
-                      {/*  */}
+
                       {/* 텍스트 오버레이 (클릭 시 가게화면 띄움) */}
-                      <View style={[styles.textOverlay, {bottom:height*0.25}]}>
+                      <View
+                        style={[styles.textOverlay, { bottom: height * 0.25 }]}
+                      >
                         <Text style={styles.titleText}>#{item.title}</Text>
                         <Text style={styles.descText}>{item.description}</Text>
                       </View>
@@ -283,15 +329,6 @@ export default function Reviews({ userRole, onLogout }: ReviewProps) {
                 removeClippedSubviews
               />
             )}
-
-            {/* 사이드바 */}
-            {/* <Sidebar
-              isOpen={isSidebarOpen}
-              onClose={() => setIsSidebarOpen(false)}
-              userRole="eater"
-              onLogout={onLogout}
-              activePage="reviewPage"
-            /> */}
           </>
         )}
       </SafeAreaView>
@@ -334,7 +371,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     position: "absolute",
     bottom: 200,
-    right: 20,
+    right: 10,
   },
   goToStore: {},
   bookMark: {
