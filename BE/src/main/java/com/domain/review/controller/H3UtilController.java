@@ -42,6 +42,7 @@ public class H3UtilController {
     @PostMapping("/update-stores")
     public String updateStoreH3Indexes() {
         List<Store> stores = storeRepository.findAll();
+        log.info("stores: {}", stores.size());
         int updated = 0;
 
         for (Store store : stores) {
