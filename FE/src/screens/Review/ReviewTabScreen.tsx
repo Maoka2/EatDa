@@ -143,15 +143,11 @@ export default function Reviews(props?: ReviewProps) {
     }).start();
   };
 
-  // 마이페이지로 이동하는 핸들러
-  const handleNavigateToMypage = () => {
-    setCurrentPage("mypage");
-    setIsSidebarOpen(false);
-  };
-
   // 마이페이지 렌더링
   if (currentPage === "mypage") {
-    return <MypageScreen userRole={userRole} onLogout={onLogout} />;
+    // MypageScreen으로 네비게이션 이동
+    navigation.navigate("MypageScreen");
+    return null; // 또는 로딩 컴포넌트
   }
 
   return (
@@ -374,8 +370,8 @@ const styles = StyleSheet.create({
   goToStoreAndBookMarkContainer: {
     flexDirection: "row",
     position: "absolute",
-    bottom: 200,
-    right: 20,
+    bottom: 180,
+    right: 10,
   },
   goToStore: {},
   bookMark: {
