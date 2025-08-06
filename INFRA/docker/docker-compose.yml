@@ -51,7 +51,6 @@ services:
       - /srv/mysql:/var/lib/mysql
     command:
       - "mysqld"
-      - "--default-authentication-plugin=mysql_native_password"
       - "--character-set-server=utf8mb4"
       - "--collation-server=utf8mb4_unicode_ci"
     restart: always
