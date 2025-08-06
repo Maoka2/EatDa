@@ -1,6 +1,11 @@
 spring:
   application:
     name: EatDa
+  data:
+    redis:
+      host: localhost
+      port: 6370
+      password: test
 
 management: # Spring-Actuator 설정
   endpoints:
@@ -11,12 +16,6 @@ management: # Spring-Actuator 설정
     metrics: # 시스템이나 애플리케이션의 동작 상태를 수치로 표현한 정보
       export:
         enabled: true   # prometheus 엔드포인트 활성화 여부 *default = true
-
-redis:
-  host: localhost
-  port: 6370
-  password: test
-  timeout: 2000
 
 filestorage: # 파일 저장소 설정
   image-root: /data/images  # 이미지 파일 저장 루트 경로
