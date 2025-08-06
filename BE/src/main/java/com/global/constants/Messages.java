@@ -14,7 +14,8 @@ public enum Messages {
 
     // 서버 URL 정보
     LOCAL_SERVER_URL("http://localhost:8080"),
-    DEV_SERVER_URL("https://eatda.com"),
+    PROD_SERVER_URL("http://i13a609.p.ssafy.io/prod"),
+    TEST_SERVER_URL("http://i13a609.p.ssafy.io/test"),
 
     // 보안 인증 관련
     SECURITY_SCHEME_NAME("BearerAuthentication"),

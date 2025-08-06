@@ -5,9 +5,10 @@ import static com.global.constants.Messages.API_TITLE;
 import static com.global.constants.Messages.API_VERSION;
 import static com.global.constants.Messages.BEARER_FORMAT;
 import static com.global.constants.Messages.BEARER_SCHEME;
-import static com.global.constants.Messages.DEV_SERVER_URL;
 import static com.global.constants.Messages.LOCAL_SERVER_URL;
+import static com.global.constants.Messages.PROD_SERVER_URL;
 import static com.global.constants.Messages.SECURITY_SCHEME_NAME;
+import static com.global.constants.Messages.TEST_SERVER_URL;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -61,7 +62,8 @@ public class SwaggerConfig {
     // 서버 정보 설정
     private List<Server> createServers() {
         Server localServer = new Server().url(LOCAL_SERVER_URL.message());
-        Server devServer = new Server().url(DEV_SERVER_URL.message());
-        return List.of(localServer, devServer);
+        Server prodServer = new Server().url(PROD_SERVER_URL.message());
+        Server testServer = new Server().url(TEST_SERVER_URL.message());
+        return List.of(localServer, prodServer, testServer);
     }
 }
