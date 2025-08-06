@@ -112,19 +112,6 @@ export default function StoreScreen(props?: StoreProps) {
           onMypage={handleMypage}
         />
         <HeaderLogo />
-        <TouchableOpacity
-          onPress={goBack}
-          style={{
-            padding: 10,
-            alignSelf: "flex-end",
-            marginRight: 20,
-            marginTop: 10,
-            backgroundColor: "#eee",
-            borderRadius: 8,
-          }}
-        >
-          <Text>뒤로가기</Text>
-        </TouchableOpacity>
       </View>
 
       {/* 가게정보 파트 */}
