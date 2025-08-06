@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: SPACING.xl * 2,
+    paddingVertical: SPACING.xl * 4,
   },
   emptyIcon: {
     width: "20%", // 부모 기준 비율

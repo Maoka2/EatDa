@@ -13,7 +13,9 @@ import {
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import { COLORS, textStyles, SPACING, RADIUS } from "../../constants/theme";
-import MypageGridComponent, { ReviewItem } from "../../components/MypageGridComponent";
+import MypageGridComponent, {
+  ReviewItem,
+} from "../../components/MypageGridComponent";
 import TabNavigation from "../../components/TabNavigation";
 import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
@@ -36,12 +38,20 @@ type TabKey = "storeReviews" | "storeEvents" | "receivedMenuBoard";
 // 빈 상태 컴포넌트
 const EmptyState = ({ message, icon }: { message: string; icon?: any }) => (
   <View style={styles.emptyContent}>
-    {icon && <Image source={icon} style={styles.emptyIcon} resizeMode="contain" />}
+    {icon && (
+      <Image source={icon} style={styles.emptyIcon} resizeMode="contain" />
+    )}
     <Text style={styles.emptyText}>{message}</Text>
   </View>
 );
 
-export default function MakerMypageDetail({ userRole, onLogout, initialTab = "storeReviews", onBack, setHeaderVisible }: MakerMypageProps) {
+export default function MakerMypageDetail({
+  userRole,
+  onLogout,
+  initialTab = "storeReviews",
+  onBack,
+  setHeaderVisible,
+}: MakerMypageProps) {
   const { width, height } = useWindowDimensions();
   const screenHeight = Dimensions.get("window").height;
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
@@ -53,7 +63,7 @@ export default function MakerMypageDetail({ userRole, onLogout, initialTab = "st
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<ReviewItem>>(null);
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
-  
+
   useEffect(() => {
     Object.keys(vdoRefs.current).forEach((key) => {
       const idx = parseInt(key, 10);
@@ -66,17 +76,17 @@ export default function MakerMypageDetail({ userRole, onLogout, initialTab = "st
       }
     });
   }, [currentIndex]);
-  
+
   // 확대 애니메이션 (전체 그리드 레이아웃 -> 단일 그리드)
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const handleOpenDetail = (item: ReviewItem) => {
-      setSelectedItem(item);
-      scaleAnim.setValue(0.8);
-      Animated.spring(scaleAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-      }).start();
-      };
+    setSelectedItem(item);
+    scaleAnim.setValue(0.8);
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length > 0) {
@@ -89,16 +99,15 @@ export default function MakerMypageDetail({ userRole, onLogout, initialTab = "st
     viewAreaCoveragePercentThreshold: 80,
   }).current;
 
-  // 데이터 
+  // 데이터
   const storeReviewsData = reviewData.slice(6, 12);
-  const storeEventsData = reviewData.slice(12, 15); 
+  const storeEventsData = reviewData.slice(12, 15);
 
   // 그리드 사이즈 계산 - 넓힘
   const gridSize = (width - SPACING.md * 2 - 16) / 2; // 2열 그리드, 간격 8px씩 총 16px 고려
 
   return (
     <View style={styles.container}>
-
       {/* 상세보기 모드 */}
       {selectedItem ? (
         <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
@@ -178,8 +187,8 @@ export default function MakerMypageDetail({ userRole, onLogout, initialTab = "st
 
           {/* 탭 콘텐츠 */}
           <View style={styles.tabContent}>
-            {activeTab === "storeReviews" && (
-              storeReviewsData.length > 0 ? (
+            {activeTab === "storeReviews" &&
+              (storeReviewsData.length > 0 ? (
                 <View style={styles.gridContainer}>
                   {storeReviewsData.map((item, index) => (
                     <MypageGridComponent
@@ -194,16 +203,12 @@ export default function MakerMypageDetail({ userRole, onLogout, initialTab = "st
                     />
                   ))}
                 </View>
-                ) : (
-                  <EmptyState 
-                    message="가게 리뷰가 없습니다" 
-                    icon={EmptyIcon}
-                  />
-                )
-              )}
+              ) : (
+                <EmptyState message="가게 리뷰가 없습니다" icon={EmptyIcon} />
+              ))}
 
-            {activeTab === "storeEvents" && (
-              storeEventsData.length > 0 ? (
+            {activeTab === "storeEvents" &&
+              (storeEventsData.length > 0 ? (
                 <View style={styles.gridContainer}>
                   {storeEventsData.map((item, index) => (
                     <MypageGridComponent
@@ -219,18 +224,11 @@ export default function MakerMypageDetail({ userRole, onLogout, initialTab = "st
                   ))}
                 </View>
               ) : (
-                <EmptyState 
-                  message="가게 이벤트가 없습니다" 
-                  icon={EmptyIcon}
-                />
-              )
-            )}
+                <EmptyState message="가게 이벤트가 없습니다" icon={EmptyIcon} />
+              ))}
 
             {activeTab === "receivedMenuBoard" && (
-              <EmptyState 
-                message="받은 메뉴판이 없습니다" 
-                icon={EmptyIcon}
-              />
+              <EmptyState message="받은 메뉴판이 없습니다" icon={EmptyIcon} />
             )}
           </View>
         </ScrollView>
@@ -263,10 +261,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: SPACING.xl * 2,
+    paddingVertical: SPACING.xl * 4,
   },
   emptyIcon: {
-    width: '20%',  // 부모 기준 비율
+    width: "20%", // 부모 기준 비율
     aspectRatio: 1, // 정사각형
     marginBottom: SPACING.lg,
   },
@@ -299,4 +297,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: SPACING.xs,
   },
-}); 
+});
