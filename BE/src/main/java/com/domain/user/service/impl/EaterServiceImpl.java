@@ -22,12 +22,22 @@ public class EaterServiceImpl implements EaterService {
         UserValidator.validateEmail(request.email());
         UserValidator.validatePassword(request.password(), request.passwordConfirm());
         UserValidator.validateNickname(request.nickname());
-        if (eaterRepository.existsByEmail(request.email())) {
+
+        validateDuplicateEmail(request.email());
+        validateDuplicateNickname(request.nickname());
+
+        return eaterRepository.save(eaterMapper.toEntity(request));
+    }
+
+    private void validateDuplicateEmail(String email) {
+        if (eaterRepository.existsByEmail(email)) {
             throw new IllegalArgumentException(ErrorCode.EMAIL_DUPLICATED.getMessage());
         }
-        if (eaterRepository.existsByNickname(request.nickname())) {
+    }
+
+    private void validateDuplicateNickname(String nickname) {
+        if (eaterRepository.existsByNickname(nickname)) {
             throw new IllegalArgumentException(ErrorCode.NICKNAME_DUPLICATED.getMessage());
         }
-        return eaterRepository.save(eaterMapper.toEntity(request));
     }
 }
