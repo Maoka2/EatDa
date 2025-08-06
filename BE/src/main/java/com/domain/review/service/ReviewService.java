@@ -40,6 +40,7 @@ public class ReviewService {
     public ReviewFeedResult getReviewFeed(Double latitude, Double longitude, Integer distance, Long lastReviewId) {
         try {
             Poi nearestPoi = poiStoreDistanceService.findNearestPoi(latitude, longitude);
+            log.info("nearestPoi: {}", nearestPoi.getName());
 
             List<StoreDistanceResult> nearbyStores = poiStoreDistanceService.getNearbyStores(
                     nearestPoi.getId(), distance
@@ -107,14 +108,14 @@ public class ReviewService {
         int scrapCount = 0;
         boolean isScrapped = false;
 
-        UserInfo userInfo = UserInfo.builder()
+        ReviewDetailResponse.UserInfo userInfo = ReviewDetailResponse.UserInfo.builder()
                 .userId(1L) // 임시
                 .nickname("테스트유저") // 임시
                 .build();
 
         return ReviewDetailResponse.builder()
                 .reviewId(review.getId())
-                .store(StoreInfo.builder()
+                .store(ReviewDetailResponse.StoreInfo.builder()
                         .storeId(store.getId())
                         .storeName(store.getName())
                         .address("서울시 강남구") // Store 엔티티에 address 필드 없음
@@ -123,13 +124,13 @@ public class ReviewService {
                         .build())
                 .user(userInfo)
                 .description(review.getDescription())
-                .menuNames(List.of()) // Review 엔티티에 menuNames 없음
-                .asset(AssetInfo.builder()
-                        .type("IMAGE")
-                        .assetUrl(null) // Review 엔티티에 assetUrl 없음
-                        .build())
-                .scrapCount(scrapCount)
-                .isScrapped(isScrapped)
+//                .menuNames(List.of()) // Review 엔티티에 menuNames 없음
+//                .asset(AssetInfo.builder()
+//                        .type("IMAGE")
+//                        .assetUrl(null) // Review 엔티티에 assetUrl 없음
+//                        .build())
+//                .scrapCount(scrapCount)
+//                .isScrapped(isScrapped)
                 .createdAt(review.getCreatedAt())
                 .build();
     }
