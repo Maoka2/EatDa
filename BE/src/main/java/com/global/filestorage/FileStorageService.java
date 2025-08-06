@@ -14,7 +14,7 @@ public interface FileStorageService {
      * @param originalName 원본 파일명
      * @return 저장된 파일의 경로
      */
-    String storeImage(final MultipartFile file, final String relativePath, final String originalName);
+    String storeImage(MultipartFile file, String relativePath, String originalName);
 
     /**
      * 비디오 파일을 저장소에 저장
@@ -24,5 +24,5 @@ public interface FileStorageService {
      * @param originalName 원본 파일명
      * @return 저장된 파일의 경로
      */
-    String storeVideo(final MultipartFile file, final String relativePath, final String originalName);
+    String storeVideo(MultipartFile file, String relativePath, String originalName);
 }
