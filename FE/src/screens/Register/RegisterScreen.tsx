@@ -1,43 +1,24 @@
 // src/screens/Register/RegisterScreen.tsx
-import React from "react";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
-import EaterRegisterScreen from "./EaterRegisterScreen";
-import MakerRegisterScreen from "./MakerRegisterScreen";
+import React, { useEffect } from "react";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../../navigation/AuthNavigator";
 
-type NavigationProp = NativeStackNavigationProp<
-  AuthStackParamList,
-  "RegisterScreen"
->;
+// Navigation Props 타입 정의
+type Props = NativeStackScreenProps<AuthStackParamList, "RegisterScreen">;
 
-// Props를 optional로 변경
-type Props = {
-  role?: "eater" | "maker";
-  onBack?: () => void;
-  onComplete?: () => void;
-};
+export default function RegisterScreen({ navigation, route }: Props) {
+  // route params에서 역할 정보 가져오기 (기본값: eater)
+  const role = route.params?.role || "eater";
 
-export default function RegisterScreen(props?: Props) {
-  const navigation = useNavigation<NavigationProp>();
+  useEffect(() => {
+    // 컴포넌트가 마운트되면 바로 해당 역할의 회원가입 화면으로 이동
+    if (role === "eater") {
+      navigation.replace("EaterRegisterScreen");
+    } else {
+      navigation.replace("MakerRegisterScreen");
+    }
+  }, [navigation, role]);
 
-  // 내장 네비게이션 함수들
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
-  const handleComplete = () => {
-    navigation.navigate("Login");
-  };
-
-  // props가 있으면 props 함수 사용, 없으면 내장 함수 사용
-  const role = props?.role || "eater"; // 기본값은 eater
-  const goBack = props?.onBack || handleBack;
-  const complete = props?.onComplete || handleComplete;
-
-  if (role === "eater") {
-    return <EaterRegisterScreen onBack={goBack} onComplete={complete} />;
-  }
-
-  return <MakerRegisterScreen onBack={goBack} onComplete={complete} />;
+  // 로딩 상태나 빈 화면 반환 (실제로는 바로 다른 화면으로 이동하므로 보이지 않음)
+  return null;
 }

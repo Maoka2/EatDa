@@ -40,9 +40,9 @@ type Props = {
 export default function EaterLoginScreen(props?: Props) {
   const navigation = useNavigation<NavigationProp>();
 
-  // 내장 네비게이션 함수들
   const handleNavigateToRegister = () => {
-    navigation.navigate("EaterRegisterScreen");
+    // 역할 선택 화면으로 먼저 이동
+    navigation.navigate("RoleSelectionScreen");
   };
 
   const handleLoginSuccess = () => {
