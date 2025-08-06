@@ -53,6 +53,12 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'                                       // 보일러플레이트 코드 감소
     annotationProcessor 'org.projectlombok:lombok'                               // Lombok 어노테이션 처리
     developmentOnly 'org.springframework.boot:spring-boot-devtools'              // 개발 편의를 위한 도구
+    implementation 'commons-io:commons-io:2.20.0'                                // 파일 및 IO 작업을 위한 유틸리티 라이브러리
+
+    // 이미지 변환 및 최적화 라이브러리
+    implementation 'com.sksamuel.scrimage:scrimage-core:4.1.3'                   // 이미지 변환, 크기 조정, 효과 적용 등 이미지 처리 기능
+    implementation 'com.sksamuel.scrimage:scrimage-webp:4.1.3'                   // WebP 포맷 변환 지원
+    implementation 'org.bytedeco:ffmpeg:6.0-1.5.9'                               // 동영상 및 미디어 파일 처리를 위한 라이브러리
 
     // 매핑 관련 의존성
     implementation 'org.mapstruct:mapstruct:1.6.3'                              // 객체 간 매핑 자동화
