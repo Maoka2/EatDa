@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { SafeAreaView, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../../../navigation/AuthNavigator"; // 경로 수정 필요
 import OCRStep from "./OCRStep";
 import MenuSelectStep from "./MenuSelectStep";
 import GenerateStep from "./GenerateStep";
@@ -9,29 +9,12 @@ import WriteStep from "./WriteStep";
 
 // GenerateStep과 동일한 타입으로 맞춤
 type ContentType = "image" | "shorts_ray2" | "shorts_gen4" | null;
+type Step = "ocr" | "menu" | "gen" | "write";
 
-// 네비게이션 타입 정의
-type MainStackParamList = {
-  MainDrawer:
-    | {
-        screen?: string;
-        params?: {
-          screen?: string;
-        };
-      }
-    | undefined;
-  ReviewWrite: undefined;
-};
+// Navigation Props 타입 정의
+type Props = NativeStackScreenProps<AuthStackParamList, "ReviewWriteScreen">;
 
-type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
-
-export default function ReviewWriteScreen({
-  onClose,
-}: {
-  onClose: () => void;
-}) {
-  const navigation = useNavigation<NavigationProp>();
-  type Step = "ocr" | "menu" | "gen" | "write";
+export default function ReviewWriteScreen({ navigation }: Props) {
   const [step, setStep] = useState<Step>("ocr");
   const [selected, setSelected] = useState<string[]>([]);
   const [type, setType] = useState<ContentType>(null);
@@ -40,6 +23,11 @@ export default function ReviewWriteScreen({
   const [genLoading, setGenLoading] = useState(false);
   const [aiOk, setAiOk] = useState(false);
   const [text, setText] = useState("");
+
+  // 화면 닫기 핸들러
+  const handleClose = () => {
+    navigation.goBack();
+  };
 
   const nextGen = () => {
     setGenLoading(true); // AI 생성 시작
@@ -58,31 +46,12 @@ export default function ReviewWriteScreen({
     console.log("리뷰 작성 완료 - 리뷰 페이지로 이동");
 
     try {
-      // 현재 모달 닫기
-      onClose();
-
-      // 메인 드로어로 이동 후 리뷰 탭 선택
-      navigation.navigate("MainDrawer");
-
-      // 약간의 딜레이 후 리뷰 탭으로 이동
-      setTimeout(() => {
-        try {
-          navigation.navigate("MainDrawer", {
-            screen: "MainTab",
-            params: {
-              screen: "Review", // ReviewTabScreen 대신 Review 사용
-            },
-          });
-        } catch (nestedError) {
-          console.log("중첩 네비게이션 실패, 단순 네비게이션 시도");
-          // 중첩 네비게이션 실패시 단순히 드로어로만 이동
-          navigation.navigate("MainDrawer");
-        }
-      }, 300);
+      // ReviewTabScreen으로 이동 (AuthStackParamList에 있는 화면으로)
+      navigation.navigate("ReviewTabScreen");
     } catch (error) {
       console.error("네비게이션 오류:", error);
-      // 실패시 단순히 모달만 닫기
-      onClose();
+      // 실패시 이전 화면으로 돌아가기
+      navigation.goBack();
     }
   };
 
@@ -105,8 +74,8 @@ export default function ReviewWriteScreen({
       {step === "ocr" && (
         <OCRStep
           onSuccess={() => setStep("menu")}
-          onFailure={() => onClose()}
-          onBack={() => onClose()}
+          onFailure={handleClose}
+          onBack={handleClose}
         />
       )}
 
@@ -150,7 +119,7 @@ export default function ReviewWriteScreen({
             setAiOk(false);
             setStep("gen");
           }}
-          onClose={onClose}
+          onClose={handleClose}
         />
       )}
     </SafeAreaView>

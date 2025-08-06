@@ -11,10 +11,11 @@ import {
   ViewStyle,
   TextStyle,
 } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { AuthStackParamList } from "../../../navigation/AuthNavigator"; // 경로 수정 필요
 
-interface StoreMapScreenProps {
-  onClose: () => void;
-}
+// Navigation Props 타입 정의
+type Props = NativeStackScreenProps<AuthStackParamList, "MapScreen">;
 
 interface TimeSlot {
   day: string;
@@ -22,7 +23,7 @@ interface TimeSlot {
   isToday?: boolean;
 }
 
-export default function MapScreen({ onClose }: StoreMapScreenProps) {
+export default function MapScreen({ navigation }: Props) {
   const [showAllHours, setShowAllHours] = useState(false);
 
   const timeSlots: TimeSlot[] = [
@@ -32,6 +33,11 @@ export default function MapScreen({ onClose }: StoreMapScreenProps) {
     { day: "2시간 5분", time: "오늘 2400원" },
     { day: "1시간 7분", time: "오늘 2200원" },
   ];
+
+  const handleClose = () => {
+    // 이전 화면으로 돌아가기
+    navigation.goBack();
+  };
 
   const handleNavigation = (type: string) => {
     // 실제 지도 앱으로 연결
@@ -59,7 +65,7 @@ export default function MapScreen({ onClose }: StoreMapScreenProps) {
     <SafeAreaView style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onClose}>
+        <TouchableOpacity onPress={handleClose}>
           <Text style={styles.closeButton}>×</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>찾아가기</Text>
