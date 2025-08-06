@@ -14,6 +14,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Objects;
 import javax.imageio.ImageIO;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -110,7 +113,8 @@ class ImageOptimizerTest {
 
     @Test
     void 리사이징_시_이미지_비율이_유지된다() throws Exception {
-        File file = new File("src/test/resources/test-images/sleep.jpg");
+        URL resource = getClass().getResource("/test-images/sleep.jpg");
+        File file = new File(Objects.requireNonNull(resource).toURI());
         BufferedImage original = ImageIO.read(new FileInputStream(file));
         double originalRatio = (double) original.getWidth() / original.getHeight();
 
@@ -127,12 +131,13 @@ class ImageOptimizerTest {
 
     // ========== 유틸 메서드 ==========
 
-    private MockMultipartFile loadTestImage(String name) throws IOException {
+    private MockMultipartFile loadTestImage(String name) throws IOException, URISyntaxException {
         return loadTestImage(name, "image/" + getExtension(name));
     }
 
-    private MockMultipartFile loadTestImage(String name, String contentType) throws IOException {
-        File file = new File("src/test/resources/test-images/" + name);
+    private MockMultipartFile loadTestImage(String name, String contentType) throws IOException, URISyntaxException {
+        URL resource = getClass().getResource("/test-images/" + name);
+        File file = new File(Objects.requireNonNull(resource).toURI());
         return new MockMultipartFile("file", file.getName(), contentType, new FileInputStream(file));
     }
 
