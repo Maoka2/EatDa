@@ -21,10 +21,7 @@ reload-infra:
     - cp -r $CI_PROJECT_DIR/INFRA/* /srv/
     - docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.yml up -d
   rules:
-    - changes:
-        - INFRA/**
-      when: manual
-    
+    - when: manual
   allow_failure: true
 
 run-test:
