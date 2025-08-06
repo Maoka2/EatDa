@@ -1,0 +1,68 @@
+package com.domain.review.entity;
+
+import com.domain.review.constants.ReviewAssetType;
+import com.domain.review.constants.ReviewStatus;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "review_asset")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class ReviewAsset {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "review_id", nullable = false, unique = true)
+    private Review review;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ReviewAssetType type;
+
+    @Column(columnDefinition = "TEXT")
+    private String assetUrl;
+
+    @NotNull
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String prompt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ReviewStatus status = ReviewStatus.PENDING;
+
+    @Builder
+    public ReviewAsset(final Review review, final ReviewAssetType type, final String assetUrl, final String prompt,
+                       final ReviewStatus status) {
+        this.review = review;
+        this.type = type;
+        this.assetUrl = assetUrl;
+        this.prompt = prompt;
+        this.status = status != null ? status : ReviewStatus.PENDING;
+    }
+
+    public void updateStatus(final ReviewStatus status) {
+        this.status = status;
+        
+        if (this.review != null) {
+            this.review.updateStatus(status);
+        }
+    }
+}
