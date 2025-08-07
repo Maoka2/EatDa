@@ -20,7 +20,6 @@ import com.global.filestorage.FileStorageService;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -46,12 +45,14 @@ public class MakerServiceImpl implements MakerService {
         validateSignUpRequest(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
 
         User maker = makerMapper.toEntity(baseRequest);
-        Store store = storeMapper.toEntity(baseRequest, maker, storeLicenseImage(licenseImageRequest));
+        Store store = storeMapper.toEntity(baseRequest, maker,
+                storeLicenseImage(licenseImageRequest, "licenses/" + maker.getEmail()));
 
         List<Menu> menus = new ArrayList<>();
         for (int i = 0; i < menuRequests.size(); i++) {
-            MultipartFile image = menuImageRequests.get(i);
-            menus.add(menuMapper.toEntity(menuRequests.get(i), store, image.getOriginalFilename()));
+            MultipartFile imageRequest = menuImageRequests.get(i);
+            menus.add(menuMapper.toEntity(menuRequests.get(i), store,
+                    storeLicenseImage(imageRequest, "menus/" + maker.getEmail())));
         }
 
         makerRepository.save(maker);
@@ -66,12 +67,8 @@ public class MakerServiceImpl implements MakerService {
         validateDuplicateEmail(request.email());
     }
 
-    private String storeLicenseImage(MultipartFile licenseImageRequest) {
-        String relativePath = "licenses/" + UUID.randomUUID();
-        return fileStorageService.storeImage(
-                licenseImageRequest,
-                relativePath,
-                licenseImageRequest.getOriginalFilename()
+    private String storeLicenseImage(MultipartFile imageRequest, String path) {
+        return fileStorageService.storeImage(imageRequest, path, imageRequest.getOriginalFilename()
         );
     }
 
