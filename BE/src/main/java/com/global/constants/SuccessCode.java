@@ -10,6 +10,8 @@ public enum SuccessCode {
 
     // 냠냠이
     EATER_SIGNUP("EATER_SIGNUP", "회원가입이 완료되었습니다.", HttpStatus.CREATED.value()),
+    EMAIL_AVAILABLE("EMAIL_AVAILABLE", "사용 가능한 이메일입니다.", HttpStatus.OK.value()),
+    NICKNAME_AVAILABLE("NICKNAME_AVAILABLE", "사용 가능한 닉네임입니다.", HttpStatus.OK.value()),
 
     // 사장님 회원가입 단계
     MAKER_SIGNUP_STEP1("MAKER_SIGNUP_STEP1", "기본 정보가 저장되었습니다.", HttpStatus.CREATED.value()),

@@ -1,5 +1,7 @@
 package com.domain.user.service.impl;
 
+import com.domain.user.dto.request.EaterCheckEmailRequest;
+import com.domain.user.dto.request.EaterCheckNicknameRequest;
 import com.domain.user.dto.request.EaterSignUpRequest;
 import com.domain.user.entity.User;
 import com.domain.user.mapper.EaterMapper;
@@ -28,6 +30,28 @@ public class EaterServiceImpl implements EaterService {
     public User registerEater(final EaterSignUpRequest request) {
         validateSignUpRequest(request);
         return eaterRepository.save(eaterMapper.toEntity(request));
+    }
+
+    /**
+     * 냠냠이 회원가입 이메일 중복 확인
+     *
+     * @param request 이메일 중복 확인 요청 정보
+     */
+    @Override
+    public void validateEmailAvailable(final EaterCheckEmailRequest request) {
+        UserValidator.validateEmail(request.email());
+        validateDuplicateEmail(request.email());
+    }
+
+    /**
+     * 냠냠이 회원가입 닉네임 중복 확인
+     *
+     * @param request 닉네임 중복 확인 요청 정보
+     */
+    @Override
+    public void validateNicknameAvailable(final EaterCheckNicknameRequest request) {
+        UserValidator.validateNickname(request.nickname());
+        validateDuplicateNickname(request.nickname());
     }
 
     // @formatter:off
