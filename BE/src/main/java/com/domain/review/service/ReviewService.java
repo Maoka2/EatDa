@@ -74,7 +74,7 @@ public class ReviewService {
     public ReviewDetailResponse getReviewDetail(Long reviewId, Long currentUserId) {
         // 1. 리뷰 조회 (연관 엔티티 포함)
         Review review = reviewRepository.findByIdWithDetails(reviewId)
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
 
         // 2. 연관 엔티티 null 체크
         validateReviewIntegrity(review);
@@ -119,8 +119,7 @@ public class ReviewService {
 
         } catch (Exception e) {
             log.error("Database error while fetching user reviews", e);
-            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    "내 리뷰 조회 중 오류가 발생했습니다.");
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -128,7 +127,7 @@ public class ReviewService {
     public void removeReview(Long reviewId, Long currentUserId) {
         try {
             Review review = reviewRepository.findById(reviewId)
-                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND));
+                    .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
 
             if (!review.getUser().getId().equals(currentUserId)) {
                 throw new ApiException(ErrorCode.FORBIDDEN);
