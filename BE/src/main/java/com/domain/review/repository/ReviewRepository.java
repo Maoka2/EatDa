@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     /**
@@ -16,8 +17,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query("SELECT r FROM Review r " +
             "WHERE r.store.id IN :storeIds " +
             "AND (:lastReviewId IS NULL OR r.id < :lastReviewId) " +
-            "ORDER BY r.createdAt DESC, r.id DESC")
-    List<Review> findByStoreIdInOrderByCreatedAtDesc(
+            "ORDER BY r.id DESC")
+    List<Review> findByStoreIdInOrderByIdDesc(
             @Param("storeIds") List<Long> storeIds,
             @Param("lastReviewId") Long lastReviewId,
             Pageable pageable
@@ -28,8 +29,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
      */
     @Query("SELECT r FROM Review r " +
             "WHERE :lastReviewId IS NULL OR r.id < :lastReviewId " +
-            "ORDER BY r.createdAt DESC, r.id DESC")
-    List<Review> findAllOrderByCreatedAtDesc(
+            "ORDER BY r.id DESC")
+    List<Review> findAllOrderByIdDesc(
             @Param("lastReviewId") Long lastReviewId,
             Pageable pageable
     );
@@ -41,4 +42,12 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             "WHERE r.store.id IN :storeIds " +
             "GROUP BY r.store.id")
     List<Object[]> countByStoreIds(@Param("storeIds") List<Long> storeIds);
+
+    @Query("SELECT r FROM Review r " +
+            "LEFT JOIN FETCH r.user " +
+            "LEFT JOIN FETCH r.store " +
+            "LEFT JOIN FETCH r.scraps s " +
+            "LEFT JOIN FETCH s.user " +
+            "WHERE r.id = :reviewId")
+    Optional<Review> findByIdWithDetails(@Param("reviewId") Long reviewId);
 }
