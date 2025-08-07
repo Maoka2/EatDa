@@ -95,11 +95,11 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public ReviewFeedResult<MyReviewResponse> getMyReviews(Long userId, Long lastReviewId, int pageSize) {
         if (userId == null) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
         if (pageSize <= 0 || pageSize > ReviewConstants.MAX_PAGE_SIZE) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
         try {
@@ -150,19 +150,19 @@ public class ReviewService {
      */
     private void validateLocationParameters(Double latitude, Double longitude, Integer distance) {
         if (latitude == null || longitude == null || distance == null) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
         if (latitude < ReviewConstants.MIN_LATITUDE || latitude > ReviewConstants.MAX_LATITUDE) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
         if (longitude < ReviewConstants.MIN_LONGITUDE || longitude > ReviewConstants.MAX_LONGITUDE) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
         if (!ReviewConstants.SEARCH_DISTANCES.contains(distance)) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
     }
 
@@ -192,7 +192,7 @@ public class ReviewService {
             return poiStoreDistanceService.getNearbyStores(poiId, distance);
         } catch (IllegalArgumentException e) {
             // 잘못된 거리 파라미터
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
         } catch (Exception e) {
             log.error("Error fetching nearby stores for POI ID {}", poiId, e);
             // 근처 매장 조회 실패 시 빈 리스트 반환 (fallback으로 이어짐)
