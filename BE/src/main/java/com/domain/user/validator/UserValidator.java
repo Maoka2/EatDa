@@ -28,6 +28,15 @@ public class UserValidator {
         }
     }
 
+    public static void validatePassword(String password) {
+        if (Objects.isNull(password) || password.isBlank()) {
+            throw new ApiException(ErrorCode.PASSWORD_REQUIRED, password);
+        }
+        if (password.length() < PASSWORD_MIN_LENGTH) {
+            throw new ApiException(ErrorCode.PASSWORD_TOO_SHORT, password);
+        }
+    }
+
     // @formatter:off
     /**
      * 비밀번호가 null이거나 공백이면 예외 발생
