@@ -13,17 +13,6 @@ spring:
       hibernate:
         format_sql: true
 
-app:
-  poi:
-    distance:
-      max-radius: 2000
-      search-distances:
-        - 300
-        - 500
-        - 700
-        - 1000
-        - 2000
-
 logging:
   level:
     com.domain.review: DEBUG
