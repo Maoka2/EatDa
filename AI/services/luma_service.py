@@ -14,7 +14,13 @@ class LumaService:
     def __init__(self):
         """Luma AI 클라이언트를 초기화합니다."""
         try:
-            self.client = AsyncLumaAI(auth_token=os.getenv("LUMAAI_API_KEY"))
+            api_key = os.getenv("LUMAAI_API_KEY")
+            if not api_key:
+                print("LUMAAI_API_KEY not found, Luma service will be disabled")
+                self.client = None
+                return
+            
+            self.client = AsyncLumaAI(auth_token=api_key)
             print("Successfully initialized Luma AI client")
         except Exception as e:
             print(f"Failed to initialize Luma AI client: {e}")
