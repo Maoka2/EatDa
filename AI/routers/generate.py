@@ -19,7 +19,7 @@ router = APIRouter(
 generations = {}
 
 
-@router.post("/generate", response_model=SpringResponse)
+@router.post("/api/reviews/assests/generate", response_model=SpringResponse)
 async def generate_video(request: GenerateRequest):
     """
     영상 생성 요청 - luma.py의 로직의 FastAPI
