@@ -9,5 +9,5 @@ import org.springframework.web.multipart.MultipartFile;
 public interface MakerService {
 
     User registerMaker(MakerSignUpBaseRequest baseRequest, List<MakerSignUpMenuRequest> menuRequests,
-                       List<MultipartFile> imageRequests);
+                       MultipartFile licenseImageRequest, List<MultipartFile> menuImageRequests);
 }

@@ -36,9 +36,9 @@ public class MakerController {
     public ResponseEntity<BaseResponse> signup(
             @Valid @RequestPart("base") MakerSignUpBaseRequest baseRequest,
             @Valid @RequestPart(value = "menus", required = false) List<MakerSignUpMenuRequest> menuRequests,
-            @RequestPart(value = "license", required = false) MultipartFile licenseRequest,
-            @RequestPart(value = "images", required = false) List<MultipartFile> imageRequests) {
-        User maker = makerService.registerMaker(baseRequest, menuRequests, imageRequests);
+            @RequestPart(value = "license", required = false) MultipartFile licenseImageRequest,
+            @RequestPart(value = "images", required = false) List<MultipartFile> menuImageRequests) {
+        User maker = makerService.registerMaker(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
         return ApiResponseFactory.success(SuccessCode.MAKER_SIGNUP, makerMapper.toResponse(maker));
     }
 }
