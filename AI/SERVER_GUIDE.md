@@ -1,6 +1,6 @@
-# 🚀 AI Video Generation FastAPI 서버 실행 가이드
+# AI FastAPI 서버 실행 가이드
 
-## 📋 사전 준비사항
+## 사전 준비사항
 
 ### 1. 환경변수 설정
 `env.example` 파일을 참고하여 `.env` 파일을 생성하고 다음 값들을 설정하세요:
@@ -9,6 +9,7 @@
 # .env 파일에 다음 내용 추가
 LUMAAI_API_KEY=여기에_실제_Luma_AI_키_입력
 GMS_API_KEY=여기에_실제_GMS_키_입력
+추가 API_KEY는 버전 관리하면서 추가 될 예정
 ```
 
 ### 2. Python 패키지 설치
@@ -16,7 +17,7 @@ GMS_API_KEY=여기에_실제_GMS_키_입력
 # AI 디렉토리로 이동
 cd AI
 
-# 가상환경 생성 (권장)
+# 가상환경 생성 
 python -m venv venv
 
 # 가상환경 활성화
@@ -46,8 +47,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ## 📡 API 엔드포인트
 
 서버가 실행되면 다음 URL에서 접근 가능합니다:
-
-- **API 문서**: http://localhost:8000/docs (Swagger UI)
+- **API 문서**: https://www.notion.so/API-23abb13c7ad58099b420f9c4296c6bb7?source=copy_link (notion)
 - **상태 확인**: http://localhost:8000/health
 - **영상 생성**: POST http://localhost:8000/generate-video
 
@@ -66,7 +66,9 @@ import requests
 
 response = requests.post(
     "http://localhost:8000/generate-video",
-    json={"prompt": "고양이가 공원에서 뛰어노는 모습"}
+    json={
+        "prompt": "고양이가 공원에서 뛰어노는 모습"
+        }
 )
 print(response.json())
 ```
@@ -97,6 +99,5 @@ uvicorn main:app --host 0.0.0.0 --port 8001
 
 ## ⚠️ 주의사항
 
-1. **API 키 보안**: 실제 배포시에는 환경변수를 안전하게 관리하세요
-2. **CORS 설정**: 운영환경에서는 `ALLOWED_ORIGINS`를 특정 도메인으로 제한하세요
-3. **영상 생성 시간**: Luma AI 영상 생성은 2-5분 정도 소요됩니다
+1. **CORS 설정**: 운영환경에서는 `ALLOWED_ORIGINS`를 특정 도메인으로 제한하세요
+2. **영상 생성 시간**: Luma AI 영상 생성은 2-4분 정도 소요됩니다(9초 영상 기준)
