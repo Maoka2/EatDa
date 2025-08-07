@@ -27,6 +27,8 @@ public enum ErrorCode {
     // 리소스 관련
     NOT_FOUND("NOT_FOUND", "요청한 파일이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
     RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", "요청한 리소스를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
+    REVIEW_NOT_FOUND("REVIEW_NOT_FOUND", "해당 리뷰를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
+    SCRAP_NOT_FOUND("SCRAP_NOT_FOUND", "해당 스크랩을 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
 
     // 비즈니스 로직 관련
     DUPLICATE_RESOURCE("DUPLICATE_RESOURCE", "이미 존재하는 리소스입니다.", HttpStatus.CONFLICT.value()),
