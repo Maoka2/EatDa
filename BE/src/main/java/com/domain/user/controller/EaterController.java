@@ -1,5 +1,7 @@
 package com.domain.user.controller;
 
+import com.domain.user.dto.request.EaterCheckEmailRequest;
+import com.domain.user.dto.request.EaterCheckNicknameRequest;
 import com.domain.user.dto.request.EaterSignUpRequest;
 import com.domain.user.entity.User;
 import com.domain.user.mapper.EaterMapper;
@@ -30,7 +32,27 @@ public class EaterController {
     )
     @PostMapping
     public ResponseEntity<BaseResponse> signUp(@Valid @RequestBody final EaterSignUpRequest request) {
-        User user = eaterService.registerEater(request);
-        return ApiResponseFactory.success(SuccessCode.EATERS_SIGNUP, eaterMapper.toResponse(user));
+        User eater = eaterService.registerEater(request);
+        return ApiResponseFactory.success(SuccessCode.EATER_SIGNUP, eaterMapper.toResponse(eater));
+    }
+
+    @Operation(
+            summary = "Eater 회원가입 - 이메일 중복 확인",
+            description = "Eater의 회원가입을 진행합니다."
+    )
+    @PostMapping("/check-email")
+    public ResponseEntity<BaseResponse> checkEmail(@Valid @RequestBody final EaterCheckEmailRequest request) {
+        eaterService.validateEmailAvailable(request);
+        return ApiResponseFactory.success(SuccessCode.EMAIL_AVAILABLE);
+    }
+
+    @Operation(
+            summary = "Eater 회원가입 - 닉네임 중복 확인",
+            description = "Eater의 회원가입을 진행합니다."
+    )
+    @PostMapping("/check-nickname")
+    public ResponseEntity<BaseResponse> checkNickname(@Valid @RequestBody final EaterCheckNicknameRequest request) {
+        eaterService.validateNicknameAvailable(request);
+        return ApiResponseFactory.success(SuccessCode.NICKNAME_AVAILABLE);
     }
 }

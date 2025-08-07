@@ -27,6 +27,9 @@ public enum ErrorCode {
     CONFIRM_PASSWORD_MISMATCH("CONFIRM_PASSWORD_MISMATCH", "비밀번호와 비밀번호 확인이 일치하지 않습니다.", HttpStatus.BAD_REQUEST.value()),
     NICKNAME_REQUIRED("NICKNAME_REQUIRED", "닉네임은 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
     NICKNAME_DUPLICATED("NICKNAME_DUPLICATED", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT.value()),
+    STORE_NAME_REQUIRED("STORE_NAME_REQUIRED", "가게 이름은 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
+    ADDRESS_REQUIRED("ADDRESS_REQUIRED", "주소는 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
+    MENU_NAME_REQUIRED("MENU_NAME_REQUIRED", "메뉴명은 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
 
     // 인증/인가 관련
     UNAUTHORIZED("UNAUTHORIZED", "인증이 필요합니다.", HttpStatus.UNAUTHORIZED.value()),

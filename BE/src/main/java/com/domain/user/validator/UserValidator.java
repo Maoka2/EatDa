@@ -3,6 +3,7 @@ package com.domain.user.validator;
 import com.global.constants.ErrorCode;
 import com.global.exception.ApiException;
 import java.util.Objects;
+import org.springframework.web.multipart.MultipartFile;
 
 public class UserValidator {
 
@@ -56,6 +57,20 @@ public class UserValidator {
     public static void validateNickname(String nickname) {
         if (Objects.isNull(nickname) || nickname.isBlank()) {
             throw new ApiException(ErrorCode.NICKNAME_REQUIRED, nickname);
+        }
+    }
+
+    /**
+     * 주소가 null이거나 공백이면 예외 발생
+     */
+    public static void validateAddress(String address) {
+        if (Objects.isNull(address) || address.isBlank()) {
+            throw new ApiException(ErrorCode.ADDRESS_REQUIRED, address);
+        }
+    }
+
+    public static void validateLicenseImage(MultipartFile licenseImage) {
+        if (Objects.isNull(licenseImage) || licenseImage.isEmpty()) {
         }
     }
 }

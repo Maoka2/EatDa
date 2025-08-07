@@ -1,8 +1,10 @@
 package com.domain.user.entity;
 
+import com.domain.store.entity.Store;
 import com.domain.user.constants.Provider;
 import com.domain.user.constants.Role;
 import com.global.entity.BaseEntity;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,8 +12,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -50,6 +54,9 @@ public class User extends BaseEntity {
 
     @Column(length = 100)
     private String providerId;
+
+    @OneToMany(mappedBy = "maker", cascade = CascadeType.ALL)
+    private List<Store> stores;
 
     @Builder
     public User(final String email, final String password, final String nickname, final Role role,
