@@ -32,7 +32,7 @@ public class MakerController {
             summary = "Maker 회원가입",
             description = "Maker의 회원가입을 진행합니다."
     )
-    @PostMapping(value = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse> signup(
             @Valid @RequestPart("base") MakerSignUpBaseRequest baseRequest,
             @Valid @RequestPart(value = "menus", required = false) List<MakerSignUpMenuRequest> menuRequests,
