@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 # 라우터 임포트
-from routers import generate_router
+from routers import generate_router, ocr_router
 
 # 환경 변수 로드
 load_dotenv()
@@ -31,6 +31,7 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(generate_router)
+app.include_router(ocr_router)
 
 # API 서버 상태 확인(루트 페이지)
 @app.get("/609")
