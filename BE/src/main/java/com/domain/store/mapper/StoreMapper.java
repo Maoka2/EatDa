@@ -21,5 +21,5 @@ public interface StoreMapper {
      * maker 필드는 전달받는 User Entity로 설정
      */
     @Mapping(target = "maker", source = "maker")
-    Store toEntity(MakerSignUpBaseRequest request, User maker);
+    Store toEntity(MakerSignUpBaseRequest request, User maker, String licenseUrl);
 }

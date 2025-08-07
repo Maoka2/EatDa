@@ -3,6 +3,7 @@ package com.domain.user.validator;
 import com.global.constants.ErrorCode;
 import com.global.exception.ApiException;
 import java.util.Objects;
+import org.springframework.web.multipart.MultipartFile;
 
 public class UserValidator {
 
@@ -65,6 +66,11 @@ public class UserValidator {
     public static void validateAddress(String address) {
         if (Objects.isNull(address) || address.isBlank()) {
             throw new ApiException(ErrorCode.ADDRESS_REQUIRED, address);
+        }
+    }
+
+    public static void validateLicenseImage(MultipartFile licenseImage) {
+        if (Objects.isNull(licenseImage) || licenseImage.isEmpty()) {
         }
     }
 }
