@@ -20,11 +20,18 @@ public class Review {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;  // User 엔티티 참조
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id", nullable = false)
     private Store store;
 
     @Column(nullable = false, length = 500)
     private String description;
+
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReviewScrap> scraps;
 
 //    @ElementCollection
 //    @CollectionTable(name = "review_menu", joinColumns = @JoinColumn(name = "review_id"))
