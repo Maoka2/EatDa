@@ -32,8 +32,9 @@ public class ReviewMenu {
     @JoinColumn(name = "review_id", nullable = false)
     private Review review;
 
+    // 일단 메뉴 없이 테스트 nullable = false로 바꿔야 함
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "menu_id", nullable = false)
+    @JoinColumn(name = "menu_id", nullable = true)
     private Menu menu;
 
     @Builder

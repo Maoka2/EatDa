@@ -1,7 +1,7 @@
 package com.domain.review.entity;
 
 import com.domain.review.constants.ReviewAssetType;
-import com.domain.review.constants.ReviewStatus;
+import com.global.constants.Status;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -46,23 +46,34 @@ public class ReviewAsset {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
-    private ReviewStatus status = ReviewStatus.PENDING;
+    private Status status = Status.PENDING;
 
     @Builder
     public ReviewAsset(final Review review, final ReviewAssetType type, final String assetUrl, final String prompt,
-                       final ReviewStatus status) {
+                       final Status status) {
         this.review = review;
         this.type = type;
         this.assetUrl = assetUrl;
         this.prompt = prompt;
-        this.status = status != null ? status : ReviewStatus.PENDING;
+        this.status = status != null ? status : Status.PENDING;
     }
 
-    public void updateStatus(final ReviewStatus status) {
+    /**
+     * AI 결과를 콜백받으면 '리뷰 에섯'의 status을 업데이트하고, 해당 '리뷰'의 status도 업데이트 한다
+     */
+    public void updateStatus(final Status status) {
         this.status = status;
-        
+
         if (this.review != null) {
             this.review.updateStatus(status);
         }
+    }
+
+    public void updateAssetUrl(final String assetUrl) {
+        this.assetUrl = assetUrl;
+    }
+
+    public void registerReview(final Review review) {
+        this.review = review;
     }
 }

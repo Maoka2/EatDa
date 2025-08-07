@@ -1,8 +1,8 @@
 package com.domain.review.entity;
 
-import com.domain.review.constants.ReviewStatus;
 import com.domain.store.entity.Store;
 import com.domain.user.entity.User;
+import com.global.constants.Status;
 import com.global.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -18,7 +18,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -36,14 +35,14 @@ public class Review extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
+    // 일단 유저 없이 테스트 nullable = false로 바꿔야 함
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
-    @NotNull
+    // 일단 가게 없이 테스트 nullable = false로 바꿔야 함
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "store_id", nullable = false)
+    @JoinColumn(name = "store_id", nullable = true)
     private Store store;
 
     @Column(columnDefinition = "TEXT")
@@ -51,7 +50,7 @@ public class Review extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
-    private ReviewStatus status = ReviewStatus.PENDING;
+    private Status status = Status.PENDING;
 
     @OneToOne(mappedBy = "review", cascade = CascadeType.ALL)
     private ReviewAsset reviewAsset;
@@ -60,18 +59,28 @@ public class Review extends BaseEntity {
     private final List<ReviewMenu> reviewMenus = new ArrayList<>();
 
     @Builder
-    public Review(final User user, final Store store, final String description, final ReviewStatus status) {
+    public Review(final User user, final Store store, final String description, final Status status) {
         this.user = user;
         this.store = store;
         this.description = description;
-        this.status = status != null ? status : ReviewStatus.PENDING;
+        this.status = status != null ? status : Status.PENDING;
     }
 
-    public void updateStatus(final ReviewStatus status) {
+    public void updateStatus(final Status status) {
         this.status = status;
     }
 
     public void updateDescription(final String description) {
         this.description = description;
+    }
+
+    // 💡 테스트용 유저 Setter (운영 전 제거)
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    // 💡 테스트용 가게 Setter (운영 전 제거)
+    public void setStore(Store store) {
+        this.store = store;
     }
 }
