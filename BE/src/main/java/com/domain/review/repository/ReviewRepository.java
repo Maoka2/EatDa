@@ -3,7 +3,6 @@ package com.domain.review.repository;
 import com.domain.review.entity.Review;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -50,4 +49,17 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             "LEFT JOIN FETCH s.user " +
             "WHERE r.id = :reviewId")
     Optional<Review> findByIdWithDetails(@Param("reviewId") Long reviewId);
+
+    @Query("""
+    SELECT r FROM Review r
+    LEFT JOIN FETCH r.store
+    WHERE r.user.id = :userId
+      AND (:lastReviewId IS NULL OR r.id < :lastReviewId)
+    ORDER BY r.id DESC
+    """)
+    List<Review> findMyReviews(
+            @Param("userId") Long userId,
+            @Param("lastReviewId") Long lastReviewId,
+            Pageable pageable
+    );
 }
