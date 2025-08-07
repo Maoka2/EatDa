@@ -304,7 +304,7 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("리뷰 삭제 성공 테스트 - 작성자")
-    void deleteReviewDetail_Success_WhoUserIsOwner() {
+    void removeReviewDetail_Success_WhoUserIsOwner() {
         // given
         Long reviewId = 1L;
         Long userId = 2L;
@@ -315,7 +315,7 @@ class ReviewServiceTest {
         // then
         // 삭제 메서드 실행, 예외가 발생하지 않아야 함.
         assertThatNoException().isThrownBy(() -> {
-            reviewService.deleteReview(reviewId, userId);
+            reviewService.removeReview(reviewId, userId);
         });
 
         Optional<Review> deletedReview = reviewRepository.findById(reviewId);
@@ -324,13 +324,13 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("리뷰 삭제 실패 테스트 - 존재하지 않는 리뷰 ID")
-    void deleteReview_Failure_WhenReviewNotFound() {
+    void removeReview_Failure_WhenReviewNotFound() {
         // given
         Long reviewId = 0L;
         Long userId = 2L; //
 
         // when & then
-        assertThatThrownBy(() -> reviewService.deleteReview(reviewId, userId))
+        assertThatThrownBy(() -> reviewService.removeReview(reviewId, userId))
                 .isInstanceOf(ApiException.class)
                 .satisfies(e -> {
                     ApiException apiException = (ApiException) e;
@@ -343,11 +343,11 @@ class ReviewServiceTest {
 
     @Test
     @DisplayName("리뷰 삭제 실패 테스트 - 작성자가 아닌 경우")
-    void deleteReview_Failure_WhoUserIsNotOwner() {
+    void removeReview_Failure_WhoUserIsNotOwner() {
         Long reviewId = 1L;
         Long userId = 1L;
 
-        assertThatThrownBy(() -> reviewService.deleteReview(reviewId, userId))
+        assertThatThrownBy(() -> reviewService.removeReview(reviewId, userId))
                 .isInstanceOf(ApiException.class)
                 .satisfies(e -> {
                     ApiException apiException = (ApiException) e;
@@ -366,7 +366,7 @@ class ReviewServiceTest {
         Long userId = 2L;
 
         // when
-        reviewService.deleteReview(reviewId, userId);
+        reviewService.removeReview(reviewId, userId);
 
         // then
         assertThatThrownBy(() -> reviewService.getReviewDetail(reviewId, userId))
