@@ -1,9 +1,7 @@
-# 이 파일을 복사해서 .env 파일을 만드세요!
-
 # Luma AI API Key
 LUMAAI_API_KEY=your_luma_ai_api_key_here
 
-# GMS (GPT) API Key - SSAFY 환경용  
+# GMS (GPT) API Key 
 GMS_API_KEY=your_gms_api_key_here
 
 # FastAPI 설정
@@ -12,3 +10,9 @@ PORT=8000
 
 # 환경 설정
 ENVIRONMENT=development
+
+# 스프링 서버 콜백 URL
+SPRING_CALLBACK_URL=http://localhost:8080/api/reviews/assets/callback
+
+# FastAPI 서버 BASE URL (웹훅용)
+BASE_URL=http://localhost:8080
