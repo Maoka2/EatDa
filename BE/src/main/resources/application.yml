@@ -1,6 +1,10 @@
 spring:
   application:
     name: EatDa
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   data:
     redis:
       host: localhost
@@ -18,5 +22,5 @@ management: # Spring-Actuator 설정
         enabled: true   # prometheus 엔드포인트 활성화 여부 *default = true
 
 filestorage: # 파일 저장소 설정
-  image-root: /data/images  # 이미지 파일 저장 루트 경로
-  video-root: /data/videos  # 비디오 파일 저장 루트 경로
+  image-root: ${user.home}/eatda/data/images  # 이미지 파일 저장 루트 경로
+  video-root: ${user.home}/eatda/data/videos  # 비디오 파일 저장 루트 경로
