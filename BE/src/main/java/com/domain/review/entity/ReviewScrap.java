@@ -32,4 +32,12 @@ public class ReviewScrap {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public void setReview(Review review) {
+        this.review = review;
+    }
 }
