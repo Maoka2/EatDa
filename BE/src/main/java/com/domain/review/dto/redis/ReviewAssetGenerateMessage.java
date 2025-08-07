@@ -47,8 +47,8 @@ public record ReviewAssetGenerateMessage(
             List<Long> menuIds,
             List<String> imageUrls
     ) {
-        // 필수 필드 검증
-        validateRequiredFields(reviewAssetId, type, storeId, userId);
+        // 필수 필드 검증 (나중에 주석 제거)
+        //        validateRequiredFields(reviewAssetId, type, storeId, userId);
 
         // TTL 적용
         LocalDateTime expireAt = LocalDateTime.now().plus(STREAM_REVIEW_ASSET_TTL);
