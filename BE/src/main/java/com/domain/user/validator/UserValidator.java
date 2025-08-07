@@ -58,4 +58,13 @@ public class UserValidator {
             throw new ApiException(ErrorCode.NICKNAME_REQUIRED, nickname);
         }
     }
+
+    /**
+     * 주소가 null이거나 공백이면 예외 발생
+     */
+    public static void validateAddress(String address) {
+        if (Objects.isNull(address) || address.isBlank()) {
+            throw new ApiException(ErrorCode.ADDRESS_REQUIRED, address);
+        }
+    }
 }
