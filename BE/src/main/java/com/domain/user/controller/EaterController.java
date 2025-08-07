@@ -1,8 +1,10 @@
 package com.domain.user.controller;
 
+import com.domain.user.constants.Role;
 import com.domain.user.dto.request.EaterSignUpRequest;
 import com.domain.user.entity.User;
 import com.domain.user.mapper.EaterMapper;
+import com.domain.user.repository.EaterRepository;
 import com.domain.user.service.EaterService;
 import com.global.constants.SuccessCode;
 import com.global.dto.response.ApiResponseFactory;
@@ -24,6 +26,9 @@ public class EaterController {
     private final EaterService eaterService;
     private final EaterMapper eaterMapper;
 
+    // 테스트용, 삭제해야함
+    private final EaterRepository eaterRepository;
+
     @Operation(
             summary = "Eater 회원가입",
             description = "Eater의 회원가입을 진행합니다."
@@ -32,5 +37,18 @@ public class EaterController {
     public ResponseEntity<BaseResponse> signUp(@Valid @RequestBody final EaterSignUpRequest request) {
         User user = eaterService.registerEater(request);
         return ApiResponseFactory.success(SuccessCode.EATERS_SIGNUP, eaterMapper.toResponse(user));
+    }
+
+    // 테스트용, 삭제해야함
+    @PostMapping("/test")
+    public Long createTestUser() {
+        User user = User.builder()
+                .email("test@example.com")
+                .password("1234")
+                .nickname("테스터")
+                .role(Role.EATER)
+                .build();
+
+        return eaterRepository.save(user).getId();
     }
 }
