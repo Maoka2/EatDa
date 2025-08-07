@@ -1,27 +1,14 @@
 package com.domain.review.dto.response;
 
-import lombok.Getter;
-
 import java.util.List;
 
-import lombok.Getter;
-import java.util.List;
+public record ReviewFeedResult(List<ReviewFeedResponse> reviews, boolean nearbyReviewsFound, boolean hasNext ) {
 
-@Getter
-public class ReviewFeedResult {
-    private final List<ReviewFeedResponse> reviews;
-    private final boolean nearbyReviewsFound;
-
-    private ReviewFeedResult(List<ReviewFeedResponse> reviews, boolean nearbyReviewsFound) {
-        this.reviews = reviews;
-        this.nearbyReviewsFound = nearbyReviewsFound;
+    public static ReviewFeedResult nearbyReviews(List<ReviewFeedResponse> reviews, boolean hasNext) {
+        return new ReviewFeedResult(reviews, true, hasNext);
     }
 
-    public static ReviewFeedResult nearbyReviews(List<ReviewFeedResponse> reviews) {
-        return new ReviewFeedResult(reviews, true);
-    }
-
-    public static ReviewFeedResult fallbackReviews(List<ReviewFeedResponse> reviews) {
-        return new ReviewFeedResult(reviews, false);
+    public static ReviewFeedResult fallbackReviews(List<ReviewFeedResponse> reviews, boolean hasNext) {
+        return new ReviewFeedResult(reviews, false, hasNext);
     }
 }
