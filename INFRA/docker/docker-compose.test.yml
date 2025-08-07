@@ -6,6 +6,8 @@ services:
       - "8083:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=test
+    volumes:
+      - /home/ubuntu/eatda/test:/root/eatda
     networks:
       - backend
 
@@ -16,6 +18,8 @@ services:
       - "8084:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=test
+    volumes:
+      - /home/ubuntu/eatda/test:/root/eatda
     networks:
       - backend
 
