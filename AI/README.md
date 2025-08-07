@@ -169,3 +169,9 @@ uvicorn main:app --host 0.0.0.0 --port 8081
 
 1. **CORS 설정**: 운영환경에서는 `ALLOWED_ORIGINS`를 특정 도메인으로 제한하세요
 2. **영상 생성 시간**: Luma AI 영상 생성은 2-4분 정도 소요됩니다(9초 영상 기준)
+
+
+### python version
+$ python --version
+Python 3.11.9
+(venv) 
