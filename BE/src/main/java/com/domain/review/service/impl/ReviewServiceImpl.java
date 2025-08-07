@@ -48,9 +48,14 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewAssetRedisPublisher reviewAssetRedisPublisher;
     private final FileStorageService fileStorageService;
 
+    // @formatter:off
     /**
-     * 리뷰 에셋 생성 요청 처리 1. 리뷰/에셋 엔티티 생성 2. 이미지 업로드 3. Redis Stream 메시지 발행
+     * 리뷰 에셋 생성 요청 처리
+     * 1. 리뷰/에셋 엔티티 생성
+     * 2. 이미지 업로드
+     * 3. Redis Stream 메시지 발행
      */
+    // @formatter:on
     @Override
     @Transactional
     public ReviewAssetRequestResponse requestReviewAsset(final ReviewAssetCreateRequest request) {
@@ -111,8 +116,8 @@ public class ReviewServiceImpl implements ReviewService {
         // 리뷰 조회 및 상태 검증
         Review review = reviewRepository.findById(request.reviewId())
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND, request.reviewId()));
-        if (review.getStatus().isNotPending()) {
-            throw new ApiException(ErrorCode.REVIEW_NOT_PENDING, review.getId());
+        if (!review.getStatus().isSuccess()) {
+            throw new ApiException(ErrorCode.REVIEW_NOT_SUCCESS, review.getId());
         }
 
         // 에셋 조회 및 상태 검증
@@ -120,9 +125,6 @@ public class ReviewServiceImpl implements ReviewService {
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_ASSET_NOT_FOUND, request.reviewAssetId()));
         if (!Objects.equals(asset.getType(), request.type())) {
             throw new ApiException(ErrorCode.REVIEW_ASSET_TYPE_MISMATCH, asset.getType().name());
-        }
-        if (!Objects.isNull(asset.getReview())) {
-            throw new ApiException(ErrorCode.REVIEW_ASSET_ALREADY_LINKED, request.reviewAssetId());
         }
 
         // 도메인 업데이트
