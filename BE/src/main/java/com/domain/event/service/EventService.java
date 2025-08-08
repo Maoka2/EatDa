@@ -5,5 +5,5 @@ import com.domain.event.dto.response.EventAssetRequestResponse;
 
 public interface EventService {
 
-    EventAssetRequestResponse requestEventAsset(final EventAssetCreateRequest request);
+    EventAssetRequestResponse requestEventAsset(final EventAssetCreateRequest request, final Long userId);
 }
