@@ -6,6 +6,7 @@ import com.domain.user.entity.User;
 import com.domain.user.repository.EaterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,10 +21,14 @@ public class StoreController {
 
     // 테스트용,  Store 생성
     @PostMapping("/test")
-    public Long createTestStore() {
-        // 임시 maker (User가 실제 DB에 있는 경우에만 동작)
-        User maker = User.builder().build(); // ID만 있는 더미 객체
+    public Long createTestStore(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId
+    ) {
+        // 실제 DB에서 User 조회
+        User maker = eaterRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 사용자가 존재하지 않습니다."));
 
+        // Store 생성
         Store store = Store.builder()
                 .name("테스트 가게")
                 .address("서울시 강남구 어딘가")
@@ -35,7 +40,6 @@ public class StoreController {
                 .h3Index8(456L)
                 .h3Index9(789L)
                 .h3Index10(101112L)
-                .maker(eaterRepository.findById(1L).get())
                 .build();
 
         Store saved = storeRepository.save(store);
