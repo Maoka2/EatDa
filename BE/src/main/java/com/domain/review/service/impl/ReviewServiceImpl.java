@@ -1,5 +1,6 @@
 package com.domain.review.service.impl;
 
+import static com.global.constants.ErrorCode.FORBIDDEN;
 import static com.global.constants.ErrorCode.STORE_NOT_FOUND;
 
 import com.domain.menu.entity.Menu;
@@ -33,6 +34,7 @@ import com.domain.review.validator.ReviewValidator;
 import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
 import com.domain.user.entity.User;
+import com.domain.user.repository.EaterRepository;
 import com.global.constants.ErrorCode;
 import com.global.constants.Status;
 import com.global.exception.ApiException;
@@ -65,6 +67,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewAssetRedisPublisher reviewAssetRedisPublisher;
     private final FileStorageService fileStorageService;
     private final PoiStoreDistanceService poiStoreDistanceService;
+    private final EaterRepository eaterRepository;
 
     // @formatter:off
     /**
@@ -76,12 +79,14 @@ public class ReviewServiceImpl implements ReviewService {
     // @formatter:on
     @Override
     @Transactional
-    public ReviewAssetRequestResponse requestReviewAsset(final ReviewAssetCreateRequest request) {
+    public ReviewAssetRequestResponse requestReviewAsset(final ReviewAssetCreateRequest request, final Long userId) {
         Store store = storeRepository.findById(request.storeId())
                 .orElseThrow(() -> new ApiException(STORE_NOT_FOUND));
+        User user = eaterRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(FORBIDDEN));
         ReviewValidator.validateCreateRequest(request);
 
-        Review review = createPendingReview(store);
+        Review review = createPendingReview(store, user);
         ReviewAsset reviewAsset = createPendingReviewAsset(review, request);
 
         List<String> uploadedImageUrls = uploadImages(request.image());
@@ -262,7 +267,7 @@ public class ReviewServiceImpl implements ReviewService {
                     .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
 
             if (!review.getUser().getId().equals(currentUserId)) {
-                throw new ApiException(ErrorCode.FORBIDDEN);
+                throw new ApiException(FORBIDDEN);
             }
 
             reviewRepository.deleteById(reviewId);
@@ -494,9 +499,9 @@ public class ReviewServiceImpl implements ReviewService {
     /**
      * 리뷰 생성 (대기 상태)
      */
-    private Review createPendingReview(final Store store) {
+    private Review createPendingReview(final Store store, final User user) {
         // 사용자 등록해야함
-        return reviewRepository.save(reviewMapper.toPendingReview(store, null));
+        return reviewRepository.save(reviewMapper.toPendingReview(store, user));
     }
 
     /**

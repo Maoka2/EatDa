@@ -17,7 +17,7 @@ public interface ReviewService {
     /**
      * 1단계 - 리뷰 에셋 생성 요청 처리
      */
-    ReviewAssetRequestResponse requestReviewAsset(ReviewAssetCreateRequest request);
+    ReviewAssetRequestResponse requestReviewAsset(ReviewAssetCreateRequest request, Long userId);
 
     /**
      * 2단계 - FastAPI 콜백 처리 (에셋 생성 완료 후 상태/URL 반영)
@@ -34,7 +34,8 @@ public interface ReviewService {
      */
     ReviewFinalizeResponse finalizeReview(ReviewFinalizeRequest request);
 
-    ReviewFeedResult<ReviewFeedResponse> getReviewFeed(Double latitude, Double longitude, Integer distance, Long lastReviewId);
+    ReviewFeedResult<ReviewFeedResponse> getReviewFeed(Double latitude, Double longitude, Integer distance,
+                                                       Long lastReviewId);
 
     ReviewDetailResponse getReviewDetail(Long reviewId, Long currentUserId);
 

@@ -17,35 +17,36 @@ import com.domain.review.service.ReviewService;
 import com.domain.review.validator.SeoulLocation;
 import com.global.config.swagger.annotation.ApiInternalServerError;
 import com.global.config.swagger.annotation.ApiUnauthorizedError;
+import com.global.constants.ErrorCode;
 import com.global.constants.SuccessCode;
 import com.global.dto.response.ApiResponseFactory;
-import com.global.constants.ErrorCode;
 import com.global.dto.response.BaseResponse;
+import com.global.dto.response.SuccessResponse;
+import com.global.exception.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
-import com.global.dto.response.SuccessResponse;
-import com.global.exception.ApiException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -55,6 +56,7 @@ public class ReviewController {
 
     private final ReviewService reviewService;
     private final ReviewScrapService reviewScrapService;
+
     @Operation(
             summary = "1단계 - 리뷰 에셋 생성 요청",
             description = """
@@ -91,8 +93,11 @@ public class ReviewController {
     @ApiUnauthorizedError
     @ApiInternalServerError
     @PostMapping(value = "/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BaseResponse> requestReviewAsset(@ModelAttribute final ReviewAssetCreateRequest request) {
-        ReviewAssetRequestResponse response = reviewService.requestReviewAsset(request);
+    public ResponseEntity<BaseResponse> requestReviewAsset(
+            @ModelAttribute final ReviewAssetCreateRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) final Long userId
+    ) {
+        ReviewAssetRequestResponse response = reviewService.requestReviewAsset(request, userId);
         return ApiResponseFactory.success(SuccessCode.REVIEW_ASSET_REQUESTED, response);
     }
 
@@ -216,12 +221,13 @@ public class ReviewController {
         ReviewFinalizeResponse response = reviewService.finalizeReview(request);
         return ApiResponseFactory.success(SuccessCode.REVIEW_REGISTERED, response);
     }
+
     /**
      * 위치 기반 리뷰 피드 조회
      *
-     * @param latitude 사용자 위도 (필수, 서울 지역 범위)
-     * @param longitude 사용자 경도 (필수, 서울 지역 범위)
-     * @param distance 조회 반경 (선택, 기본값: 500m, 허용값: 300, 500, 700, 850, 1000, 2000)
+     * @param latitude     사용자 위도 (필수, 서울 지역 범위)
+     * @param longitude    사용자 경도 (필수, 서울 지역 범위)
+     * @param distance     조회 반경 (선택, 기본값: 500m, 허용값: 300, 500, 700, 850, 1000, 2000)
      * @param lastReviewId 무한스크롤용 마지막 리뷰 ID (선택)
      * @return 리뷰 피드 목록
      */
@@ -269,7 +275,7 @@ public class ReviewController {
      * 리뷰 상세 정보 조회
      *
      * @param reviewId 조회할 리뷰 ID (필수)
-     * @param userId 현재 로그인한 사용자 ID (인증 시 자동 주입, 스크랩 여부 판단용)
+     * @param userId   현재 로그인한 사용자 ID (인증 시 자동 주입, 스크랩 여부 판단용)
      * @return 리뷰 상세 정보
      */
     @GetMapping("/{reviewId}")
@@ -338,7 +344,7 @@ public class ReviewController {
      * 리뷰 스크랩 토글 (추가/해제)
      *
      * @param reviewId 스크랩할 리뷰 ID (필수)
-     * @param userId 현재 로그인한 사용자 ID (필수)
+     * @param userId   현재 로그인한 사용자 ID (필수)
      * @return 스크랩 결과 (스크랩 여부, 현재 스크랩 수)
      */
     @PostMapping("/{reviewId}/scrap/toggle")
@@ -401,7 +407,7 @@ public class ReviewController {
      * 리뷰 삭제
      *
      * @param reviewId 삭제할 리뷰 ID (필수)
-     * @param userId 현재 로그인한 사용자 ID (필수)
+     * @param userId   현재 로그인한 사용자 ID (필수)
      * @return 삭제 완료 응답
      */
     @DeleteMapping("/{reviewId}")
