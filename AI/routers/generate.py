@@ -5,7 +5,7 @@
 
 import time
 from fastapi import APIRouter, HTTPException
-from models.request_models import GenerateRequest, CallbackRequest, SpringResponse
+from models.shorts_ray2_models import GenerateRequest, CallbackRequest, SpringResponse
 from services import luma_service, gpt_service, callback_service
 from utils.logger import default_logger as logger
 
