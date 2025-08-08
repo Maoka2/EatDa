@@ -17,13 +17,11 @@ public record EventAssetCreateRequest(
         @NotBlank(message = "EVENT_TITLE_REQUIRED")
         String title,
 
-        @NotNull(message = "EVENT_START_DATE_REQUIRED")
-        @DateTimeFormat(pattern = "yyyy-MM-dd")
-        LocalDate startDate,
+        @NotBlank(message = "EVENT_START_DATE_REQUIRED")
+        String startDate,
 
-        @NotNull(message = "EVENT_END_DATE_REQUIRED")
-        @DateTimeFormat(pattern = "yyyy-MM-dd")
-        LocalDate endDate,
+        @NotBlank(message = "EVENT_END_DATE_REQUIRED")
+        String endDate,
 
         @NotBlank(message = "PROMPT_REQUIRED")
         String prompt,
