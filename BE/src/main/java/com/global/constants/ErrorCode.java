@@ -68,6 +68,7 @@ public enum ErrorCode {
     RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", "요청한 리소스를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     SCRAP_NOT_FOUND("SCRAP_NOT_FOUND", "해당 스크랩을 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     INVALID_STATUS("INVALID_STATUS", "유효하지 않은 상태값입니다.", HttpStatus.BAD_REQUEST.value()),
+    IMAGE_TOO_LARGE("IMAGE_TOO_LARGE", "이미지 크기는 10MB 이하만 허용됩니다.", HttpStatus.BAD_REQUEST.value()),
 
     // 비즈니스 로직 관련
     DUPLICATE_RESOURCE("DUPLICATE_RESOURCE", "이미 존재하는 리소스입니다.", HttpStatus.CONFLICT.value()),
