@@ -7,7 +7,7 @@ services:
     volumes:
       - /home/ubuntu/eatda/ai:/root/eatda
     networks:
-      - backend  # 기존에 쓰던 외부 네트워크 재사용
+      - backend
 
 networks:
   backend:
