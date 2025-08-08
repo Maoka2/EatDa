@@ -7,9 +7,8 @@ spring:
       max-request-size: 10MB
   data:
     redis:
-      host: localhost
-      port: 6370
-      password: test
+      host: redis
+      port: 6379
 
 management: # Spring-Actuator 설정
   endpoints:
