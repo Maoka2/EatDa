@@ -7,6 +7,7 @@ import static com.global.constants.Messages.LOG_UNSUPPORTED_LEVEL;
 
 import com.global.utils.TimestampUtils;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.stereotype.Component;
@@ -72,7 +73,9 @@ public class LogTrace {
         String prefix =
                 Objects.isNull(e) ? LOG_COMPLETE_PREFIX.message() : LOG_EXCEPTION_PREFIX.message();
         String formattedSpace = formatSpace(prefix, traceId.getLevel());
-        String exceptionMessage = Objects.isNull(e) ? String.format(EXCEPTION_FORMAT, e.getMessage()) : "";
+        String exceptionMessage = Optional.ofNullable(e)
+                .map(ex -> String.format(EXCEPTION_FORMAT, ex.getMessage()))
+                .orElse("");
 
         return String.format(COMPLETE_MESSAGE_PATTERN,
                 traceId.getId(),

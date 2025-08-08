@@ -39,9 +39,35 @@ public enum ErrorCode {
     REFRESH_TOKEN_INVALID("REFRESH_TOKEN_INVALID", "유효하지 않거나 만료된 리프레시 토큰입니다.", HttpStatus.UNAUTHORIZED.value()),
     FORBIDDEN("FORBIDDEN", "접근 권한이 없습니다.", HttpStatus.FORBIDDEN.value()),
 
+    // 리뷰 관련
+    REVIEW_PROMPT_REQUIRED("REVIEW_PROMPT_REQUIRED", "리뷰 생성 프롬프트는 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
+    REVIEW_TYPE_INVALID("REVIEW_TYPE_INVALID", "리뷰 타입은 IMAGE 또는 SHORTS 중 하나여야 합니다.", HttpStatus.BAD_REQUEST.value()),
+    REVIEW_IMAGE_REQUIRED("REVIEW_IMAGE_REQUIRED", "이미지는 1개 이상 첨부해야 합니다.", HttpStatus.BAD_REQUEST.value()),
+    REVIEW_IMAGE_UNSUPPORTED_FORMAT("REVIEW_IMAGE_UNSUPPORTED_FORMAT", "지원하지 않는 이미지 형식입니다. (JPG, PNG만 허용)",
+            HttpStatus.BAD_REQUEST.value()),
+    REVIEW_IMAGE_TOO_LARGE("REVIEW_IMAGE_TOO_LARGE", "이미지 크기는 10MB 이하만 허용됩니다.", HttpStatus.BAD_REQUEST.value()),
+    REVIEW_MENU_INVALID("REVIEW_MENU_INVALID", "선택한 메뉴는 해당 가게에 속하지 않습니다.", HttpStatus.BAD_REQUEST.value()),
+    STORE_NOT_FOUND("STORE_NOT_FOUND", "요청한 가게 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
+    REVIEW_ASSET_NOT_FOUND("REVIEW_ASSET_NOT_FOUND", "해당 리뷰 에셋 요청이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
+    REVIEW_CALLBACK_RESULT_INVALID("REVIEW_CALLBACK_RESULT_INVALID", "콜백 결과는 SUCCESS 또는 FAIL 이어야 합니다.",
+            HttpStatus.BAD_REQUEST.value()),
+    REVIEW_ASSET_URL_REQUIRED("REVIEW_ASSET_URL_REQUIRED", "성공 시 에셋 URL은 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
+    REVIEW_ASSET_URL_INVALID_FORMAT("REVIEW_ASSET_URL_INVALID_FORMAT", "에셋 URL 형식이 유효하지 않습니다.",
+            HttpStatus.BAD_REQUEST.value()),
+    REVIEW_NOT_FOUND("REVIEW_NOT_FOUND", "리뷰가 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
+    REVIEW_NOT_SUCCESS("REVIEW_NOT_SUCCESS", "해당 리뷰는 성공 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
+    REVIEW_DESCRIPTION_TOO_SHORT("REVIEW_DESCRIPTION_TOO_SHORT", "리뷰 설명은 최소 30자 이상이어야 합니다.",
+            HttpStatus.BAD_REQUEST.value()),
+    REVIEW_INVALID_STATUS("REVIEW_INVALID_STATUS", "유효하지 않은 리뷰 상태입니다.", HttpStatus.BAD_REQUEST.value()),
+    REVIEW_ASSET_NOT_READY("REVIEW_ASSET_NOT_READY", "리뷰 에셋이 아직 준비되지 않았습니다.", HttpStatus.BAD_REQUEST.value()),
+    REVIEW_ASSET_TYPE_MISMATCH("REVIEW_ASSET_TYPE_MISMATCH", "요청한 리뷰 에셋 타입이 일치하지 않습니다.",
+            HttpStatus.BAD_REQUEST.value()),
+
     // 리소스 관련
     NOT_FOUND("NOT_FOUND", "요청한 파일이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
     RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", "요청한 리소스를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
+    SCRAP_NOT_FOUND("SCRAP_NOT_FOUND", "해당 스크랩을 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
+    INVALID_STATUS("INVALID_STATUS", "유효하지 않은 상태값입니다.", HttpStatus.BAD_REQUEST.value()),
 
     // 비즈니스 로직 관련
     DUPLICATE_RESOURCE("DUPLICATE_RESOURCE", "이미 존재하는 리소스입니다.", HttpStatus.CONFLICT.value()),

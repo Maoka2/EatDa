@@ -19,9 +19,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class LoggerAspect {
     // 포인트컷용 상수
-    public static final String CONTROLLER_PATTERN = "execution(* com.global..*Controller.*(..))";
-    public static final String SERVICE_PATTERN = "execution(* com.global..*.service.*(..))";
-    public static final String REPOSITORY_PATTERN = "execution(* com.global..*.repository.*(..))";
+    public static final String CONTROLLER_PATTERN = "execution(* com..*Controller.*(..))";
+    public static final String SERVICE_PATTERN = "execution(* com..*service.*(..))";
+    public static final String REPOSITORY_PATTERN = "execution(* com..*repository.*(..))";
 
     private final LogExecutionHandler executionHandler;
 
