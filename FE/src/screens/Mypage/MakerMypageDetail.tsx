@@ -21,6 +21,7 @@ import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
 import HeaderLogo from "../../components/HeaderLogo";
 import Hamburger from "../../components/Hamburger";
+import Dustbox from "../../../assets/dustbox.svg";
 
 // 빈 상태 아이콘 import
 const EmptyIcon = require("../../../assets/blue-box-with-red-button-that-says-x-it 1.png");
@@ -296,5 +297,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     marginTop: SPACING.xs,
+  },
+  dustbox: {
+    position: "absolute",
+    bottom: 300,
+    right: 50,
+    backgroundColor: "yellow",
+    width: 100,
+    height: 100,
   },
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, StyleSheet, TouchableOpacity, useWindowDimensions } from "react-native";
+import { Text, StyleSheet, View, useWindowDimensions } from "react-native";
 import { SPACING } from "../constants/theme";
 
 interface StatsCardProps {
@@ -16,14 +16,14 @@ export default function StatsCard({ type, count }: StatsCardProps) {
   const borderRadius = cardHeight / 5;                       
 
   return (
-    <TouchableOpacity style={[styles.card, {
+    <View style={[styles.card, {
       width: cardWidth,
       height: cardHeight,
       borderRadius: borderRadius,
     }]}>
       <Text style={styles.count}>{count}</Text>
       <Text style={styles.label}>{type}</Text>
-    </TouchableOpacity>
+    </View>
   );
 }
 

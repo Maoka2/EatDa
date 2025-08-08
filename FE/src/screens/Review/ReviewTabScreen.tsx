@@ -256,7 +256,6 @@ export default function Reviews(props?: ReviewProps) {
                       <View style={styles.goToStoreAndBookMarkContainer}>
                         {/* 가게페이지로 이동 */}
                         <TouchableOpacity
-                          style={styles.goToStore}
                           onPress={() => {
                             setIsGoToStoreClicked(true);
                             setShowStoreScreen(true);
@@ -373,7 +372,6 @@ const styles = StyleSheet.create({
     bottom: 200,
     right: 10,
   },
-  goToStore: {},
   bookMark: {
     width: 10,
     height: 10,

@@ -19,6 +19,7 @@ import MypageGridComponent, {
 import TabNavigation from "../../components/TabNavigation";
 import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
+import DustBox from "../../../assets/dustbox.svg";
 
 // 빈 상태 아이콘 import
 const EmptyIcon = require("../../../assets/blue-box-with-red-button-that-says-x-it 1.png");
@@ -149,10 +150,14 @@ export default function EaterMypage({
                 </TouchableOpacity>
 
                 {/* 하단 텍스트 리뷰 오버레이 */}
-                <View style={styles.textOverlay}>
+                <View style={[styles.textOverlay, { bottom: height * 0.1}]}>
                   <Text style={styles.titleText}>#{item.title}</Text>
                   <Text style={styles.descText}>{item.description}</Text>
                 </View>
+
+                  <TouchableOpacity style={styles.dustbox}>
+                    <DustBox width={50} height={50}></DustBox>
+                  </TouchableOpacity>
               </View>
             )}
             pagingEnabled
@@ -286,17 +291,19 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: "absolute",
-    top: SPACING.md,
-    right: SPACING.md,
+    top: 0,
+    right: 0,
+    padding: 25,
     zIndex: 10,
   },
   textOverlay: {
     position: "absolute",
-    bottom: SPACING.md,
-    left: SPACING.md,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: SPACING.sm,
-    borderRadius: RADIUS.md,
+    left: 20,
+    right: 20,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: 12,
+    padding: 12,
+    marginRight: 100,
   },
   titleText: {
     color: "#fff",
@@ -308,4 +315,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: SPACING.xs,
   },
+  
+  dustbox:{
+    position:"absolute",
+    bottom: 85,
+    right:20,
+    opacity:0.5,
+  }
 });
