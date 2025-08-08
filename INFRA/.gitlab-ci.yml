@@ -24,7 +24,7 @@ reload-infra:
     - when: manual
   allow_failure: true
 
-run-test:
+BE:run-test:
   stage: test
   before_script:
     - cd $CI_PROJECT_DIR/BE
@@ -39,7 +39,7 @@ run-test:
     - if: '($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "be/develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "be/master") && $CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH =~ /^be\//'
 
-check-build:
+BE:check-build:
   stage: test
   before_script:
     - cd $CI_PROJECT_DIR/BE
@@ -55,7 +55,7 @@ check-build:
     - if: '$CI_COMMIT_BRANCH == "be/develop"'
     - if: '$CI_COMMIT_BRANCH == "be/master"'
 
-build-jar:
+BE:build-jar:
   stage: build
   before_script:
     - cd $CI_PROJECT_DIR/BE
@@ -75,7 +75,7 @@ build-jar:
     - if: '$CI_COMMIT_BRANCH == "be/develop"'
     - if: '$CI_COMMIT_BRANCH == "be/master"'
 
-build-docker-image:
+BE:build-docker-image:
   stage: build
   image:
     name: docker:latest
@@ -103,7 +103,25 @@ build-docker-image:
   needs:
     - build-jar
 
-deploy-slot-based:
+AI:build-deploy-docker-image:
+  stage: build
+  image:
+    name: docker:latest
+    pull_policy: if-not-present
+    entrypoint: [""]
+  before_script:
+    - cd $CI_PROJECT_DIR/AI
+  script:
+    - cp "$ENV_FILE" .env
+    - docker build -t eatda-ai:latest .
+    - docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.ai.yml up -d
+  rules:
+    - changes:
+        - INFRA/.gitlab-ci.yml
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "ai/master"'
+
+BE:deploy-slot-based:
   stage: deploy
   dependencies: []
   image:
