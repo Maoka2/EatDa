@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Pattern;
 public record ReviewAssetCallbackRequest(
 
         @NotNull(message = "REVIEW_ASSET_ID_REQUIRED")
-        @Schema(description = "리뷰 에셋 ID", example = "102")
+        @Schema(description = "리뷰 에셋 ID", example = "1")
         Long reviewAssetId,
 
         @NotBlank(message = "RESULT_REQUIRED")

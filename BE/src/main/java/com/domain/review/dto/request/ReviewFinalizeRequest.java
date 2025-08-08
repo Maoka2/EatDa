@@ -17,7 +17,7 @@ public record ReviewFinalizeRequest(
         Long reviewId,
 
         @NotNull(message = "REVIEW_ASSET_ID_REQUIRED")
-        @Schema(description = "연결할 리뷰 에셋 ID", example = "123")
+        @Schema(description = "연결할 리뷰 에셋 ID", example = "1")
         Long reviewAssetId,
 
         @NotEmpty(message = "MENU_IDS_REQUIRED")
@@ -26,7 +26,7 @@ public record ReviewFinalizeRequest(
 
         @NotBlank(message = "DESCRIPTION_REQUIRED")
         @Size(min = 30, message = "DESCRIPTION_TOO_SHORT")
-        @Schema(description = "리뷰 본문 (30자 이상)", example = "매콤한 소스와 바삭한 도우의 조화가 일품이었어요!")
+        @Schema(description = "리뷰 본문 (30자 이상)", example = "매콤한 소스와 바삭한 도우의 조화가 일품이었어요! 맛있어요 맛있어요 진짜 맛있어요 30자 너무 길어요")
         @ExcludeFromLogging
         String description,
 

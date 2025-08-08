@@ -7,12 +7,19 @@ import com.domain.review.dto.response.ReviewAssetRequestResponse;
 import com.domain.review.dto.response.ReviewAssetResultResponse;
 import com.domain.review.dto.response.ReviewFinalizeResponse;
 import com.domain.review.service.ReviewService;
+import com.global.config.swagger.annotation.ApiInternalServerError;
+import com.global.config.swagger.annotation.ApiUnauthorizedError;
 import com.global.constants.SuccessCode;
 import com.global.dto.response.ApiResponseFactory;
 import com.global.dto.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -29,14 +36,80 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    @Operation(summary = "1단계 - 리뷰 에셋 생성 요청", description = "리뷰 생성을 위한 이미지 및 프롬프트를 전송합니다.")
-    @PostMapping("/assets")
+    @Operation(
+            summary = "1단계 - 리뷰 에셋 생성 요청",
+            description = """
+                    리뷰 생성을 위한 이미지 및 프롬프트를 전송합니다.
+                    ※ Swagger UI에서는 파일 배열 전송이 완전하게 지원되지 않으므로, Postman 또는 클라이언트 환경에서 테스트해주세요.
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "202",
+                            description = "리뷰 에셋 생성 요청이 접수됨",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ReviewAssetRequestResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "ReviewAssetRequestSuccess",
+                                            summary = "리뷰 에셋 생성 요청 성공 응답 예시",
+                                            value = """
+                                                    {
+                                                      "code": "REVIEW_ASSET_REQUESTED",
+                                                      "message": "리뷰 에셋 생성 요청이 접수되었습니다.",
+                                                      "status": 202,
+                                                      "data": {
+                                                        "reviewId": 1,
+                                                        "reviewAssetId": 102
+                                                      },
+                                                      "timestamp": "2025-07-25T14:20:00Z"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    )
+            }
+    )
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PostMapping(value = "/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse> requestReviewAsset(@ModelAttribute final ReviewAssetCreateRequest request) {
         ReviewAssetRequestResponse response = reviewService.requestReviewAsset(request);
         return ApiResponseFactory.success(SuccessCode.REVIEW_ASSET_REQUESTED, response);
     }
 
-    @Operation(summary = "2단계 - 리뷰 에셋 콜백 처리", description = "FastAPI로부터 리뷰 생성 결과 콜백을 수신합니다.")
+    @Operation(
+            summary = "2단계 - 리뷰 에셋 콜백 처리",
+            description = """
+                    FastAPI로부터 리뷰 생성 결과 콜백을 수신합니다.
+                    생성 결과는 성공(SUCCESS) 또는 실패(FAIL)이며, 성공 시 assetUrl을 포함해야 합니다.
+                    """
+            ,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "리뷰 에셋 콜백 처리 성공",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = BaseResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "ReviewAssetCallbackSuccess",
+                                            summary = "리뷰 에셋 콜백 성공 응답 예시",
+                                            value = """
+                                                    {
+                                                      "code": "REVIEW_ASSET_RECEIVED",
+                                                      "message": "리뷰 에셋 콜백이 정상적으로 처리되었습니다.",
+                                                      "status": 200,
+                                                      "data": null,
+                                                      "timestamp": "2025-07-25T14:20:00Z"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    )
+            }
+    )
+    @ApiUnauthorizedError
+    @ApiInternalServerError
     @PostMapping("/assets/callback")
     public ResponseEntity<BaseResponse> handleReviewAssetCallback(
             @Valid @RequestBody final ReviewAssetCallbackRequest request) {
@@ -44,16 +117,83 @@ public class ReviewController {
         return ApiResponseFactory.success(SuccessCode.REVIEW_ASSET_RECEIVED);
     }
 
-    @Operation(summary = "리뷰 에셋 결과 조회", description = "에셋 생성 결과 URL을 확인합니다.")
+    @Operation(
+            summary = "리뷰 에셋 결과 조회",
+            description = """
+                    에셋 생성 결과 URL을 확인합니다.
+                    생성이 완료된 경우 type과 assetUrl을 반환합니다.
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "리뷰 에셋 생성 결과 조회 성공",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ReviewAssetResultResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "ReviewAssetResultSuccess",
+                                            summary = "리뷰 에셋 생성 성공 응답 예시",
+                                            value = """
+                                                    {
+                                                      "code": "REVIEW_ASSET_GENERATION_SUCCESS",
+                                                      "message": "리뷰 에셋 생성이 완료되었습니다.",
+                                                      "status": 200,
+                                                      "data": {
+                                                        "type": "IMAGE",
+                                                        "assetUrl": "https://cdn.example.com/reviews/abc123.png"
+                                                      },
+                                                      "timestamp": "2025-07-25T16:00:00Z"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    )
+            }
+    )
+    @ApiUnauthorizedError
+    @ApiInternalServerError
     @GetMapping("/assets/{reviewAssetId}/result")
     public ResponseEntity<BaseResponse> getReviewAssetResult(@PathVariable final Long reviewAssetId) {
         ReviewAssetResultResponse response = reviewService.getReviewAssetResult(reviewAssetId);
         return ApiResponseFactory.success(SuccessCode.REVIEW_ASSET_GENERATION_SUCCESS, response);
     }
 
-    @Operation(summary = "3단계 - 리뷰 최종 등록", description = "에셋 결과와 설명, 메뉴 ID들을 포함해 리뷰를 최종 등록합니다.")
+    @Operation(
+            summary = "3단계 - 리뷰 최종 등록",
+            description = """
+                    에셋 결과와 설명, 메뉴 ID들을 포함해 리뷰를 최종 등록합니다.
+                    """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "리뷰 최종 등록 성공",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ReviewFinalizeResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "ReviewFinalizeSuccess",
+                                            summary = "리뷰 최종 등록 성공 응답 예시",
+                                            value = """
+                                                    {
+                                                      "code": "REVIEW_REGISTERED",
+                                                      "message": "리뷰가 성공적으로 등록되었습니다.",
+                                                      "status": 200,
+                                                      "data": {
+                                                        "reviewId": 123
+                                                      },
+                                                      "timestamp": "2025-07-25T15:15:00Z"
+                                                    }
+                                                    """
+                                    )
+                            )
+                    )
+            }
+    )
+    @ApiUnauthorizedError
+    @ApiInternalServerError
     @PostMapping("/finalize")
-    public ResponseEntity<BaseResponse> finalizeReview(@Valid @RequestBody final ReviewFinalizeRequest request) {
+    public ResponseEntity<BaseResponse> finalizeReview(
+            @Valid @RequestBody final ReviewFinalizeRequest request) {
         ReviewFinalizeResponse response = reviewService.finalizeReview(request);
         return ApiResponseFactory.success(SuccessCode.REVIEW_REGISTERED, response);
     }
