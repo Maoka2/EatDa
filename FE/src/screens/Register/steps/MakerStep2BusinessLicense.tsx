@@ -1,6 +1,13 @@
 // src/screens/Register/steps/MakerStep2BusinessLicense.tsx
 import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, useWindowDimensions } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
 import { COLORS } from "../../../constants/theme";
 
 type Props = {
@@ -8,7 +15,10 @@ type Props = {
   onUpload: () => void;
 };
 
-export default function MakerStep2BusinessLicense({ businessLicenseUri, onUpload }: Props) {
+export default function MakerStep2BusinessLicense({
+  businessLicenseUri,
+  onUpload,
+}: Props) {
   const { width, height } = useWindowDimensions();
 
   return (
@@ -18,16 +28,27 @@ export default function MakerStep2BusinessLicense({ businessLicenseUri, onUpload
       </Text>
 
       <TouchableOpacity
-        style={[styles.uploadArea, { height: height * 0.25, marginBottom: height * 0.03 }]}
+        style={[
+          styles.uploadArea,
+          { height: height * 0.25, marginBottom: height * 0.03 },
+        ]}
         onPress={onUpload}
       >
         {businessLicenseUri ? (
-          <Image source={{ uri: businessLicenseUri }} style={styles.uploadedImage} resizeMode="contain" />
+          <Image
+            source={{ uri: businessLicenseUri }}
+            style={styles.uploadedImage}
+            resizeMode="contain"
+          />
         ) : (
           <View style={styles.uploadPlaceholder}>
             <Text style={styles.uploadIcon}>📄</Text>
-            <Text style={[styles.uploadText, { fontSize: width * 0.04 }]}>사업자 등록증을 업로드하세요</Text>
-            <Text style={[styles.uploadSubtext, { fontSize: width * 0.03 }]}>JPG, PNG 파일만 업로드 가능합니다</Text>
+            <Text style={[styles.uploadText, { fontSize: width * 0.04 }]}>
+              사업자 등록증을 업로드하세요
+            </Text>
+            <Text style={[styles.uploadSubtext, { fontSize: width * 0.03 }]}>
+              JPG, PNG 파일만 업로드 가능합니다
+            </Text>
           </View>
         )}
       </TouchableOpacity>
@@ -37,7 +58,12 @@ export default function MakerStep2BusinessLicense({ businessLicenseUri, onUpload
 
 const styles = StyleSheet.create({
   container: { alignItems: "center", flex: 1 },
-  desc: { color: COLORS.inactive, textAlign: "center", lineHeight: 20, marginBottom: 30 },
+  desc: {
+    color: COLORS.inactive,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 30,
+  },
   uploadArea: {
     width: "100%",
     borderWidth: 2,
