@@ -34,7 +34,7 @@ public class GlobalExceptionHandlerTest {
 
         assertThat(body).isNotNull();
         assertThat(body.code()).isEqualTo("VALIDATION_ERROR");
-        assertThat(body.details())
+        assertThat(body.data())
                 .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
                 .containsEntry("email", ErrorCode.EMAIL_REQUIRED.getMessage());
     }
@@ -60,7 +60,7 @@ public class GlobalExceptionHandlerTest {
 
         assertThat(body).isNotNull();
         assertThat(body.code()).isEqualTo("VALIDATION_ERROR");
-        assertThat(body.details())
+        assertThat(body.data())
                 .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
                 .containsEntry("email", "이메일은 입력해야 하는데요.");
     }
