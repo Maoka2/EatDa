@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class JwtUtils {
 
-    private final JwtProperties jwtProperties;
     private Key key;
+    private final JwtProperties jwtProperties;
 
     @PostConstruct
     public void init() {
@@ -66,8 +66,8 @@ public class JwtUtils {
     }
 
     public Authentication getAuthentication(final Claims claims) {
-        Long id = Long.valueOf(claims.getSubject());
+        String email = claims.getSubject();
         String role = claims.get(JwtConstants.CLAIM_ROLE.getValue(), String.class);
-        return new UsernamePasswordAuthenticationToken(id, "", AuthorityUtils.createAuthorityList(role));
+        return new UsernamePasswordAuthenticationToken(email, "", AuthorityUtils.createAuthorityList(role));
     }
 }

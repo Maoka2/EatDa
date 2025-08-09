@@ -16,14 +16,14 @@ public enum PublicEndpoint {
     SWAGGER_WEBJARS("/webjars/**"),
 
     // ACUTUATOR
-    ACUTUATOR_HEALTH("/actuator/prometheus"),
+    ACTUATOR_HEALTH("/actuator/prometheus"),
 
     // USER
     EATER_CREATE("/api/eaters"),
     MAKER_CREATE("/api/makers"),
     EATER_CHECK_EMAIL("/api/eaters/check-email"),
     EATER_CHECK_NICKNAME("/api/eaters/check-nickname"),
-    MAKER_CHECK_EMIAL("/api/makers/check-email"),
+    MAKER_CHECK_EMAIL("/api/makers/check-email"),
 
     // AUTH
     AUTH_SIGNIN("/api/auth/sign-in"),
