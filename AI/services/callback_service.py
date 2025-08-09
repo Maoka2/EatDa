@@ -12,9 +12,9 @@ class CallbackService:
     def __init__(self):
         """콜백 서비스를 초기화합니다."""
         # TODO[SPRING]: 스프링 서버 도메인/포트로 변경하세요.
-        #   예) http://spring.mycompany.com:8080/api/reviews/assets/callback
+        #   예) http://spring.mycompany.com:8000/api/reviews/assets/callback
         #   로컬에서 스프링을 9090으로 띄운다면: http://localhost:9090/api/reviews/assets/callback
-        self.callback_url = os.getenv("SPRING_CALLBACK_URL", "http://localhost:8080/api/reviews/assets/callback")
+        self.callback_url = os.getenv("SPRING_CALLBACK_URL", "http://localhost:8000/api/reviews/assets/callback")
     async def send_callback_to_spring(self, callback_data: dict) -> dict:
         """
         스프링 서버에 AI 처리 결과 콜백 요청을 전송합니다.
