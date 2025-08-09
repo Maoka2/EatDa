@@ -8,7 +8,7 @@ import os
 
 load_dotenv()
 
-# 네이버 클로바 OCR API 정보 
+# 네이버 클로바 OCR API 정보
 secret_key = os.environ.get("CLOVA_RECEIPT_SECRET_KEY")
 api_url = os.environ.get("CLOVA_RECEIPT_API_URL")
 img = 'test_receipt1.jpg'
