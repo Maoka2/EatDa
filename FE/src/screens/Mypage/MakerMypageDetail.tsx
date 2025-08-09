@@ -19,9 +19,6 @@ import MypageGridComponent, {
 import TabNavigation from "../../components/TabNavigation";
 import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
-import HeaderLogo from "../../components/HeaderLogo";
-import Hamburger from "../../components/Hamburger";
-import Dustbox from "../../../assets/dustbox.svg";
 
 // 빈 상태 아이콘 import
 const EmptyIcon = require("../../../assets/blue-box-with-red-button-that-says-x-it 1.png");
@@ -82,6 +79,7 @@ export default function MakerMypageDetail({
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const handleOpenDetail = (item: ReviewItem) => {
     setSelectedItem(item);
+    setHeaderVisible?.(false);
     scaleAnim.setValue(0.8);
     Animated.spring(scaleAnim, {
       toValue: 1,
@@ -150,7 +148,7 @@ export default function MakerMypageDetail({
                 </TouchableOpacity>
 
                 {/* 하단 텍스트 리뷰 오버레이 */}
-                <View style={styles.textOverlay}>
+                <View style={[styles.textOverlay, { bottom: height * 0.1 }]}>
                   <Text style={styles.titleText}>#{item.title}</Text>
                   <Text style={styles.descText}>{item.description}</Text>
                 </View>
@@ -276,17 +274,19 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: "absolute",
-    top: SPACING.md,
-    right: SPACING.md,
+    top: 0,
+    right: 0,
+    padding: 25,
     zIndex: 10,
   },
   textOverlay: {
-    position: "absolute",
-    bottom: SPACING.md,
-    left: SPACING.md,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: SPACING.sm,
-    borderRadius: RADIUS.md,
+     position: "absolute",
+    left: 20,
+    right: 20,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: 12,
+    padding: 12,
+    marginRight: 100,
   },
   titleText: {
     color: "#fff",
