@@ -15,7 +15,7 @@ import { DuplicateCheckResponse } from "../types";
 const BASE_HOST = "https://i13a609.p.ssafy.io";
 const BASE_PREFIX = "/test"; // 필요 없으면 "" 로!
 const BASE_API_URL = `${BASE_HOST}${BASE_PREFIX}/api`;
-const BASE_AI_URL = `${BASE_HOST}/ai`;
+const BASE_AI_URL = `${BASE_HOST}/ai/api`;
 
 /** 1) 기본 정보 + (선택) 사업자등록증 업로드 */
 export const createMaker = async (
