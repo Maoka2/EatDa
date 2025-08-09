@@ -142,6 +142,7 @@ export default function MakerMypageDetail({
                   style={styles.closeBtn}
                   onPress={() => {
                     setSelectedItem(null);
+                    setHeaderVisible?.(true);
                   }}
                 >
                   <CloseBtn />
