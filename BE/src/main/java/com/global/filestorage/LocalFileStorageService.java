@@ -105,6 +105,8 @@ public class LocalFileStorageService implements FileStorageService {
     private String storeOptimizedImage(final InputStream inputStream, final String mimeType, final String baseDir,
                                        final String relativePath) throws IOException {
         String extension = resolveExtensionFromMimeType(mimeType);
+        System.out.printf("[FileStorage] imageRoot=%s, relativePath=%s%n", baseDir, relativePath);
+
         Path fullPath = generateFullPath(baseDir, relativePath, extension);
 
         // 스트림을 디스크에 저장
