@@ -98,21 +98,47 @@ public class LocalFileStorageService implements FileStorageService {
      *
      * @param inputStream  이미지 데이터 스트림
      * @param mimeType     이미지 MIME 타입
-     * @param baseDir      저장소 루트 디렉토리 (이미지용)
+     * @param imageRoot    저장소 루트 디렉토리 (이미지용)
      * @param relativePath 루트 기준 상대 경로
      * @return 저장된 파일의 전체 경로
      */
-    private String storeOptimizedImage(final InputStream inputStream, final String mimeType, final String baseDir,
-                                       final String relativePath) throws IOException {
+    private String storeOptimizedImage(final InputStream inputStream, final String mimeType,
+                                       final String imageRoot, final String relativePath) throws IOException {
         String extension = resolveExtensionFromMimeType(mimeType);
-        System.out.printf("[FileStorage] imageRoot=%s, relativePath=%s%n", baseDir, relativePath);
 
-        Path fullPath = generateFullPath(baseDir, relativePath, extension);
+        Path root = Paths.get(imageRoot).toAbsolutePath().normalize();
+        Path fullPath = root.resolve(sanitize(relativePath))  // 아래 sanitize 참고
+                .resolve(UUID.randomUUID().toString().replace(HYPHEN, EMPTY) + extension)
+                .normalize();
 
-        // 스트림을 디스크에 저장
+        // 방어: 루트 밖으로 나가지 못하게
+        if (!fullPath.startsWith(root)) {
+            throw new SecurityException("Invalid path: " + fullPath);
+        }
+
+        System.out.printf("[FileStorage] root=%s, rel=%s, FULL=%s, user.home=%s, active=%s%n",
+                root, relativePath, fullPath,
+                System.getProperty("user.home"),
+                System.getProperty("spring.profiles.active"));
+
+        Files.createDirectories(fullPath.getParent());
         Files.copy(inputStream, fullPath);
         return fullPath.toString();
     }
+
+    private String sanitize(String relativePath) {
+        if (relativePath == null) {
+            return "";
+        }
+        String cleaned = relativePath.replace("\\", "/")
+                .replaceAll("^/+", "")   // 선행 슬래시 제거
+                .replaceAll("/+", "/");  // 중복 슬래시 정리
+        if (cleaned.contains("..")) {
+            throw new IllegalArgumentException("Invalid relativePath: " + cleaned);
+        }
+        return cleaned;
+    }
+
 
     /**
      * 고유 파일명을 포함한 전체 파일 경로 생성 + 필요한 디렉토리 생성
