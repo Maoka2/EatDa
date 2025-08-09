@@ -68,7 +68,7 @@ public class MakerServiceImpl implements MakerService {
     }
 
     private String storeLicenseImage(MultipartFile imageRequest, String path) {
-        return fileStorageService.storeImage(imageRequest, path, imageRequest.getOriginalFilename()
+        return fileStorageService.storeImage(imageRequest, path, imageRequest.getOriginalFilename(), true
         );
     }
 

@@ -1,52 +1,43 @@
-package com.global.filestorage;
+package com.a609.eatda.global.filestorage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mockStatic;
 
 import com.global.config.FileStorageProperties;
 import com.global.exception.GlobalException;
+import com.global.filestorage.LocalFileStorageService;
+import com.global.utils.ImageOptimizationUtils;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.springframework.mock.web.MockMultipartFile;
 
 class LocalFileStorageServiceTest {
 
-    private static final String TEST_IMAGE_ROOT = "build/test-images";
-    private static final String TEST_VIDEO_ROOT = "build/test-videos";
-
     private LocalFileStorageService service;
-    private ImageOptimizer mockImageOptimizer;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         FileStorageProperties props = new FileStorageProperties();
-        Field imageRootField = FileStorageProperties.class.getDeclaredField("imageRoot");
-        Field videoRootField = FileStorageProperties.class.getDeclaredField("videoRoot");
-        imageRootField.setAccessible(true);
-        videoRootField.setAccessible(true);
-        imageRootField.set(props, TEST_IMAGE_ROOT);
-        videoRootField.set(props, TEST_VIDEO_ROOT);
+        props.setBaseDir("build");      // 테스트용 베이스 디렉토리
+        props.setEnv("test-images");    // 테스트 환경 이름 (디렉토리 분기용)
 
-        // ImageOptimizer를 Mock 으로 생성
-        mockImageOptimizer = mock(ImageOptimizer.class);
-        service = new LocalFileStorageService(props, mockImageOptimizer);
+        service = new LocalFileStorageService(props);
     }
 
     @AfterEach
     void cleanup() throws IOException {
-        FileUtils.deleteDirectory(new File(TEST_IMAGE_ROOT));
-        FileUtils.deleteDirectory(new File(TEST_VIDEO_ROOT));
+        FileUtils.deleteDirectory(new File(service.getProperties().getImageRoot()));
+        FileUtils.deleteDirectory(new File(service.getProperties().getVideoRoot()));
     }
 
     @Test
@@ -56,12 +47,15 @@ class LocalFileStorageServiceTest {
                 "image/jpeg",
                 "image-content".getBytes());
 
-        // mock optimize 동작: 그대로 스트림 리턴
-        when(mockImageOptimizer.optimize(file)).thenReturn(
-                new java.io.ByteArrayInputStream("image-content".getBytes()));
+        // try-with-resources 블록으로 static 메서드를 모킹
+        try (MockedStatic<ImageOptimizationUtils> mockedStatic = mockStatic(ImageOptimizationUtils.class)) {
+            mockedStatic
+                    .when(() -> ImageOptimizationUtils.optimize(file, true))
+                    .thenReturn(new ByteArrayInputStream("image-content".getBytes()));
 
-        String path = service.storeImage(file, "menus/1", "test.jpg");
-        assertTrue(Files.exists(new File(path).toPath()));
+            String path = service.storeImage(file, "menus/1", "test.jpg", true);
+            assertTrue(Files.exists(new File(path).toPath()));
+        }
     }
 
     @Test
@@ -78,16 +72,11 @@ class LocalFileStorageServiceTest {
     @Test
     void 확장자가_없는_경우_예외가_발생한다() {
         MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "foo",
-                "application/octet-stream",
-                "content".getBytes());
-
-        when(mockImageOptimizer.optimize(file))
-                .thenReturn(new ByteArrayInputStream("dummy".getBytes()));
+                "file", "foo", "application/octet-stream", "content".getBytes()
+        );
 
         GlobalException exception = assertThrows(GlobalException.class,
-                () -> service.storeImage(file, "menus/1", "foo"));
+                () -> service.storeImage(file, "menus/1", "foo", true));
 
         assertEquals("INVALID_FILE_TYPE", exception.getErrorCode().getCode());
     }
@@ -101,59 +90,60 @@ class LocalFileStorageServiceTest {
                 "image/jpeg",
                 "nested-image".getBytes()
         );
+        try (MockedStatic<ImageOptimizationUtils> mocked = mockStatic(ImageOptimizationUtils.class)) {
+            mocked.when(() -> ImageOptimizationUtils.optimize(file, true))
+                    .thenReturn(new java.io.ByteArrayInputStream("nested-image".getBytes()));
 
-        when(mockImageOptimizer.optimize(file))
-                .thenReturn(new java.io.ByteArrayInputStream("nested-image".getBytes()));
-
-        String savedPath = service.storeImage(file, nestedPath, "nested.jpg");
-        assertTrue(Files.exists(new File(savedPath).toPath()));
+            String savedPath = service.storeImage(file, nestedPath, "nested.jpg", true);
+            assertTrue(Files.exists(new File(savedPath).toPath()));
+        }
     }
 
     @Test
     void 동일한_이름_다른_확장자라도_충돌없이_저장된다() throws Exception {
         MockMultipartFile pngFile = new MockMultipartFile(
-                "file",
-                "sample.png",
-                "image/png",
-                "png-content".getBytes()
+                "file", "sample.png", "image/png", "png-content".getBytes()
         );
         MockMultipartFile jpgFile = new MockMultipartFile(
-                "file",
-                "sample.jpg",
-                "image/jpeg",
-                "jpg-content".getBytes()
+                "file", "sample.jpg", "image/jpeg", "jpg-content".getBytes()
         );
 
-        when(mockImageOptimizer.optimize(pngFile))
-                .thenReturn(new java.io.ByteArrayInputStream("png-content".getBytes()));
-        when(mockImageOptimizer.optimize(jpgFile))
-                .thenReturn(new java.io.ByteArrayInputStream("jpg-content".getBytes()));
+        try (MockedStatic<ImageOptimizationUtils> mocked = mockStatic(ImageOptimizationUtils.class)) {
+            mocked.when(() -> ImageOptimizationUtils.optimize(pngFile, true))
+                    .thenReturn(new ByteArrayInputStream("png-content".getBytes()));
+            mocked.when(() -> ImageOptimizationUtils.optimize(jpgFile, true))
+                    .thenReturn(new ByteArrayInputStream("jpg-content".getBytes()));
 
-        String path1 = service.storeImage(pngFile, "menus/1", "sample.png");
-        String path2 = service.storeImage(jpgFile, "menus/1", "sample.jpg");
+            String path1 = service.storeImage(pngFile, "menus/1", "sample.png", true);
+            String path2 = service.storeImage(jpgFile, "menus/1", "sample.jpg", true);
 
-        assertTrue(Files.exists(new File(path1).toPath()));
-        assertTrue(Files.exists(new File(path2).toPath()));
-        assertTrue(new File(path1).length() > 0);
-        assertTrue(new File(path2).length() > 0);
-        assertNotEquals(path1, path2);
+            assertTrue(Files.exists(new File(path1).toPath()));
+            assertTrue(Files.exists(new File(path2).toPath()));
+            assertTrue(new File(path1).length() > 0);
+            assertTrue(new File(path2).length() > 0);
+
+            // 둘 다 webp로 저장되지만, 파일명(UUID)이 달라야 함
+            assertTrue(path1.endsWith(".webp"));
+            assertTrue(path2.endsWith(".webp"));
+            assertNotEquals(path1, path2);
+        }
     }
 
     @Test
     void jpeg_파일은_webp로_변환되어_webp_확장자로_저장된다() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file",
-                "image.JPG", // 대문자 확장자
-                "image/jpeg",
-                "image-content".getBytes());
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "image.JPG", "image/jpeg", "image-content".getBytes()
+        );
 
-        when(mockImageOptimizer.optimize(file))
-                .thenReturn(new ByteArrayInputStream("image-content".getBytes()));
+        try (MockedStatic<ImageOptimizationUtils> mocked = mockStatic(ImageOptimizationUtils.class)) {
+            mocked.when(() -> ImageOptimizationUtils.optimize(file, true))
+                    .thenReturn(new ByteArrayInputStream("image-content".getBytes()));
 
-        String path = service.storeImage(file, "menus/test", "image.JPG");
+            String path = service.storeImage(file, "menus/test", "image.JPG", true);
 
-        File savedFile = new File(path);
-
-        assertTrue(savedFile.exists());
-        assertTrue(path.endsWith(".webp"));
+            File savedFile = new File(path);
+            assertTrue(savedFile.exists());
+            assertTrue(path.endsWith(".webp"));
+        }
     }
 }
