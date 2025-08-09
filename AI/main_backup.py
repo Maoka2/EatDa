@@ -103,7 +103,7 @@ async def send_callback_to_spring(callback_data: CallbackRequest) -> SpringRespo
     Raises:
         HTTPException: 콜백 전송 실패 시
     """
-    callback_url = os.getenv("SPRING_CALLBACK_URL", "http://localhost:8080/api/reviews/assets/callback")
+    callback_url = os.getenv("SPRING_CALLBACK_URL", "http://localhost:8000/api/reviews/assets/callback")
     
     try:
         async with aiohttp.ClientSession() as session:
@@ -253,5 +253,5 @@ async def generate_video(request: GenerateRequest):
 if __name__ == "__main__":
     import uvicorn
     print("🚀 AI Video Generation API 서버를 시작합니다...")
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
