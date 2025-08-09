@@ -17,7 +17,7 @@ public interface ReviewService {
     /**
      * 1단계 - 리뷰 에셋 생성 요청 처리
      */
-    ReviewAssetRequestResponse requestReviewAsset(ReviewAssetCreateRequest request, Long userId);
+    ReviewAssetRequestResponse requestReviewAsset(ReviewAssetCreateRequest request, String eaterEmail);
 
     /**
      * 2단계 - FastAPI 콜백 처리 (에셋 생성 완료 후 상태/URL 반영)

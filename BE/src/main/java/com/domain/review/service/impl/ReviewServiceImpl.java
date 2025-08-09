@@ -82,20 +82,21 @@ public class ReviewServiceImpl implements ReviewService {
     // @formatter:on
     @Override
     @Transactional
-    public ReviewAssetRequestResponse requestReviewAsset(final ReviewAssetCreateRequest request, final Long userId) {
+    public ReviewAssetRequestResponse requestReviewAsset(final ReviewAssetCreateRequest request,
+                                                         final String eaterEmail) {
+        User eater = eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
+                .orElseThrow(() -> new ApiException(FORBIDDEN));
         Store store = storeRepository.findById(request.storeId())
                 .orElseThrow(() -> new ApiException(STORE_NOT_FOUND));
-        User user = eaterRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(FORBIDDEN));
         ReviewValidator.validateCreateRequest(request);
 
-        Review review = createPendingReview(store, user);
+        Review review = createPendingReview(store, eater);
         ReviewAsset reviewAsset = createPendingReviewAsset(review, request);
 
         // 타입에 따라 WebP 변환 여부 결정
         boolean convertToWebp = shouldConvertToWebp(request.type());
         // 변환 여부를 넘겨서 업로드
-        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + user.getEmail(),
+        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(),
                 convertToWebp);
 
         publishReviewAssetMessage(reviewAsset, request, store, uploadedImageUrls); // Redis 메시지 발행
