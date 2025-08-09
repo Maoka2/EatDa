@@ -42,11 +42,15 @@ public class LocalFileStorageService implements FileStorageService {
      * @return 저장된 파일의 전체 경로
      */
     @Override
-    public String storeImage(final MultipartFile file, final String relativePath, final String originalName, final boolean convertToWebp) {
+    public String storeImage(final MultipartFile file, final String relativePath, final String originalName,
+                             final boolean convertToWebp) {
+
         try {
             String originalMimeType = extractAndValidateMimeType(file);
             InputStream optimizedStream = ImageOptimizationUtils.optimize(file, convertToWebp);
-            return storeOptimizedImage(optimizedStream, MIME_TYPE_WEBP, properties.getImageRoot(), relativePath);
+            String targetMimeType = convertToWebp ? MIME_TYPE_WEBP : originalMimeType;
+
+            return storeOptimizedImage(optimizedStream, targetMimeType, properties.getImageRoot(), relativePath);
         } catch (IOException e) {
             throw new GlobalException(FILE_UPLOAD_ERROR, originalName, e);
         }

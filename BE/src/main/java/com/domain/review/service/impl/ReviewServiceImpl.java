@@ -5,6 +5,7 @@ import static com.global.constants.ErrorCode.STORE_NOT_FOUND;
 
 import com.domain.menu.entity.Menu;
 import com.domain.menu.repository.MenuRepository;
+import com.domain.review.constants.ReviewAssetType;
 import com.domain.review.constants.ReviewConstants;
 import com.domain.review.dto.redis.ReviewAssetGenerateMessage;
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
@@ -89,7 +90,11 @@ public class ReviewServiceImpl implements ReviewService {
         Review review = createPendingReview(store, user);
         ReviewAsset reviewAsset = createPendingReviewAsset(review, request);
 
-        List<String> uploadedImageUrls = uploadImages(request.image());
+        // 타입에 따라 WebP 변환 여부 결정
+        boolean convertToWebp = shouldConvertToWebp(request.type());
+        // 변환 여부를 넘겨서 업로드
+        List<String> uploadedImageUrls = uploadImages(request.image(), convertToWebp);
+
         publishReviewAssetMessage(reviewAsset, request, store, uploadedImageUrls); // Redis 메시지 발행
 
         return reviewMapper.toRequestResponse(review, reviewAsset);
@@ -515,12 +520,13 @@ public class ReviewServiceImpl implements ReviewService {
     /**
      * 이미지 파일들을 로컬에 업로드하고 URL 반환
      */
-    private List<String> uploadImages(final List<MultipartFile> images) {
+    private List<String> uploadImages(final List<MultipartFile> images, final boolean convertToWebp) {
         return images.stream()
                 .map(file -> fileStorageService.storeImage(
                         file,
                         "reviews",
-                        file.getOriginalFilename()
+                        file.getOriginalFilename(),
+                        convertToWebp
                 ))
                 .toList();
     }
@@ -562,5 +568,10 @@ public class ReviewServiceImpl implements ReviewService {
                 uploadedImageUrls
         );
         reviewAssetRedisPublisher.publish(message);
+    }
+
+    // IMAGE일 때만 true, SHORTS 계열은 false
+    private boolean shouldConvertToWebp(ReviewAssetType type) {
+        return type == ReviewAssetType.IMAGE;
     }
 }
