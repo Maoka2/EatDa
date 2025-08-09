@@ -14,6 +14,8 @@ import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
+import com.global.constants.Status;
+import com.global.dto.request.AssetCallbackRequest;
 import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
 import com.global.redis.constants.RedisStreamKey;
@@ -68,6 +70,18 @@ public class EventServiceImpl implements EventService {
 
         return eventMapper.toRequestResponse(eventAsset);
     }
+
+    @Override
+    @Transactional
+    public void handleEventAssetCallback(AssetCallbackRequest<?> request) {
+        EventAsset asset = eventAssetRepository.findById(request.assetId())
+                .orElseThrow(() -> new ApiException(ErrorCode.ASSET_NOT_FOUND));
+
+        AssetValidator.validateCallbackRequest(asset, request);
+        Status status = Status.fromString(request.result());
+        asset.processCallback(status, request.assetUrl());
+    }
+
 
     private Event createPendingEvent(final Store store, final LocalDate startDate, final LocalDate endDate) {
         return eventRepository.save(eventMapper.toPendingEvent(store, startDate, endDate));
