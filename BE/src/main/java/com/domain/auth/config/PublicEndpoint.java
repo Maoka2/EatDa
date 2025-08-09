@@ -15,6 +15,9 @@ public enum PublicEndpoint {
     SWAGGER_RESOURCES("/swagger-resources/**"),
     SWAGGER_WEBJARS("/webjars/**"),
 
+    // ACUTUATOR
+    ACUTUATOR_HEALTH("/actuator/prometheus"),
+
     // USER
     EATER_CREATE("/api/eaters"),
     MAKER_CREATE("/api/makers"),
