@@ -1,7 +1,8 @@
-package com.global.filestorage;
+package com.a609.eatda.global.filestorage;
 
-import static com.global.constants.ErrorCode.IMAGE_PROCESSING_FAILED;
+import static com.global.constants.ErrorCode.INVALID_FILE_TYPE;
 import static com.global.filestorage.constants.FileStorageConstants.DEFAULT_IMAGE_WIDTH;
+import static com.global.utils.ImageOptimizationUtils.optimize;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
@@ -25,9 +26,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
-class ImageOptimizerTest {
 
-    private final ImageOptimizer optimizer = new ImageOptimizer();
+class ImageOptimizationUtilsTest {
 
     @ParameterizedTest(name = "이미지 파일({0}) → WebP 변환 및 리사이징 검증")
     @ValueSource(strings = {
@@ -39,7 +39,7 @@ class ImageOptimizerTest {
     void 이미지파일들을_webp로_변환한다(String fileName) throws Exception {
         MockMultipartFile multipartFile = loadTestImage(fileName);
 
-        InputStream result = optimizer.optimize(multipartFile);
+        InputStream result = optimize(multipartFile, true);
         byte[] webpBytes = toByteArray(result);
 
         assertThat(webpBytes).isNotEmpty();
@@ -56,7 +56,7 @@ class ImageOptimizerTest {
     void 작은_이미지는_리사이징_없이_webp로_변환된다() throws Exception {
         MockMultipartFile multipartFile = loadTestImage("small.jpg");
 
-        InputStream result = optimizer.optimize(multipartFile);
+        InputStream result = optimize(multipartFile, true);
         byte[] webpBytes = toByteArray(result);
 
         assertThat(webpBytes).isNotEmpty();
@@ -71,7 +71,7 @@ class ImageOptimizerTest {
         MockMultipartFile multipartFile = loadTestImage("small.webp", "image/webp");
         byte[] originalBytes = toByteArray(multipartFile.getInputStream());
 
-        InputStream result = optimizer.optimize(multipartFile);
+        InputStream result = optimize(multipartFile, true);
         byte[] optimizedBytes = toByteArray(result);
 
         assertThat(optimizedBytes).isEqualTo(originalBytes);
@@ -84,9 +84,9 @@ class ImageOptimizerTest {
         MockMultipartFile fakeJpg = new MockMultipartFile(
                 "file", "fake.jpg", "image/jpeg", inputStream);
 
-        assertThatThrownBy(() -> optimizer.optimize(fakeJpg))
+        assertThatThrownBy(() -> optimize(fakeJpg, true))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining(IMAGE_PROCESSING_FAILED.getMessage());
+                .hasMessageContaining(INVALID_FILE_TYPE.getMessage());
     }
 
     @Test
@@ -106,9 +106,9 @@ class ImageOptimizerTest {
         };
         //@formatter:on
 
-        assertThatThrownBy(() -> optimizer.optimize(faultyMultipartFile))
+        assertThatThrownBy(() -> optimize(faultyMultipartFile, true))
                 .isInstanceOf(GlobalException.class)
-                .hasMessageContaining(IMAGE_PROCESSING_FAILED.getMessage());
+                .hasMessageContaining(INVALID_FILE_TYPE.getMessage());
     }
 
     @Test
@@ -120,7 +120,7 @@ class ImageOptimizerTest {
 
         MockMultipartFile multipartFile = loadTestImage("sleep.jpg");
 
-        InputStream result = optimizer.optimize(multipartFile);
+        InputStream result = optimize(multipartFile, true);
         byte[] resultBytes = toByteArray(result);
         ImmutableImage resizedImage = ImmutableImage.loader().fromBytes(resultBytes);
 

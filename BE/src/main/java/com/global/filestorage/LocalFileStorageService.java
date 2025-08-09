@@ -10,6 +10,7 @@ import static com.global.filestorage.constants.FileStorageConstants.NULL;
 
 import com.global.config.FileStorageProperties;
 import com.global.exception.GlobalException;
+import com.global.utils.ImageOptimizationUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -17,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,10 +28,10 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Service
 @RequiredArgsConstructor
+@Getter
 public class LocalFileStorageService implements FileStorageService {
 
     private final FileStorageProperties properties;
-    private final ImageOptimizer imageOptimizer;
 
     /**
      * 이미지 파일을 저장소에 저장 - WebP 변환 및 리사이징 등 최적화 수행 후 저장
@@ -40,11 +42,15 @@ public class LocalFileStorageService implements FileStorageService {
      * @return 저장된 파일의 전체 경로
      */
     @Override
-    public String storeImage(final MultipartFile file, final String relativePath, final String originalName) {
+    public String storeImage(final MultipartFile file, final String relativePath, final String originalName,
+                             final boolean convertToWebp) {
+
         try {
             String originalMimeType = extractAndValidateMimeType(file);
-            InputStream optimizedStream = imageOptimizer.optimize(file);
-            return storeOptimizedImage(optimizedStream, MIME_TYPE_WEBP, properties.getImageRoot(), relativePath);
+            InputStream optimizedStream = ImageOptimizationUtils.optimize(file, convertToWebp);
+            String targetMimeType = convertToWebp ? MIME_TYPE_WEBP : originalMimeType;
+
+            return storeOptimizedImage(optimizedStream, targetMimeType, properties.getImageRoot(), relativePath);
         } catch (IOException e) {
             throw new GlobalException(FILE_UPLOAD_ERROR, originalName, e);
         }
