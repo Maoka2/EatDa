@@ -21,8 +21,8 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     private final ObjectMapper objectMapper;
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response,
-                       AccessDeniedException accessDeniedException) throws IOException, ServletException {
+    public void handle(final HttpServletRequest request, final HttpServletResponse response,
+                       final AccessDeniedException accessDeniedException) throws IOException, ServletException {
         ErrorCode errorCode = ErrorCode.FORBIDDEN;
 
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());

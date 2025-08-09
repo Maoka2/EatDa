@@ -29,7 +29,7 @@ public enum PublicEndpoint {
 
     private final String path;
 
-    public static boolean matches(String requestPath) {
+    public static boolean matches(final String requestPath) {
         return Arrays.stream(values())
                 .anyMatch(endpoint -> endpoint.path.equals(requestPath));
     }
