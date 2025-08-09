@@ -249,6 +249,22 @@ export default function MakerRegisterScreen({ navigation }: Props) {
     );
   };
 
+  // Step2: 사업자등록증 업로드해야 다음 단계 가능
+  const isStep2NextEnabled = () => {
+    return !!businessLicenseUri;
+  };
+
+  // Step3: 메뉴 OCR로 최소 1개 이상 메뉴가 생겨야 다음 단계 가능
+  // 폴링 중에는 다음 단계 비활성화
+  const isStep3NextEnabled = () => {
+    return menuItems.length > 0 && !isPolling;
+  };
+
+  // Step4: 약관 2개 모두 체크해야 가입하기 버튼 활성화
+  const isStep4NextEnabled = () => {
+    return agreementsState.terms && agreementsState.marketing;
+  };
+
   /** 이메일 중복검사 */
   const checkEmailDuplicate = async (email: string): Promise<boolean> => {
     const response = await fetch(
@@ -734,61 +750,83 @@ export default function MakerRegisterScreen({ navigation }: Props) {
   };
 
   const renderButtons = () => {
-    const isStep1Ready = currentStep === 1 ? isStep1NextEnabled() : true;
-    const isDisabled = (currentStep === 3 && isPolling) || !isStep1Ready;
+    // 현재 단계에 따른 준비 여부 계산
+    let isReady = true;
 
-    return currentStep === 1 ? (
-      <TouchableOpacity
-        style={[
-          styles.submitButton,
-          styles.fullWidthButton,
-          {
-            backgroundColor: isStep1Ready ? secondaryColor : "#ccc",
-            height: btnHeight,
-          },
-        ]}
-        onPress={handleSubmit}
-        disabled={!isStep1Ready}
-      >
-        <Text
+    if (currentStep === 1) {
+      isReady = isStep1NextEnabled();
+    } else if (currentStep === 2) {
+      isReady = isStep2NextEnabled();
+    } else if (currentStep === 3) {
+      isReady = isStep3NextEnabled();
+    } else if (currentStep === 4) {
+      isReady = isStep4NextEnabled();
+    }
+
+    // 3단계에서 OCR 폴링 중에는 '이전 단계'도 눌러서 빠지는 걸 막고 싶다면 true 유지
+    const isPrevDisabled = currentStep === 3 && isPolling;
+
+    if (currentStep === 1) {
+      return (
+        <TouchableOpacity
           style={[
-            styles.submitButtonText,
-            { fontSize: width * 0.04, color: isStep1Ready ? "#fff" : "#999" },
+            styles.submitButton,
+            styles.fullWidthButton,
+            {
+              backgroundColor: isReady ? secondaryColor : "#ccc",
+              height: btnHeight,
+            },
           ]}
+          onPress={handleSubmit}
+          disabled={!isReady}
         >
-          {getButtonText()}
-        </Text>
-      </TouchableOpacity>
-    ) : (
+          <Text
+            style={[
+              styles.submitButtonText,
+              { fontSize: width * 0.04, color: isReady ? "#fff" : "#999" },
+            ]}
+          >
+            {getButtonText()}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
       <>
         <TouchableOpacity
           style={[styles.prevButton, { height: btnHeight }]}
           onPress={handlePrevStep}
-          disabled={isPolling}
+          disabled={isPrevDisabled}
         >
           <Text style={[styles.prevButtonText, { fontSize: width * 0.04 }]}>
             이전 단계
           </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[
             styles.submitButton,
             {
-              backgroundColor: isDisabled ? "#ccc" : secondaryColor,
+              backgroundColor: isReady ? secondaryColor : "#ccc",
               height: btnHeight,
             },
           ]}
           onPress={handleSubmit}
-          disabled={isDisabled}
+          disabled={!isReady}
         >
-          <Text style={[styles.submitButtonText, { fontSize: width * 0.04 }]}>
+          <Text
+            style={[
+              styles.submitButtonText,
+              { fontSize: width * 0.04, color: isReady ? "#fff" : "#999" },
+            ]}
+          >
             {getButtonText()}
           </Text>
         </TouchableOpacity>
       </>
     );
   };
-
   return (
     <View style={styles.container}>
       <ImageBackground
