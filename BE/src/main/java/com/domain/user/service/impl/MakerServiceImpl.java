@@ -21,6 +21,7 @@ import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class MakerServiceImpl implements MakerService {
 
+    private final FileStorageService fileStorageService;
     private final MakerRepository makerRepository;
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
@@ -36,7 +38,7 @@ public class MakerServiceImpl implements MakerService {
     private final StoreMapper storeMapper;
     private final MenuMapper menuMapper;
 
-    private final FileStorageService fileStorageService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -44,7 +46,7 @@ public class MakerServiceImpl implements MakerService {
                               final MultipartFile licenseImageRequest, final List<MultipartFile> menuImageRequests) {
         validateSignUpRequest(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
 
-        User maker = makerMapper.toEntity(baseRequest);
+        User maker = makerMapper.toEntity(baseRequest, passwordEncoder.encode(baseRequest.password()));
         Store store = storeMapper.toEntity(baseRequest, maker,
                 storeLicenseImage(licenseImageRequest, "licenses/" + maker.getEmail()));
 

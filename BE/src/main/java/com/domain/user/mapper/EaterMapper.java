@@ -23,5 +23,15 @@ public interface EaterMapper {
     @Mapping(target = "role", constant = "EATER")
     User toEntity(EaterSignUpRequest request);
 
+    // @formatter:off
+    /**
+     * role 필드는 고정 값 "EATER"로 설정
+     * password 필드는 암호화된 encodedPassword로 설정
+     */
+    // @formatter:on
+    @Mapping(target = "role", constant = "EATER")
+    @Mapping(target = "password", source = "encodedPassword")
+    User toEntity(EaterSignUpRequest request, String encodedPassword);
+
     EaterSignUpResponse toResponse(User user);
 }

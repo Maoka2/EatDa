@@ -27,5 +27,17 @@ public interface MakerMapper {
     @Mapping(target = "nickname", constant = "MAKER")
     User toEntity(MakerSignUpBaseRequest request);
 
+    // @formatter:off
+    /**
+     * role 필드는 고정 값 "MAKER"로 설정
+     * nickname 필드는 고정 값 "MAKER"로 설정
+     * password 필드는 암호화된 encodedPassword로 설정
+     */
+    // @formatter:on
+    @Mapping(target = "role", constant = "MAKER")
+    @Mapping(target = "nickname", constant = "MAKER")
+    @Mapping(target = "password", source = "encodedPassword")
+    User toEntity(MakerSignUpBaseRequest request, String encodedPassword);
+
     MakerSignUpResponse toResponse(User maker);
 }
