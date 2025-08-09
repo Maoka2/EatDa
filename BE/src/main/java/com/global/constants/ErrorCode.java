@@ -34,9 +34,10 @@ public enum ErrorCode {
     // 인증/인가 관련
     UNAUTHORIZED("UNAUTHORIZED", "인증이 필요합니다.", HttpStatus.UNAUTHORIZED.value()),
     INVALID_CREDENTIALS("INVALID_CREDENTIALS", "이메일 또는 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED.value()),
+    INVALID_TOKEN("INVALID_TOKEN", "토큰이 누락되었거나 형식이 잘못되었습니다.", HttpStatus.BAD_REQUEST.value()),
+    REFRESH_TOKEN_INVALID("REFRESH_TOKEN_INVALID", "유효하지 않거나 만료된 리프레시 토큰입니다.", HttpStatus.UNAUTHORIZED.value()),
     KAKAO_TOKEN_INVALID("KAKAO_TOKEN_INVALID", "유효하지 않은 카카오 토큰입니다.", HttpStatus.UNAUTHORIZED.value()),
     GOOGLE_TOKEN_INVALID("GOOGLE_TOKEN_INVALID", "유효하지 않은 구글 토큰입니다.", HttpStatus.UNAUTHORIZED.value()),
-    REFRESH_TOKEN_INVALID("REFRESH_TOKEN_INVALID", "유효하지 않거나 만료된 리프레시 토큰입니다.", HttpStatus.UNAUTHORIZED.value()),
     FORBIDDEN("FORBIDDEN", "접근 권한이 없습니다.", HttpStatus.FORBIDDEN.value()),
 
     // 리소스 관련
