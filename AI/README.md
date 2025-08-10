@@ -1,195 +1,87 @@
 # AI FastAPI 서버 실행 가이드
 
-## 폴더 구조 (리팩토링 완료)
+## 폴더 구조 (리팩토링 반영)
+receipt_ocr : 영수증 인식 OCR 관련 파일 - 리뷰 생성 시 사용
+menuboard_ocr : 메뉴판 인식 OCR 관련 파일 - 사장님 회원가입 시 사용 (RN)
+
+event_image : 아밴트 포스터 생성 관련 파일  
+menuboard_generate : 메뉴판 이미지 생성 관련 파일  
+
+review_generate : 리뷰 생성(쇼츠, 이미지 생성)  
 
 ```
 AI/
-├── main.py                  👈 FastAPI 앱 실행 진입점
-├── routers/
-│   └── generate.py          👈 엔드포인트 분리
-├── services/
-│   ├── luma_service.py      👈 Luma AI 연동 함수
-│   ├── gpt_service.py       👈 GPT 프롬프트 생성 함수
-│   └── callback_service.py  👈 스프링 콜백 함수
-├── models/
-│   └── shorts_models.py    👈 Pydantic 요청/응답 모델들
+├── main.py                              # FastAPI 앱 진입점 (startup에 Redis 소비자 자동 구동)
+├── consumers/                           # Redis Streams 소비자
+│   ├── event_image_consumer.py             # event.asset.generate → IMAGE/SHORTS 처리 + 이벤트 이미지지 콜백
+│   ├── menuboard_generate_consumer.py      # menu.poster.generate → IMAGE 처리 + 포스터 콜백
+│   ├── receipt_ocr_consumer.py             # ocr.verification.request → 영수증 OCR 처리
+│   └── review_generate_consumer.py         # review.asset.generate → IMAGE/SHORTS 처리 + 리뷰 콜백
+├── routers/                             # HTTP API (RN 통신용)
+│   ├── generate.py                         # 리뷰 생성 테스트용 HTTP 
+│   └── stream_test.py 
+엔드포인트
+│   ├── ocr.py                              # 메뉴보드 OCR (RN → FastAPI → Spring 콜백)
+│   └── ocr_receipt.py                      # 영수증 주소 OCR (테스트/보조)
+├── services/                            # 서비스 계층
+│   ├── image_service.py                    # DALL·E 3 (GMS 프록시) 이미지 생성
+│   ├── luma_service.py                     # Luma(ray-2) 영상 생성/폴링
+│   ├── runway_service.py                   # Runway(gen4_turbo) 영상 생성/폴링
+│   ├── gpt_service.py                      # 프롬프트 보강
+│   ├── review_generate_callback.py         # 리뷰 생성 콜백
+│   ├── event_image_callback.py             # 이벤트 이미지 콜백
+│   ├── menuboard_generate_callback.py      # 메뉴 포스터 콜백
+│   ├── menuboard_ocr_service.py            # 메뉴보드 OCR 처리
+│   └── receipt_ocr_callback.py             # 영수증 OCR 처리
+├── models/                              # Pydantic 모델
+│   ├── review_generate_models.py           # 리뷰 생성 요청/콜백/응답 모델
+│   ├── event_image_models.py               # 이벤트 생성 메시지/콜백 모델
+│   ├── menuboard_generate_models.py        # 메뉴 포스터 생성 메시지/콜백 모델
+│   ├── menuboard_ocr_models.py             # 메뉴보드 OCR 요청/응답/콜백 모델
+│   └── receipt_ocr_models.py               # 영수증 OCR 요청/콜백 모델
 ├── utils/
-│   └── logger.py            👈 로깅 유틸 함수들
-├── .env
-├── requirements.txt
-├── main_backup.py           👈 기존 main.py 백업
-└── 기존 API 폴더들 (유지됨)
-    ├── gms_api/             👈 GPT 프롬프트 생성 (현재 서비스에서 사용)
-    ├── luma_api/            👈 Luma AI 관련
-    ├── ocr_api/             👈 OCR 관련
-    ├── runway_api/          👈 Runway AI 관련
-    └── venv/                👈 Python 가상환경
+│   └── logger.py
+├── env_example.txt                      # 환경변수 샘플
+├── requirements.txt                     # 패키치 버전 관리 파일
+└── main_backup.py                       # 과거 백업 (사용 안 함)
 ```
 
-### 🔄 리팩토링 내용
-- **main.py**: FastAPI 앱 초기화와 라우터 등록만 담당
-- **라우터 분리**: 엔드포인트별로 별도 파일로 분리
-- **서비스 계층**: 비즈니스 로직을 서비스 클래스로 분리
-- **모델 분리**: Pydantic 모델들을 별도 파일로 정리
-- **유틸리티**: 공통 기능들을 utils 폴더로 분리
+## Redis Streams → 생성 → 콜백 플로우
+- 리뷰 생성: `review.asset.generate` → ReviewGenerateConsumer → 콜백 `/api/reviews/assets/callback`
+- 이벤트 생성: `event.asset.generate` → EventImageConsumer → 콜백 `/api/events/assets/callback`
+- 메뉴 포스터: `menu.poster.generate` → MenuboardGenerateConsumer → 콜백 `/api/menu-posters/assets/callback`
+- 영수증 OCR: `ocr.verification.request` → ReceiptOCRConsumer → 콜백 `/api/reviews/ocr-verification/callback`
 
-## 사전 준비사항
+참고: `referenceImages`/`menu`는 XADD 시 JSON 문자열 단일 필드로 넣어야 하며, 소비자에서 자동 파싱합니다.
 
-### 1. 환경변수 설정
-`env_example.txt` 파일을 참고하여 `.env` 파일을 생성하고 다음 값들을 설정하세요:
-
+## 실행
 ```bash
-# .env 파일에 다음 내용 추가
-LUMAAI_API_KEY=여기에_실제_Luma_AI_키_입력
-OPENAI_API_KEY=여기에_실제_OpenAI_키_입력
-SPRING_CALLBACK_URL=https://i13a609.p.ssafy.io/api/reviews/assets/callback
-```
-
-### 2. Python 패키지 설치
-```bash
-# AI 디렉토리로 이동
 cd AI
-
-# 가상환경 생성 
-python -m venv venv
-
-# 가상환경 활성화
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
-
-# 패키지 설치
 pip install -r requirements.txt
-```
-
-## 🏃‍♂️ 서버 실행
-
-### 방법 1: 개발 모드 (자동 리로드)
-```bash
-cd AI
-python main.py
-```
-
-### 방법 2: Uvicorn 직접 실행
-```bash
-cd AI
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-## 📡 API 엔드포인트
+서버가 시작되면 4개 소비자가 백그라운드로 자동 구독됩니다.
 
-서버가 실행되면 다음 URL에서 접근 가능합니다:
-- **API 문서**: https://www.notion.so/API-23abb13c7ad58099b420f9c4296c6bb7?source=copy_link (notion)
-- **상태 확인**: http://localhost:8000/health
-- **루트 확인**: http://localhost:8000/609
-- **영상 생성**: POST http://localhost:8000/api/reviews/assests/generate
+## 주요 환경변수 (env_example.txt 참고)
+- 공통: `REDIS_URL`, `REDIS_GROUP`, `REDIS_CONSUMER_ID`
+- 스트림 키
+  - `REVIEW_ASSET_STREAM_KEY=review.asset.generate`
+  - `EVENT_ASSET_STREAM_KEY=event.asset.generate`
+  - `MENU_POSTER_STREAM_KEY=menu.poster.generate`
+  - `OCR_RECEIPT_STREAM_KEY=ocr.verification.request`
+- 콜백 URL
+  - `SPRING_CALLBACK_URL=/api/reviews/assets/callback`
+  - `SPRING_EVENT_ASSET_CALLBACK_URL=/api/events/assets/callback`
+  - `SPRING_MENU_POSTER_CALLBACK_URL=/api/menu-posters/assets/callback`
+- 생성/외부 API 키
+  - `GMS_API_KEY`, `GMS_BASE_URL`
+  - `LUMAAI_API_KEY`, `RUNWAY_API_KEY`
+  - `CLOVA_MENU_SECRET_KEY`, `CLOVA_MENU_API_URL`
+  - `CLOVA_RECEIPT_SECRET_KEY`, `CLOVA_RECEIPT_API_URL`
 
-### 영상 생성 API 사용 예시
-
-```bash
-# curl을 사용한 예시
-curl -X POST "http://localhost:8000/api/reviews/assests/generate" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "reviewAssetId": 1,
-       "type": "SHORTS",
-       "prompt": "맛있는 음식을 먹는 모습",
-       "storeId": 1,
-       "userId": 1,
-       "requestedAt": "2025-01-01T00:00:00Z",
-       "expireAt": "2025-01-01T01:00:00Z",
-       "retryCount": 0,
-       "menu": [
-         {
-           "id": 1,
-           "name": "치킨",
-           "description": "바삭한 치킨",
-           "imageUrl": "https://example.com/chicken.jpg"
-         }
-       ],
-       "referenceImages": ["https://example.com/image1.jpg"]
-     }'
-```
-
-또는 Python requests:
-```python
-import requests
-
-response = requests.post(
-    "http://localhost:8000/api/reviews/assests/generate",
-    json={
-        "reviewAssetId": 1,
-        "type": "SHORTS",
-        "prompt": "맛있는 음식을 먹는 모습",
-        "storeId": 1,
-        "userId": 1,
-        "requestedAt": "2025-01-01T00:00:00Z",
-        "expireAt": "2025-01-01T01:00:00Z",
-        "retryCount": 0,
-        "menu": [
-            {
-                "id": 1,
-                "name": "치킨",
-                "description": "바삭한 치킨",
-                "imageUrl": "https://example.com/chicken.jpg"
-            }
-        ],
-        "referenceImages": ["https://example.com/image1.jpg"]
-    }
-)
-print(response.json())
-```
-
-## 🔧 문제 해결
-
-### 1. 환경변수 오류
-- `.env` 파일이 `AI` 디렉토리에 있는지 확인
-- API 키가 올바르게 입력되었는지 확인
-
-### 2. 패키지 오류
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt --force-reinstall
-```
-
-### 3. 포트 충돌
-```bash
-# 다른 포트로 실행
-uvicorn main:app --host 0.0.0.0 --port 8081
-```
-
-## 📁 생성된 파일
-
-영상 생성이 완료되면:
-- `downloads/` 폴더에 `.mp4` 파일이 저장됩니다
-- API 응답에 온라인 URL도 포함됩니다
-
-## ⚠️ 주의사항
-
-1. **CORS 설정**: 운영환경에서는 `ALLOWED_ORIGINS`를 특정 도메인으로 제한하세요
-2. **영상 생성 시간**: Luma AI 영상 생성은 2-4분 정도 소요됩니다(9초 영상 기준)
-
-
-### python version
-$ python --version
-Python 3.11.9
-(venv) 
-
-### 메뉴판 인식 샘플
-
-RN 플로우 엔드포인트(백그라운드 처리)
-Method: POST
-URL: https://i13a609.p.ssafy.io/ai/api/reviews/menu-extraction
-Body: raw(JSON)
-
-{
-"sourceId": 123,
-"storeId": 456,
-"userId": 789,
-"imageUrl": "https://example.com/menu.png",
-"type": "MENU",
-"requestedAt": "2025-01-27T10:00:00Z",
-"expireAt": "2025-01-27T11:00:00Z",
-"retryCount": 0
-}
+## HTTP 엔드포인트(테스트/연동)
+- 헬스: `GET /ai/health`
+- 라우트 확인: `GET /ai/609`
+- 리뷰 생성(HTTP) - 테스트트: `POST /ai/api/reviews/assets/generate`
+- 메뉴보드 OCR: `POST /ai/api/reviews/menu-extraction`
