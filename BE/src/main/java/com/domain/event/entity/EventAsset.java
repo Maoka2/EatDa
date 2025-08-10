@@ -28,4 +28,17 @@ public class EventAsset extends BaseAssetEntity {
         this.prompt = prompt;
         this.status = status != null ? status : Status.PENDING;
     }
+
+    public static EventAsset createPending(Event event, AssetType type, String prompt) {
+        return EventAsset.builder()
+                .event(event)
+                .type(type)
+                .prompt(prompt)
+                .status(Status.PENDING)
+                .build();
+    }
+
+    public void registerEvent(final Event event) {
+        this.event = event;
+    }
 }
