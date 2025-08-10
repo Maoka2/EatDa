@@ -5,6 +5,7 @@ import com.domain.event.dto.request.EventAssetCreateRequest;
 import com.domain.event.dto.request.EventFinalizeRequest;
 import com.domain.event.dto.response.EventAssetRequestResponse;
 import com.domain.event.dto.response.EventFinalizeResponse;
+import com.domain.event.dto.response.MyEventResponse;
 import com.domain.event.entity.Event;
 import com.domain.event.entity.EventAsset;
 import com.domain.event.infrastructure.redis.EventAssetRedisPublisher;
@@ -17,6 +18,7 @@ import com.domain.user.entity.User;
 import com.domain.user.repository.UserRepository;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
+import com.global.constants.PagingConstants;
 import com.global.constants.Status;
 import com.global.dto.request.AssetCallbackRequest;
 import com.global.dto.response.AssetResultResponse;
@@ -34,9 +36,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -1023,6 +1027,290 @@ class EventServiceImplTest {
         verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
         verify(eventAssetRepository).findByIdWithStore(assetId);
         verify(fileStorageService).loadAsResource("/uploads/events/error.webp");
+    }
+
+    @Test
+    @DisplayName("내 이벤트 목록 조회 - 성공 (첫 페이지)")
+    void getMyEvents_Success_FirstPage() {
+        // given
+        String makerEmail = "maker@example.com";
+        User maker = User.builder().build();
+        setFieldValue(maker, userId);
+
+        Store store1 = Store.builder()
+                .name("테스트 가게1")
+                .maker(maker)
+                .build();
+
+        Store store2 = Store.builder()
+                .name("테스트 가게2")
+                .maker(maker)
+                .build();
+
+        Event event1 = Event.builder()
+                .store(store1)
+                .startDate(LocalDate.parse("2024-12-01"))
+                .endDate(LocalDate.parse("2024-12-31"))
+                .status(Status.SUCCESS)
+                .build();
+        setFieldValue(event1, 100L);
+        event1.setTitle("연말 특별 이벤트");
+
+        Event event2 = Event.builder()
+                .store(store2)
+                .startDate(LocalDate.parse("2024-12-15"))
+                .endDate(LocalDate.parse("2024-12-25"))
+                .status(Status.SUCCESS)
+                .build();
+        setFieldValue(event2, 99L);
+        event2.updateDescription("크리스마스 이벤트");
+
+        EventAsset asset1 = EventAsset.builder()
+                .event(event1)
+                .type(AssetType.IMAGE)
+                .assetUrl("/uploads/event1.webp")
+                .status(Status.SUCCESS)
+                .build();
+
+        EventAsset asset2 = EventAsset.builder()
+                .event(event2)
+                .type(AssetType.IMAGE)
+                .assetUrl("/uploads/event2.webp")
+                .status(Status.SUCCESS)
+                .build();
+
+        List<Event> events = List.of(event1, event2);
+        List<EventAsset> assets = List.of(asset1, asset2);
+
+        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+                .willReturn(Optional.of(maker));
+        given(eventRepository.findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class)))
+                .willReturn(events);
+        given(eventAssetRepository.findByEventIds(List.of(100L, 99L)))
+                .willReturn(assets);
+
+        // when
+        List<MyEventResponse> responses = eventService.getMyEvents(null, makerEmail);
+
+        // then
+        assertThat(responses).hasSize(2);
+
+        MyEventResponse response1 = responses.getFirst();
+        assertThat(response1.eventId()).isEqualTo(100L);
+        assertThat(response1.storeName()).isEqualTo("테스트 가게1");
+        assertThat(response1.title()).isEqualTo("연말 특별 이벤트");
+        assertThat(response1.postUrl()).isEqualTo("/uploads/event1.webp");
+
+        MyEventResponse response2 = responses.get(1);
+        assertThat(response2.eventId()).isEqualTo(99L);
+        assertThat(response2.storeName()).isEqualTo("테스트 가게2");
+        assertThat(response2.postUrl()).isEqualTo("/uploads/event2.webp");
+
+        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(eventRepository).findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class));
+        verify(eventAssetRepository).findByEventIds(List.of(100L, 99L));
+    }
+
+    @Test
+    @DisplayName("내 이벤트 목록 조회 - 커서 기반 페이징")
+    void getMyEvents_Success_WithCursor() {
+        // given
+        String makerEmail = "maker@example.com";
+        Long lastEventId = 50L;
+        User maker = User.builder().build();
+        setFieldValue(maker, userId);
+
+        Store store = Store.builder()
+                .name("테스트 가게")
+                .maker(maker)
+                .build();
+
+        Event event = Event.builder()
+                .store(store)
+                .startDate(LocalDate.parse("2024-12-01"))
+                .endDate(LocalDate.parse("2024-12-31"))
+                .status(Status.SUCCESS)
+                .build();
+        setFieldValue(event, 45L);
+
+        EventAsset asset = EventAsset.builder()
+                .event(event)
+                .type(AssetType.IMAGE)
+                .assetUrl("/uploads/event45.webp")
+                .status(Status.SUCCESS)
+                .build();
+
+        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+                .willReturn(Optional.of(maker));
+        given(eventRepository.findMyEventsWithCursor(eq(makerEmail), eq(lastEventId), any(PageRequest.class)))
+                .willReturn(List.of(event));
+        given(eventAssetRepository.findByEventIds(List.of(45L)))
+                .willReturn(List.of(asset));
+
+        // when
+        List<MyEventResponse> responses = eventService.getMyEvents(lastEventId, makerEmail);
+
+        // then
+        assertThat(responses).hasSize(1);
+        assertThat(responses.getFirst().eventId()).isEqualTo(45L);
+
+        verify(eventRepository).findMyEventsWithCursor(eq(makerEmail), eq(lastEventId), any(PageRequest.class));
+    }
+
+    @Test
+    @DisplayName("내 이벤트 목록 조회 - 이벤트는 있지만 에셋이 없는 경우")
+    void getMyEvents_Success_NoAssets() {
+        // given
+        String makerEmail = "maker@example.com";
+        User maker = User.builder().build();
+        setFieldValue(maker, userId);
+
+        Store store = Store.builder()
+                .name("테스트 가게")
+                .maker(maker)
+                .build();
+
+        Event event = Event.builder()
+                .store(store)
+                .startDate(LocalDate.parse("2024-12-01"))
+                .endDate(LocalDate.parse("2024-12-31"))
+                .status(Status.PENDING)
+                .build();
+        setFieldValue(event, 100L);
+
+        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+                .willReturn(Optional.of(maker));
+        given(eventRepository.findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class)))
+                .willReturn(List.of(event));
+        given(eventAssetRepository.findByEventIds(List.of(100L)))
+                .willReturn(Collections.emptyList());  // 에셋 없음
+
+        // when
+        List<MyEventResponse> responses = eventService.getMyEvents(null, makerEmail);
+
+        // then
+        assertThat(responses).hasSize(1);
+        assertThat(responses.getFirst().eventId()).isEqualTo(100L);
+        assertThat(responses.getFirst().postUrl()).isNull();  // 에셋이 없으므로 null
+
+        verify(eventAssetRepository).findByEventIds(List.of(100L));
+    }
+
+    @Test
+    @DisplayName("내 이벤트 목록 조회 - 빈 결과")
+    void getMyEvents_EmptyResult() {
+        // given
+        String makerEmail = "maker@example.com";
+        User maker = User.builder().build();
+
+        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+                .willReturn(Optional.of(maker));
+        given(eventRepository.findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class)))
+                .willReturn(Collections.emptyList());
+
+        // when
+        List<MyEventResponse> responses = eventService.getMyEvents(null, makerEmail);
+
+        // then
+        assertThat(responses).isEmpty();
+
+        verify(eventRepository).findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class));
+        verify(eventAssetRepository).findByEventIds(anyList());  // 이벤트가 없으므로 호출 안됨
+    }
+
+    @Test
+    @DisplayName("내 이벤트 목록 조회 - 사용자를 찾을 수 없음")
+    void getMyEvents_UserNotFound() {
+        // given
+        String makerEmail = "notfound@example.com";
+
+        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+                .willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> eventService.getMyEvents(null, makerEmail))
+                .isInstanceOf(ApiException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED);
+
+        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verifyNoInteractions(eventRepository, eventAssetRepository);
+    }
+
+    @Test
+    @DisplayName("내 이벤트 목록 조회 - 여러 이벤트 중 일부만 에셋 있음")
+    void getMyEvents_PartialAssets() {
+        // given
+        String makerEmail = "maker@example.com";
+        User maker = User.builder().build();
+        setFieldValue(maker, userId);
+
+        Store store = Store.builder()
+                .name("테스트 가게")
+                .maker(maker)
+                .build();
+
+        Event event1 = Event.builder()
+                .store(store)
+                .startDate(LocalDate.parse("2024-12-01"))
+                .endDate(LocalDate.parse("2024-12-31"))
+                .status(Status.SUCCESS)
+                .build();
+        setFieldValue(event1, 100L);
+
+        Event event2 = Event.builder()
+                .store(store)
+                .startDate(LocalDate.parse("2024-12-15"))
+                .endDate(LocalDate.parse("2024-12-25"))
+                .status(Status.PENDING)
+                .build();
+        setFieldValue(event2, 99L);
+
+        // event1만 에셋 있음
+        EventAsset asset1 = EventAsset.builder()
+                .event(event1)
+                .type(AssetType.IMAGE)
+                .assetUrl("/uploads/event1.webp")
+                .status(Status.SUCCESS)
+                .build();
+
+        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+                .willReturn(Optional.of(maker));
+        given(eventRepository.findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class)))
+                .willReturn(List.of(event1, event2));
+        given(eventAssetRepository.findByEventIds(List.of(100L, 99L)))
+                .willReturn(List.of(asset1));  // event1의 에셋만 반환
+
+        // when
+        List<MyEventResponse> responses = eventService.getMyEvents(null, makerEmail);
+
+        // then
+        assertThat(responses).hasSize(2);
+        assertThat(responses.get(0).postUrl()).isEqualTo("/uploads/event1.webp");
+        assertThat(responses.get(1).postUrl()).isNull();  // event2는 에셋 없음
+    }
+
+    @Test
+    @DisplayName("내 이벤트 목록 조회 - 페이지 크기 확인")
+    void getMyEvents_PageSizeVerification() {
+        // given
+        String makerEmail = "maker@example.com";
+        User maker = User.builder().build();
+
+        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+                .willReturn(Optional.of(maker));
+        given(eventRepository.findMyEventsWithCursor(any(), any(), any()))
+                .willReturn(Collections.emptyList());
+
+        // when
+        eventService.getMyEvents(null, makerEmail);
+
+        // then - PageRequest 파라미터 검증
+        ArgumentCaptor<PageRequest> pageRequestCaptor = ArgumentCaptor.forClass(PageRequest.class);
+        verify(eventRepository).findMyEventsWithCursor(any(), any(), pageRequestCaptor.capture());
+
+        PageRequest capturedPageRequest = pageRequestCaptor.getValue();
+        assertThat(capturedPageRequest.getPageNumber()).isEqualTo(0);
+        assertThat(capturedPageRequest.getPageSize()).isEqualTo(PagingConstants.DEFAULT_SIZE.value);
     }
 
 
