@@ -136,7 +136,6 @@ public class ReviewController {
                     )
             }
     )
-    @ApiUnauthorizedError
     @ApiInternalServerError
     @PostMapping("/assets/callback")
     public ResponseEntity<BaseResponse> handleReviewAssetCallback(
@@ -178,7 +177,6 @@ public class ReviewController {
                     )
             }
     )
-    @ApiUnauthorizedError
     @ApiInternalServerError
     @GetMapping("/assets/{reviewAssetId}/result")
     public ResponseEntity<BaseResponse> getReviewAssetResult(
