@@ -64,6 +64,7 @@ public enum ErrorCode {
     REVIEW_ASSET_NOT_READY("REVIEW_ASSET_NOT_READY", "리뷰 에셋이 아직 준비되지 않았습니다.", HttpStatus.BAD_REQUEST.value()),
     REVIEW_ASSET_TYPE_MISMATCH("REVIEW_ASSET_TYPE_MISMATCH", "요청한 리뷰 에셋 타입이 일치하지 않습니다.",
             HttpStatus.BAD_REQUEST.value()),
+    REVIEW_OWNER_MISMATCH("REVIEW_OWNER_MISMATCH", "리뷰 소유자가 일치하지 않습니다.", HttpStatus.FORBIDDEN.value()),
 
     // 리소스 관련
     NOT_FOUND("NOT_FOUND", "요청한 파일이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),

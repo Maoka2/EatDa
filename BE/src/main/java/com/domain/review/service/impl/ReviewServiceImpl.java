@@ -146,20 +146,19 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public ReviewFinalizeResponse finalizeReview(final ReviewFinalizeRequest request) {
-        // 리뷰 조회 및 상태 검증
+    public ReviewFinalizeResponse finalizeReview(final ReviewFinalizeRequest request, final String eaterEmail) {
+        // 조회
+        User eater = eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
+                .orElseThrow(() -> new ApiException(FORBIDDEN));
         Review review = reviewRepository.findById(request.reviewId())
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND, request.reviewId()));
-        if (!review.getStatus().isSuccess()) {
-            throw new ApiException(ErrorCode.REVIEW_NOT_SUCCESS, review.getId());
-        }
-
-        // 에셋 조회 및 상태 검증
         ReviewAsset asset = reviewAssetRepository.findById(request.reviewAssetId())
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_ASSET_NOT_FOUND, request.reviewAssetId()));
-        if (!Objects.equals(asset.getType(), request.type())) {
-            throw new ApiException(ErrorCode.REVIEW_ASSET_TYPE_MISMATCH, asset.getType().name());
-        }
+
+        // 검증
+        ReviewValidator.checkOwner(eater, review);
+        ReviewValidator.checkReviewReady(review);
+        ReviewValidator.checkAssetMatches(asset, request);
 
         // 도메인 업데이트
         review.updateDescription(request.description());

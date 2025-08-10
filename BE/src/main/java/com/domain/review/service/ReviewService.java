@@ -32,7 +32,7 @@ public interface ReviewService {
     /**
      * 4단계 - 리뷰 최종 등록
      */
-    ReviewFinalizeResponse finalizeReview(ReviewFinalizeRequest request);
+    ReviewFinalizeResponse finalizeReview(ReviewFinalizeRequest request, String eaterEmail);
 
     ReviewFeedResult<ReviewFeedResponse> getReviewFeed(Double latitude, Double longitude, Integer distance,
                                                        Long lastReviewId);

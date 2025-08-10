@@ -220,10 +220,13 @@ public class ReviewController {
     )
     @ApiUnauthorizedError
     @ApiInternalServerError
+    @PreAuthorize("hasAuthority('EATER')")
     @PostMapping("/finalize")
     public ResponseEntity<BaseResponse> finalizeReview(
-            @Valid @RequestBody final ReviewFinalizeRequest request) {
-        ReviewFinalizeResponse response = reviewService.finalizeReview(request);
+            @Valid @RequestBody final ReviewFinalizeRequest request,
+            @AuthenticationPrincipal final String email
+    ) {
+        ReviewFinalizeResponse response = reviewService.finalizeReview(request, email);
         return ApiResponseFactory.success(SuccessCode.REVIEW_REGISTERED, response);
     }
 
