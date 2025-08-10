@@ -6,7 +6,7 @@
 import time
 from fastapi import APIRouter, HTTPException
 from models.shorts_models import GenerateRequest, CallbackRequest, SpringResponse
-from services import luma_service, gpt_service, callback_service
+from services import luma_service, runway_service, gpt_service, callback_service
 from utils.logger import default_logger as logger
 
 
@@ -43,20 +43,34 @@ async def generate_video(request: GenerateRequest):
         logger.info("STEP2: after GPT")
         # print(f"Enhanced prompt: {detailed_prompt}")
         
-        # 2단계: Luma AI로 영상 생성 요청 (type에 따라 모델 분기)
-        # type 규칙 예시
+        # 2단계: 생성 모델 분기 (Luma / Runway)
         #  - SHORTS_RAY2  -> Luma ray-2
-        #  - SHORTS_GEN_4 -> (미구현: 추후 Runway 등)
-        #  - IMAGE        -> (미구현: 추후 이미지 생성 모델)
-        model_name = "ray-2" if request.type.upper() == "SHORTS_RAY2" else "ray-2"
-        # TODO: 향후 다른 type 추가 시 위 분기 확장
+        #  - SHORTS_GEN_4 -> Runway gen4_turbo
+        req_type = (request.type or "").upper()
 
-        generation_result = await luma_service.generate_video(
-            detailed_prompt,
-            request.referenceImages,
-            model_name=model_name,
-        )
-        logger.info(f"STEP3: after Luma create id={generation_result['id']}")
+        if req_type == "SHORTS_GEN_4":
+            # Runway 사용 - gen4_turbo
+            if not runway_service.is_available():
+                raise HTTPException(
+                    status_code=500,
+                    detail="Runway ML 클라이언트가 초기화되지 않았습니다. 환경변수 RUNWAY_API_KEY를 설정(.env) 후 서버를 재시작하세요.",
+                )
+            generation_result = await runway_service.generate_video(
+                enhanced_prompt=detailed_prompt,
+                reference_images=request.referenceImages,
+                model_name="gen4_turbo",
+                ratio="720:1280",
+                duration_seconds=5,
+            )
+            logger.info(f"STEP3: after Runway create id={generation_result['id']}")
+        else:
+            # Luma 사용 - ray-2
+            generation_result = await luma_service.generate_video(
+                enhanced_prompt=detailed_prompt,
+                reference_images=request.referenceImages,
+                model_name = "ray-2",
+            )
+            logger.info(f"STEP3: after Luma create id={generation_result['id']}")
 
         # 메모리 기록
         generations[generation_result["id"]] = {
@@ -72,7 +86,12 @@ async def generate_video(request: GenerateRequest):
 
         # 3단계: 생성 완료까지 폴링하여 실제 성공/실패 확인
         logger.info("STEP4: enter polling")
-        wait = await luma_service.wait_for_generation_completion(generation_result["id"])
+        # runway - gen4 사용
+        if req_type == "SHORTS_GEN_4":
+            wait = await runway_service.wait_for_generation_completion(generation_result["id"])
+        # luma - ray-2 사용
+        else:
+            wait = await luma_service.wait_for_generation_completion(generation_result["id"])
         logger.info(f"STEP5: polling done state={wait['state']} url={wait.get('asset_url')}")
 
         is_success = wait["state"] == "completed" and bool(wait.get("asset_url"))
