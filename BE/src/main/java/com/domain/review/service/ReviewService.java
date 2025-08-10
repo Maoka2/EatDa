@@ -41,5 +41,5 @@ public interface ReviewService {
 
     ReviewFeedResult<MyReviewResponse> getMyReviews(Long lastReviewId, int pageSize, String eaterEmail);
 
-    void removeReview(Long reviewId, Long currentUserId);
+    void removeReview(Long reviewId, String eaterEmail);
 }

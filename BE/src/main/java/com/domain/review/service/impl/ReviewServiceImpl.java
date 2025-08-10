@@ -273,17 +273,19 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional
-    public void removeReview(Long reviewId, Long currentUserId) {
+    public void removeReview(final Long reviewId, final String eaterEmail) {
         try {
+            User eater = findEaterByEmail(eaterEmail);
+
             Review review = reviewRepository.findById(reviewId)
                     .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
 
-            if (!review.getUser().getId().equals(currentUserId)) {
+            if (!review.getUser().getId().equals(eater.getId())) {
                 throw new ApiException(FORBIDDEN);
             }
 
             reviewRepository.deleteById(reviewId);
-            log.info("Review ID {} successfully deleted by User ID {}", reviewId, currentUserId);
+            log.info("Review ID {} successfully deleted by User ID {}", reviewId, eater.getId());
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {

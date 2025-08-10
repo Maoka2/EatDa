@@ -46,7 +46,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -409,30 +408,26 @@ public class ReviewController {
     /**
      * 리뷰 삭제
      *
-     * @param reviewId 삭제할 리뷰 ID (필수)
-     * @param userId   현재 로그인한 사용자 ID (필수)
+     * @param reviewId   삭제할 리뷰 ID (필수)
+     * @param eaterEmail 현재 로그인한 사용자 이메일 (필수)
      * @return 삭제 완료 응답
      */
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PreAuthorize("hasAuthority('EATER')")
     @DeleteMapping("/{reviewId}")
     public ResponseEntity<BaseResponse> deleteReview(
             @PathVariable
             @NotNull(message = "리뷰 ID는 필수입니다")
             @Positive(message = "리뷰 ID는 양수여야 합니다")
             Long reviewId,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId
-            //            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal String eaterEmail
     ) {
-        log.info("Delete review request - reviewId: {}, userId: {}", reviewId, userId);
-
-        // 인증 체크
-        if (userId == null) {
-            log.warn("Unauthorized delete attempt for review: {}", reviewId);
-            throw new ApiException(ErrorCode.UNAUTHORIZED);
-        }
+        log.info("Delete review request - reviewId: {}", reviewId);
 
         try {
             // 서비스 호출 (작성자 확인 및 삭제 처리)
-            reviewService.removeReview(reviewId, userId);
+            reviewService.removeReview(reviewId, eaterEmail);
 
             // 성공 응답
             SuccessResponse<?> response = SuccessResponse.of(
@@ -441,7 +436,7 @@ public class ReviewController {
                     200
             );
 
-            log.info("Review deleted successfully - reviewId: {}, userId: {}", reviewId, userId);
+            log.info("Review deleted successfully - reviewId: {}", reviewId);
 
             return ResponseEntity.ok(response);
 
@@ -452,8 +447,8 @@ public class ReviewController {
             throw e;
         } catch (Exception e) {
             // 예상치 못한 예외
-            log.error("Unexpected error during review deletion - reviewId: {}, userId: {}",
-                    reviewId, userId, e);
+            log.error("Unexpected error during review deletion - reviewId: {}",
+                    reviewId, e);
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
