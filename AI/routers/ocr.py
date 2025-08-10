@@ -10,7 +10,7 @@ from services import ocr_menuboard_service, callback_service
 
 # 라우터 생성
 router = APIRouter(
-    prefix="api",
+    prefix="/api",
     tags=["ocr"]
 )
 
