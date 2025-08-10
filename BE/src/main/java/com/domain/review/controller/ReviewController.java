@@ -317,25 +317,20 @@ public class ReviewController {
     /**
      * 내 리뷰 목록 조회
      */
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PreAuthorize("hasAuthority('EATER')")
     @GetMapping("/me")
     public ResponseEntity<BaseResponse> getMyReviews(
             @RequestParam(required = false) Long lastReviewId,
             @RequestParam(defaultValue = "20") int pageSize,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId
-            //            @AuthenticationPrincipal Long userId  // 또는 @CurrentUser Long userId
+            @AuthenticationPrincipal String eaterEmail
     ) {
-        log.info("My reviews request - userId: {}, lastReviewId: {}, pageSize: {}",
-                userId, lastReviewId, pageSize);
-
-        // 인증 체크
-        if (userId == null) {
-            throw new ApiException(ErrorCode.UNAUTHORIZED);
-        }
+        log.info("My reviews request - lastReviewId: {}, pageSize: {}",
+                lastReviewId, pageSize);
 
         // 서비스 호출
-        ReviewFeedResult<MyReviewResponse> result = reviewService.getMyReviews(
-                userId, lastReviewId, pageSize
-        );
+        ReviewFeedResult<MyReviewResponse> result = reviewService.getMyReviews(lastReviewId, pageSize, eaterEmail);
 
         // 응답 생성
         Map<String, Object> responseData = new HashMap<>();

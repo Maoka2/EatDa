@@ -39,7 +39,7 @@ public interface ReviewService {
 
     ReviewDetailResponse getReviewDetail(Long reviewId, String email);
 
-    ReviewFeedResult<MyReviewResponse> getMyReviews(Long userId, Long lastReviewId, int pageSize);
+    ReviewFeedResult<MyReviewResponse> getMyReviews(Long lastReviewId, int pageSize, String eaterEmail);
 
     void removeReview(Long reviewId, Long currentUserId);
 }

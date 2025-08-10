@@ -86,8 +86,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Transactional
     public ReviewAssetRequestResponse requestReviewAsset(final ReviewAssetCreateRequest request,
                                                          final String eaterEmail) {
-        User eater = eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
-                .orElseThrow(() -> new ApiException(FORBIDDEN));
+        User eater = findEaterByEmail(eaterEmail);
         Store store = storeRepository.findById(request.storeId())
                 .orElseThrow(() -> new ApiException(STORE_NOT_FOUND));
         ReviewValidator.validateCreateRequest(request);
@@ -150,8 +149,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Transactional
     public ReviewFinalizeResponse finalizeReview(final ReviewFinalizeRequest request, final String eaterEmail) {
         // 조회
-        User eater = eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
-                .orElseThrow(() -> new ApiException(FORBIDDEN));
+        User eater = findEaterByEmail(eaterEmail);
         Review review = reviewRepository.findById(request.reviewId())
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND, request.reviewId()));
         ReviewAsset asset = reviewAssetRepository.findById(request.reviewAssetId())
@@ -244,10 +242,9 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ReviewFeedResult<MyReviewResponse> getMyReviews(Long userId, Long lastReviewId, int pageSize) {
-        if (userId == null) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-        }
+    public ReviewFeedResult<MyReviewResponse> getMyReviews(final Long lastReviewId, final int pageSize,
+                                                           final String eaterEmail) {
+        User eater = findEaterByEmail(eaterEmail);
 
         if (pageSize <= 0 || pageSize > ReviewConstants.MAX_PAGE_SIZE) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
@@ -256,7 +253,7 @@ public class ReviewServiceImpl implements ReviewService {
         try {
             // 요청된 사이즈보다 1개 더 가져와서 hasNext 판단
             Pageable pageable = PageRequest.of(0, pageSize + 1);
-            List<Review> reviews = reviewRepository.findMyReviews(userId, lastReviewId, pageable);
+            List<Review> reviews = reviewRepository.findMyReviews(eater.getId(), lastReviewId, pageable);
 
             // hasNext 판단 및 응답 생성
             boolean hasNext = reviews.size() > pageSize;
@@ -458,6 +455,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .reviewId(review.getId())
                 .storeName(review.getStore().getName())
                 .description(review.getDescription())
+                .assetUrl(review.getReviewAsset().getAssetUrl())
                 .menuNames(List.of()) // TODO: 메뉴 연결 시 수정
                 .build();
     }
@@ -473,7 +471,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .storeName(review.getStore().getName())
                 .description(review.getDescription())
                 .menuNames(List.of()) // TODO: 메뉴 연결 시 수정
-                .assetUrl(null) // TODO: 에셋 연결 시 수정
+                .assetUrl(review.getReviewAsset().getAssetUrl())
                 .createdAt(review.getCreatedAt())
                 .build();
     }
@@ -598,5 +596,10 @@ public class ReviewServiceImpl implements ReviewService {
         if (!isEater && !isMaker) {
             throw new ApiException(FORBIDDEN);
         }
+    }
+
+    private User findEaterByEmail(final String eaterEmail) {
+        return eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
+                .orElseThrow(() -> new ApiException(FORBIDDEN));
     }
 }
