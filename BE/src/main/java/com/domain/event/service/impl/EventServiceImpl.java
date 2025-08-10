@@ -11,8 +11,10 @@ import com.domain.event.infrastructure.redis.EventAssetRedisPublisher;
 import com.domain.event.repository.EventAssetRepository;
 import com.domain.event.repository.EventRepository;
 import com.domain.event.service.EventService;
+import com.domain.user.repository.UserRepository;
 import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
+import com.domain.user.entity.User;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
 import com.global.constants.Status;
@@ -23,6 +25,8 @@ import com.global.filestorage.FileStorageService;
 import com.global.redis.constants.RedisStreamKey;
 import com.global.utils.AssetValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +35,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
@@ -40,6 +45,7 @@ public class EventServiceImpl implements EventService {
     private final EventAssetRepository eventAssetRepository;
     private final FileStorageService fileStorageService;
     private final EventAssetRedisPublisher eventAssetRedisPublisher;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -127,6 +133,38 @@ public class EventServiceImpl implements EventService {
         asset.registerEvent(event);
 
         return EventFinalizeResponse.from(event);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Resource downloadEventAsset(Long assetId, String makerEmail) {
+        User maker = userRepository.findByEmailAndDeletedFalse(makerEmail)
+                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
+
+        EventAsset asset = eventAssetRepository.findByIdWithStore(assetId)
+                .orElseThrow(() -> new ApiException(ErrorCode.ASSET_NOT_FOUND, assetId));
+
+        if (!asset.getEvent().getStore().getMaker().getId().equals(maker.getId())) {
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        if (asset.getAssetUrl() == null || asset.getAssetUrl().isBlank()) {
+            throw new ApiException(ErrorCode.ASSET_URL_REQUIRED, assetId);
+        }
+
+        try {
+            Resource resource = fileStorageService.loadAsResource(asset.getAssetUrl());
+
+            // 6. 파일 존재 및 읽기 가능 여부 확인
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new ApiException(ErrorCode.FILE_NOT_FOUND, asset.getAssetUrl());
+            }
+
+            return resource;
+        } catch (Exception e) {
+            log.error("파일 다운로드 실패: eventAssetId={}, assetUrl={}", assetId, asset.getAssetUrl(), e);
+            throw new ApiException(ErrorCode.FILE_DOWNLOAD_ERROR, e.getMessage());
+        }
     }
 
     private Event createPendingEvent(final Store store, final LocalDate startDate, final LocalDate endDate) {
