@@ -13,7 +13,7 @@ review_generate : 리뷰 생성(쇼츠, 이미지 생성)
 AI/
 ├── main.py                              # FastAPI 앱 진입점 (startup에 Redis 소비자 자동 구동)
 ├── consumers/                           # Redis Streams 소비자
-│   ├── event_image_consumer.py             # event.asset.generate → IMAGE/SHORTS 처리 + 이벤트 이미지지 콜백
+│   ├── event_image_consumer.py             # event.asset.generate → IMAGE/SHORTS 처리 + 이벤트 이미지 콜백
 │   ├── menuboard_generate_consumer.py      # menu.poster.generate → IMAGE 처리 + 포스터 콜백
 │   ├── receipt_ocr_consumer.py             # ocr.verification.request → 영수증 OCR 처리
 │   └── review_generate_consumer.py         # review.asset.generate → IMAGE/SHORTS 처리 + 리뷰 콜백
