@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import httpx
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
-from models.ocr_receipt_models import OCRReceiptCallbackRequest
-from services.ocr_receipt_service import ocr_receipt_service
+from models.receipt_ocr_models import OCRReceiptCallbackRequest
+from services.receipt_ocr_callback import receipt_ocr_callback_service
 
 
 router = APIRouter(prefix="/api/ocr", tags=["ocr-receipt"])
@@ -20,7 +20,7 @@ async def process_receipt_by_url(
     sourceId: int = Form(...),
     imageUrl: str = Form(...),
 ):
-    if not ocr_receipt_service.is_available():
+    if not receipt_ocr_callback_service.is_available():
         raise HTTPException(500, detail="CLOVA_RECEIPT_* 환경변수를 확인하세요.")
 
     # 이미지 다운로드 + 확장자 추출
@@ -29,16 +29,16 @@ async def process_receipt_by_url(
         resp.raise_for_status()
         image_data = resp.content
 
-    fmt = ocr_receipt_service.detect_image_format_from_url(imageUrl) or "jpg"
-    ocr_json = await ocr_receipt_service.call_clova_receipt(image_data, fmt)
-    result, address = ocr_receipt_service.parse_infer_result(ocr_json)
+    fmt = receipt_ocr_callback_service.detect_image_format_from_url(imageUrl) or "jpg"
+    ocr_json = await receipt_ocr_callback_service.call_clova_receipt(image_data, fmt)
+    result, address = receipt_ocr_callback_service.parse_infer_result(ocr_json)
 
     callback = OCRReceiptCallbackRequest(
         sourceId=sourceId,
         result=result,
         extractedAddress=address,
     )
-    cb_resp = await ocr_receipt_service.send_callback(callback)
+    cb_resp = await receipt_ocr_callback_service.send_callback(callback)
     return {"callback": cb_resp, "result": result, "address": address}
 
 
@@ -47,7 +47,7 @@ async def process_receipt_by_upload(
     sourceId: int = Form(...),
     file: UploadFile = File(...),
 ):
-    if not ocr_receipt_service.is_available():
+    if not receipt_ocr_callback_service.is_available():
         raise HTTPException(500, detail="CLOVA_RECEIPT_* 환경변수를 확인하세요.")
 
     image_data = await file.read()
@@ -68,15 +68,15 @@ async def process_receipt_by_upload(
         if name.endswith((".jpg", ".jpeg", ".png", ".pdf", ".tif", ".tiff")):
             fmt = name.split(".")[-1]
 
-    ocr_json = await ocr_receipt_service.call_clova_receipt(image_data, fmt)
-    result, address = ocr_receipt_service.parse_infer_result(ocr_json)
+    ocr_json = await receipt_ocr_callback_service.call_clova_receipt(image_data, fmt)
+    result, address = receipt_ocr_callback_service.parse_infer_result(ocr_json)
 
     callback = OCRReceiptCallbackRequest(
         sourceId=sourceId,
         result=result,
         extractedAddress=address,
     )
-    cb_resp = await ocr_receipt_service.send_callback(callback)
+    cb_resp = await receipt_ocr_callback_service.send_callback(callback)
     return {"callback": cb_resp, "result": result, "address": address}
 
 
