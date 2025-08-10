@@ -99,7 +99,7 @@ export default function EaterLoginScreen(props?: Props) {
         role: "EATER",
       });
 
-      console.log("로그인 성공, 서버 응답 : ", response);
+      console.log(`로그인 성공 [${response.status}]:`, response);
 
       // 밑에 토큰 저장코드 추가
       await saveTokens(response.data);
@@ -107,7 +107,10 @@ export default function EaterLoginScreen(props?: Props) {
       loginSuccess();
     } catch (error) {
       if (error instanceof ApiError) {
-        console.error("로그인 실패(API ERROR) :", error.message);
+        console.error(
+          `로그인 실패(API ERROR) [${error.status}]:`,
+          error.message
+        );
         loginFailure(error.message);
       } else {
         console.log("로그인 실패(Unknown ERROR) :", error);
