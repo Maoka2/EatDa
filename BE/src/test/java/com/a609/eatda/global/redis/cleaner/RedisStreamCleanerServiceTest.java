@@ -1,4 +1,4 @@
-package com.global.redis.cleaner;
+package com.a609.eatda.global.redis.cleaner;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.global.redis.cleaner.RedisStreamCleanerService;
 import com.global.redis.constants.RedisStreamKey;
 import java.time.LocalDateTime;
 import java.util.List;

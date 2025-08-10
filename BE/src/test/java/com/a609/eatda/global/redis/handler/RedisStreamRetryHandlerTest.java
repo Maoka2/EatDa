@@ -1,4 +1,4 @@
-package com.global.redis.handler;
+package com.a609.eatda.global.redis.handler;
 
 import static com.global.redis.constants.RetryFailReason.TIMEOUT;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import com.global.redis.constants.RedisStreamKey;
 import com.global.redis.constants.RetryFailReason;
 import com.global.redis.dto.RedisRetryableMessage;
+import com.global.redis.handler.RedisStreamRetryHandler;
 import com.global.redis.publisher.RedisStreamWriter;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -53,16 +54,15 @@ class RedisStreamRetryHandlerTest {
 
     @Test
     void 추상_메서드_미구현시_예외_발생() {
-        RedisStreamRetryHandler<DummyMessage> incomplete = new RedisStreamRetryHandler<>(retryPublisher, dlqPublisher,
-                Duration.ofSeconds(1), Duration.ofSeconds(10)) {
-        };
+        IncompleteHandler incomplete = new IncompleteHandler(retryPublisher, dlqPublisher,
+                Duration.ofSeconds(1), Duration.ofSeconds(10));
 
         DummyMessage dummy = new DummyMessage(1, LocalDateTime.now(), TIMEOUT);
 
-        assertThrows(UnsupportedOperationException.class, () -> incomplete.getRetryStreamKey());
-        assertThrows(UnsupportedOperationException.class, () -> incomplete.getDLQStreamKey());
+        assertThrows(UnsupportedOperationException.class, incomplete::exposeRetryStreamKey);
+        assertThrows(UnsupportedOperationException.class, incomplete::exposeDLQStreamKey);
         assertThrows(UnsupportedOperationException.class,
-                () -> incomplete.updateRetryFields(dummy, 2, LocalDateTime.now()));
+                () -> incomplete.exposeUpdateRetryFields(dummy, 2, LocalDateTime.now()));
     }
 
     @Test
@@ -137,6 +137,29 @@ class RedisStreamRetryHandlerTest {
         @Override
         protected DummyMessage updateRetryFields(DummyMessage original, int retryCount, LocalDateTime nextRetryAt) {
             return new DummyMessage(retryCount, nextRetryAt, original.failReason);
+        }
+    }
+
+    /**
+     * 테스트 전용: protected 메서드를 super 로 호출하는 public 래퍼
+     */
+    static class IncompleteHandler extends RedisStreamRetryHandler<DummyMessage> {
+        IncompleteHandler(RedisStreamWriter<DummyMessage> retryPublisher,
+                          RedisStreamWriter<DummyMessage> dlqPublisher,
+                          Duration baseDelay, Duration maxDelay) {
+            super(retryPublisher, dlqPublisher, baseDelay, maxDelay);
+        }
+
+        public RedisStreamKey exposeRetryStreamKey() {
+            return super.getRetryStreamKey(); // protected → 상속으로 접근
+        }
+
+        public RedisStreamKey exposeDLQStreamKey() {
+            return super.getDLQStreamKey();
+        }
+
+        public DummyMessage exposeUpdateRetryFields(DummyMessage original, int retryCount, LocalDateTime nextRetryAt) {
+            return super.updateRetryFields(original, retryCount, nextRetryAt);
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.global.redis.publisher;
+package com.a609.eatda.global.redis.publisher;
 
 import static com.global.redis.constants.RedisStreamKey.MENU_POSTER;
 import static com.global.redis.constants.RedisStreamKey.REVIEW_ASSET;
@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.global.redis.constants.RedisStreamKey;
 import com.global.redis.constants.RetryFailReason;
 import com.global.redis.dto.RedisRetryableMessage;
+import com.global.redis.publisher.RedisStreamPublisher;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -79,12 +80,11 @@ class RedisStreamPublisherTest {
                 .thenThrow(new IllegalArgumentException("fail"));
 
         assertThrows(RuntimeException.class,
-                () -> publisher.publishToStreamWithMaxLen(REVIEW_ASSET, payload));
+                () -> publisher.publishToStreamWithMaxLenPublic(REVIEW_ASSET, payload));
     }
 
     @Test
     void Redis_스크립트가_정상_호출된다() {
-        // execute(RedisCallback<T>) 가 정상적으로 호출되는지 확인
         DummyPayload payload = new DummyPayload("name", 42);
 
         when(objectMapper.convertValue(any(), any(TypeReference.class)))
@@ -100,7 +100,7 @@ class RedisStreamPublisherTest {
             return callback.doInRedis(connection);
         });
 
-        publisher.publishToStreamWithMaxLen(MENU_POSTER, payload);
+        publisher.publishToStreamWithMaxLenPublic(MENU_POSTER, payload);
     }
 
     @ParameterizedTest(name = "{index}: {0}")
@@ -114,12 +114,11 @@ class RedisStreamPublisherTest {
         when(key.value()).thenReturn("stream.key");
         when(key.maxLen()).thenReturn(1000L);
 
-        assertThrows(expectedException, () -> publisher.publishToStreamWithMaxLen(key, payload));
+        assertThrows(expectedException, () -> publisher.publishToStreamWithMaxLenPublic(key, payload));
     }
 
     @Test
     void payload_field_직렬화_실패시_RuntimeException_발생한다() {
-        // ObjectMapper는 성공하도록 둔다
         DummyPayload payload = new DummyPayload("name", 42);
 
         when(objectMapper.convertValue(any(), any(TypeReference.class)))
@@ -133,8 +132,10 @@ class RedisStreamPublisherTest {
         RedisStreamKey validKey = mock(RedisStreamKey.class);
 
         assertThrows(RuntimeException.class,
-                () -> publisher.publishToStreamWithMaxLen(validKey, payload));
+                () -> publisher.publishToStreamWithMaxLenPublic(validKey, payload));
     }
+
+    // ====== 테스트용 payload & publisher ======
 
     record DummyPayload(String name, int value) implements RedisRetryableMessage {
         @Override
@@ -161,6 +162,13 @@ class RedisStreamPublisherTest {
     static class DummyPublisher extends RedisStreamPublisher<DummyPayload> {
         DummyPublisher(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
             super(redisTemplate, objectMapper);
+        }
+
+        /**
+         * 테스트 전용: protected 메서드 공개 래퍼
+         */
+        public void publishToStreamWithMaxLenPublic(RedisStreamKey key, DummyPayload payload) {
+            super.publishToStreamWithMaxLen(key, payload);
         }
     }
 }
