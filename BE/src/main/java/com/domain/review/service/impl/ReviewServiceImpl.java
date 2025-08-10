@@ -100,7 +100,7 @@ public class ReviewServiceImpl implements ReviewService {
         List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(),
                 convertToWebp);
 
-        publishReviewAssetMessage(reviewAsset, request, store, uploadedImageUrls); // Redis 메시지 발행
+        publishReviewAssetMessage(reviewAsset, eater.getId(), request, store, uploadedImageUrls); // Redis 메시지 발행
 
         return reviewMapper.toRequestResponse(review, reviewAsset);
     }
@@ -572,14 +572,15 @@ public class ReviewServiceImpl implements ReviewService {
     /**
      * Redis Stream 내 리뷰 에셋 생성 요청 메시지 발행
      */
-    private void publishReviewAssetMessage(final ReviewAsset reviewAsset, final ReviewAssetCreateRequest request,
+    private void publishReviewAssetMessage(final ReviewAsset reviewAsset, final long userId,
+                                           final ReviewAssetCreateRequest request,
                                            final Store store, final List<String> uploadedImageUrls) {
         ReviewAssetGenerateMessage message = ReviewAssetGenerateMessage.of(
                 reviewAsset.getId(),
                 request.type(),
                 request.prompt(),
                 store.getId(),
-                null, // 사용자 ID 지정 필요
+                userId,
                 request.menuIds(),
                 uploadedImageUrls
         );
