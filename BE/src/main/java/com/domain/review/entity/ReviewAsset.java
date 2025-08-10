@@ -59,14 +59,10 @@ public class ReviewAsset {
     }
 
     /**
-     * AI 결과를 콜백받으면 '리뷰 에섯'의 status을 업데이트하고, 해당 '리뷰'의 status도 업데이트 한다
+     * AI 결과를 콜백받으면 '리뷰 에섯'의 status을 업데이트한다
      */
     public void updateStatus(final Status status) {
         this.status = status;
-
-        if (this.review != null) {
-            this.review.updateStatus(status);
-        }
     }
 
     public void updateAssetUrl(final String assetUrl) {

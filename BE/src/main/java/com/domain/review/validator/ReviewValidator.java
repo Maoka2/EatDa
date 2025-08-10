@@ -72,9 +72,9 @@ public class ReviewValidator {
         }
     }
 
-    public static void checkReviewReady(final Review review) {
-        if (!review.getStatus().isSuccess()) {
-            throw new ApiException(ErrorCode.REVIEW_NOT_SUCCESS, review.getId());
+    public static void checkReviewAssetReady(final ReviewAsset asset) {
+        if (!asset.getStatus().isSuccess()) {
+            throw new ApiException(ErrorCode.REVIEW_ASSET_NOT_READY, asset.getId());
         }
     }
 

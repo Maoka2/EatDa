@@ -159,7 +159,7 @@ public class ReviewServiceImpl implements ReviewService {
 
         // 검증
         ReviewValidator.checkOwner(eater, review);
-        ReviewValidator.checkReviewReady(review);
+        ReviewValidator.checkReviewAssetReady(asset);
         ReviewValidator.checkAssetMatches(asset, request);
 
         // 도메인 업데이트
