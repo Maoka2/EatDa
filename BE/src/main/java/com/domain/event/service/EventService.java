@@ -6,6 +6,7 @@ import com.domain.event.dto.response.EventAssetRequestResponse;
 import com.domain.event.dto.response.EventFinalizeResponse;
 import com.global.dto.request.AssetCallbackRequest;
 import com.global.dto.response.AssetResultResponse;
+import org.springframework.core.io.Resource;
 
 public interface EventService {
 
@@ -13,4 +14,5 @@ public interface EventService {
     void handleEventAssetCallback(final AssetCallbackRequest<?> request);
     AssetResultResponse getEventAssetStatus(final Long assetId, final Long userId);
     EventFinalizeResponse finalizeEvent(final EventFinalizeRequest request);
+    Resource downloadEventAsset(final Long assetId, final String makerEmail);
 }
