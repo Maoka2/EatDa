@@ -49,4 +49,21 @@ public class Event extends BaseEntity {
         this.endDate = endDate;
         this.status = status != null ? status : Status.PENDING;
     }
+
+    public static Event createPending(Store store, LocalDate startDate, LocalDate endDate) {
+        return Event.builder()
+                .store(store)
+                .startDate(startDate)
+                .endDate(endDate)
+                .status(Status.PENDING)
+                .build();
+    }
+
+    public void updateStatus(final Status status) {
+        this.status = status;
+    }
+
+    public void updateDescription(final String description) {
+        this.description = description;
+    }
 }
