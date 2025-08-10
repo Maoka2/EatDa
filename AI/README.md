@@ -12,7 +12,7 @@ AI/
 │   ├── gpt_service.py       👈 GPT 프롬프트 생성 함수
 │   └── callback_service.py  👈 스프링 콜백 함수
 ├── models/
-│   └── shorts_ray2_models.py    👈 Pydantic 요청/응답 모델들
+│   └── shorts_models.py    👈 Pydantic 요청/응답 모델들
 ├── utils/
 │   └── logger.py            👈 로깅 유틸 함수들
 ├── .env
@@ -42,7 +42,7 @@ AI/
 # .env 파일에 다음 내용 추가
 LUMAAI_API_KEY=여기에_실제_Luma_AI_키_입력
 OPENAI_API_KEY=여기에_실제_OpenAI_키_입력
-SPRING_CALLBACK_URL=http://localhost:8080/api/reviews/assets/callback
+SPRING_CALLBACK_URL=https://i13a609.p.ssafy.io/api/reviews/assets/callback
 ```
 
 ### 2. Python 패키지 설치
@@ -74,7 +74,7 @@ python main.py
 ### 방법 2: Uvicorn 직접 실행
 ```bash
 cd AI
-uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ## 📡 API 엔드포인트
@@ -82,14 +82,14 @@ uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 서버가 실행되면 다음 URL에서 접근 가능합니다:
 - **API 문서**: https://www.notion.so/API-23abb13c7ad58099b420f9c4296c6bb7?source=copy_link (notion)
 - **상태 확인**: http://localhost:8000/health
-- **루트 확인**: http://localhost:8080/609
-- **영상 생성**: POST http://localhost:8080/api/reviews/assests/generate
+- **루트 확인**: http://localhost:8000/609
+- **영상 생성**: POST http://localhost:8000/api/reviews/assests/generate
 
 ### 영상 생성 API 사용 예시
 
 ```bash
 # curl을 사용한 예시
-curl -X POST "http://localhost:8080/api/reviews/assests/generate" \
+curl -X POST "http://localhost:8000/api/reviews/assests/generate" \
      -H "Content-Type: application/json" \
      -d '{
        "reviewAssetId": 1,
@@ -117,7 +117,7 @@ curl -X POST "http://localhost:8080/api/reviews/assests/generate" \
 import requests
 
 response = requests.post(
-    "http://localhost:8080/api/reviews/assests/generate",
+    "http://localhost:8000/api/reviews/assests/generate",
     json={
         "reviewAssetId": 1,
         "type": "SHORTS",
@@ -180,7 +180,7 @@ Python 3.11.9
 
 RN 플로우 엔드포인트(백그라운드 처리)
 Method: POST
-URL: http://localhost:8080/api/reviews/menu-extraction
+URL: https://i13a609.p.ssafy.io/ai/api/reviews/menu-extraction
 Body: raw(JSON)
 
 {

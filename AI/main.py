@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 # 라우터 임포트
-from routers import generate_router, ocr_router
+from routers import generate_router, ocr_router, ocr_receipt_router
 
 # 환경 변수 로드
 load_dotenv()
@@ -16,7 +16,7 @@ load_dotenv()
 # FastAPI 애플리케이션 초기화
 app = FastAPI(
     title="AI API",
-    description="AI API 서버 구축 - 테스트 및 쇼츠 생성 ai(luma ai) 연동",
+    description="AI API 서버",
     version="1.0.0"
 )
 
@@ -32,6 +32,7 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(generate_router)
 app.include_router(ocr_router)
+app.include_router(ocr_receipt_router)
 
 # API 서버 상태 확인(루트 페이지)
 @app.get("/609")

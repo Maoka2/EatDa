@@ -19,7 +19,7 @@ class Menu(BaseModel):
 # 쇼츠 생성 요청 모델
 class GenerateRequest(BaseModel):
     reviewAssetId: int = Field(..., description="리뷰 에셋 생성 요청의 식별자")
-    type: str = Field(..., description="생성할 에셋 타입 (IMAGE 또는 SHORTS)")
+    type: str = Field(..., description="생성할 에셋 타입 (IMAGE 또는 SHORTS_RAY2 또는 SHORTS_GEN_4)")
     prompt: str = Field(..., description="사용자 입력 프롬프트")
     storeId: int = Field(..., description="리뷰 대상 가게 ID")
     userId: int = Field(..., description="요청을 보낸 사용자 ID")

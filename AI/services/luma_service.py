@@ -32,13 +32,14 @@ class LumaService:
         """Luma AI 클라이언트가 사용 가능한지 확인합니다."""
         return self.client is not None
     
-    async def generate_video(self, enhanced_prompt: str, reference_images: list) -> Dict[str, Any]:
+    async def generate_video(self, enhanced_prompt: str, reference_images: list, model_name: str = "ray-2") -> Dict[str, Any]:
         """
         Luma AI로 영상을 생성합니다.
         
         Args:
             enhanced_prompt (str): 개선된 프롬프트
             reference_images (list): 참고 이미지 URL 목록
+            model_name (str): 사용할 Luma 모델명 (기본값: "ray-2")
             
         Returns:
             Dict[str, Any]: 생성 결과 정보
@@ -60,7 +61,7 @@ class LumaService:
         # Luma AI로 영상 생성 요청
         generation = await self.client.generations.create(
             prompt=enhanced_prompt,
-            model="ray-2",
+            model=model_name,
             loop=True,
             aspect_ratio="9:16",
             duration="5s",
@@ -76,8 +77,8 @@ class LumaService:
     async def wait_for_generation_completion(
         self,
         generation_id: str,
-        poll_interval_seconds: float = 2.0,
-        timeout_seconds: float = 120.0,
+        poll_interval_seconds: float = 3.0,
+        timeout_seconds: float = 240.0,
     ) -> Dict[str, Any]:
         """
         생성 완료/실패까지 폴링합니다. 완료되면 가능한 경우 asset URL을 추출해 반환합니다.

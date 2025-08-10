@@ -1,18 +1,18 @@
-# Luma AI API Key
-LUMAAI_API_KEY=your_luma_ai_api_key_here
+# 프롬프트 api 키
+GMS_API_KEY = 
 
-# GMS (GPT) API Key 
-GMS_API_KEY=your_gms_api_key_here
+# shorts 생성 api 키
+LUMAAI_API_KEY = 
+RUNWAY_API_KEY = 
 
-# FastAPI 설정
-HOST=0.0.0.0
-PORT=8000
+# 사업자 등록증 api 키 - 현재는 미운영
+CLOVA_LICENSE_SECRET_KEY = 
+CLOVA_LICENSE_API_URL= 
 
-# 환경 설정
-ENVIRONMENT=development
+# 영수증 인증 api 키
+CLOVA_RECEIPT_SECRET_KEY = 
+CLOVA_RECEIPT_API_URL = 
 
-# 스프링 서버 콜백 URL
-SPRING_CALLBACK_URL=http://localhost:8080/api/reviews/assets/callback
-
-# FastAPI 서버 BASE URL (웹훅용)
-BASE_URL=http://localhost:8080
+# 메뉴판 등록 api 키
+CLOVA_MENU_SECRET_KEY = 
+CLOVA_MENU_API_URL =
