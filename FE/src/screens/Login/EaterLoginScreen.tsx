@@ -1,5 +1,5 @@
 // src/screens/Login/EaterLoginScreen.tsx
-import React from "react";
+import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
@@ -7,6 +7,8 @@ import AuthForm, { AuthField } from "../../components/AuthForm";
 import SocialLoginBtn from "../../components/SocialLoginBtn";
 import GoogleIcon from "../../../assets/google-icon.svg";
 import KakaoIcon from "../../../assets/kakao-icon.svg";
+import { ApiError, signIn } from "./services/api";
+import { saveTokens } from "./services/tokenStorage";
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
@@ -39,6 +41,8 @@ type Props = {
 
 export default function EaterLoginScreen(props?: Props) {
   const navigation = useNavigation<NavigationProp>();
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleNavigateToRegister = () => {
     // 역할 선택 화면으로 먼저 이동
@@ -75,25 +79,54 @@ export default function EaterLoginScreen(props?: Props) {
     }
   };
 
-  const handleLogin = (formData: Record<string, string>) => {
+  const handleLogin = async (formData: Record<string, string>) => {
     console.log("냠냠이 로그인 처리", formData);
 
-    // 간단한 유효성 검사
-    if (!formData.email || !formData.password) {
-      loginFailure("이메일과 비밀번호를 모두 입력해주세요.");
-      return;
-    }
+    // 간단한 유효성 검사, AuthForm 에서 진행하고 있어서 일단 주석처리 했습니다.
+    // if (!formData.email || !formData.password) {
+    //   loginFailure("이메일과 비밀번호를 모두 입력해주세요.");
+    //   return;
+    // }
 
     // 실제 로그인 API 호출을 시뮬레이션
-    // 여기서는 간단한 검증으로 대체
-    setTimeout(() => {
-      // 더미 검증: 이메일에 '@'가 있고 비밀번호가 4자 이상이면 성공
-      if (formData.email.includes("@") && formData.password.length >= 4) {
-        loginSuccess();
+
+    try {
+      setIsLoading(true);
+
+      const response = await signIn({
+        email: formData.email,
+        password: formData.password,
+        role: "EATER",
+      });
+
+      console.log("로그인 성공, 서버 응답 : ", response);
+
+      // 밑에 토큰 저장코드 추가
+      await saveTokens(response.data);
+
+      loginSuccess();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        console.error("로그인 실패(API ERROR) :", error.message);
+        loginFailure(error.message);
       } else {
-        loginFailure("이메일 또는 비밀번호가 올바르지 않습니다.");
+        console.log("로그인 실패(Unknown ERROR) :", error);
+        loginFailure(
+          "알 수 없는 오류로 인한 로그인 실패 발생. 네트워크 상태를 확인해주세요."
+        );
       }
-    }, 1000);
+    } finally {
+      setIsLoading(false);
+    }
+    // 여기서는 간단한 검증으로 대체, AuthForm 에서 검증하고 있어서 일단 주석처리 했습니다.
+    // setTimeout(() => {
+    //   // 더미 검증: 이메일에 '@'가 있고 비밀번호가 4자 이상이면 성공
+    //   if (formData.email.includes("@") && formData.password.length >= 4) {
+    //     loginSuccess();
+    //   } else {
+    //     loginFailure("이메일 또는 비밀번호가 올바르지 않습니다.");
+    //   }
+    // }, 1000);
   };
 
   const handleGoogleLogin = () => {
@@ -117,7 +150,7 @@ export default function EaterLoginScreen(props?: Props) {
       role="eater"
       fields={loginFields}
       onSubmit={handleLogin}
-      submitButtonText="로그인"
+      submitButtonText={isLoading ? "로그인 중..." : "로그인"}
       linkItems={linkItems}
       onLinkPress={handleLinkPress}
       showLinks={true}
