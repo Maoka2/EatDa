@@ -35,7 +35,7 @@ public interface ReviewService {
     ReviewFinalizeResponse finalizeReview(ReviewFinalizeRequest request, String eaterEmail);
 
     ReviewFeedResult<ReviewFeedResponse> getReviewFeed(Double latitude, Double longitude, Integer distance,
-                                                       Long lastReviewId);
+                                                       Long lastReviewId, String email);
 
     ReviewDetailResponse getReviewDetail(Long reviewId, Long currentUserId);
 

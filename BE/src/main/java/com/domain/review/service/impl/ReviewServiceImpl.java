@@ -36,6 +36,7 @@ import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
 import com.domain.user.entity.User;
 import com.domain.user.repository.EaterRepository;
+import com.domain.user.repository.MakerRepository;
 import com.global.constants.ErrorCode;
 import com.global.constants.Status;
 import com.global.exception.ApiException;
@@ -64,13 +65,14 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final ReviewAssetRepository reviewAssetRepository;
     private final ReviewMenuRepository reviewMenuRepository;
+    private final EaterRepository eaterRepository;
+    private final MakerRepository makerRepository;
     private final MenuRepository menuRepository;
     private final StoreRepository storeRepository;
     private final ReviewMapper reviewMapper;
     private final ReviewAssetRedisPublisher reviewAssetRedisPublisher;
     private final FileStorageService fileStorageService;
     private final PoiStoreDistanceService poiStoreDistanceService;
-    private final EaterRepository eaterRepository;
 
     // @formatter:off
     /**
@@ -174,8 +176,16 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ReviewFeedResult<ReviewFeedResponse> getReviewFeed(Double latitude, Double longitude,
-                                                              Integer distance, Long lastReviewId) {
+    public ReviewFeedResult<ReviewFeedResponse> getReviewFeed(final Double latitude, final Double longitude,
+                                                              final Integer distance, final Long lastReviewId,
+                                                              final String email) {
+        boolean isEater = eaterRepository.findByEmailAndDeletedFalse(email).isPresent();
+        boolean isMaker = makerRepository.findByEmailAndDeletedFalse(email).isPresent();
+
+        if (!isEater && !isMaker) {
+            throw new ApiException(FORBIDDEN);
+        }
+
         // 1. 파라미터 검증
         validateLocationParameters(latitude, longitude, distance);
 

@@ -237,6 +237,9 @@ public class ReviewController {
      * @param lastReviewId 무한스크롤용 마지막 리뷰 ID (선택)
      * @return 리뷰 피드 목록
      */
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PreAuthorize("hasAnyAuthority('EATER','MAKER')")
     @GetMapping("/feed")
     public ResponseEntity<BaseResponse> getReviewFeed(
             @RequestParam
@@ -253,7 +256,9 @@ public class ReviewController {
             Integer distance,
 
             @RequestParam(required = false)
-            Long lastReviewId
+            Long lastReviewId,
+
+            @AuthenticationPrincipal final String email
     ) {
         log.info("Review feed request - lat: {}, lon: {}, distance: {}m, lastReviewId: {}",
                 latitude, longitude, distance, lastReviewId);
@@ -263,7 +268,7 @@ public class ReviewController {
         }
 
         ReviewFeedResult<ReviewFeedResponse> result = reviewService.getReviewFeed(
-                latitude, longitude, distance, lastReviewId
+                latitude, longitude, distance, lastReviewId, email
         );
 
         String code = result.nearbyReviewsFound() ? "FEED_FETCHED" : "FEED_FALLBACK";
