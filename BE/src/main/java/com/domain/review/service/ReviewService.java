@@ -37,7 +37,7 @@ public interface ReviewService {
     ReviewFeedResult<ReviewFeedResponse> getReviewFeed(Double latitude, Double longitude, Integer distance,
                                                        Long lastReviewId, String email);
 
-    ReviewDetailResponse getReviewDetail(Long reviewId, Long currentUserId);
+    ReviewDetailResponse getReviewDetail(Long reviewId, String email);
 
     ReviewFeedResult<MyReviewResponse> getMyReviews(Long userId, Long lastReviewId, int pageSize);
 

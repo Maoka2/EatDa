@@ -179,12 +179,7 @@ public class ReviewServiceImpl implements ReviewService {
     public ReviewFeedResult<ReviewFeedResponse> getReviewFeed(final Double latitude, final Double longitude,
                                                               final Integer distance, final Long lastReviewId,
                                                               final String email) {
-        boolean isEater = eaterRepository.findByEmailAndDeletedFalse(email).isPresent();
-        boolean isMaker = makerRepository.findByEmailAndDeletedFalse(email).isPresent();
-
-        if (!isEater && !isMaker) {
-            throw new ApiException(FORBIDDEN);
-        }
+        validatedToken(email);
 
         // 1. 파라미터 검증
         validateLocationParameters(latitude, longitude, distance);
@@ -224,7 +219,9 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ReviewDetailResponse getReviewDetail(Long reviewId, Long currentUserId) {
+    public ReviewDetailResponse getReviewDetail(final Long reviewId, final String email) {
+        validatedToken(email);
+
         // 1. 리뷰 조회 (연관 엔티티 포함)
         Review review = reviewRepository.findByIdWithDetails(reviewId)
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
@@ -235,8 +232,8 @@ public class ReviewServiceImpl implements ReviewService {
         // 3. 스크랩 정보 계산
         List<ReviewScrap> scraps = review.getScraps();
         int scrapCount = scraps.size();
-        boolean isScrapped = currentUserId != null && scraps.stream()
-                .anyMatch(scrap -> scrap.getUser().getId().equals(currentUserId));
+        boolean isScrapped = scraps.stream()
+                .anyMatch(scrap -> scrap.getUser().getEmail().equals(email));
 
         // 4. 응답 생성
         return buildReviewDetailResponse(review, scrapCount, isScrapped);
@@ -587,5 +584,14 @@ public class ReviewServiceImpl implements ReviewService {
     // IMAGE일 때만 true, SHORTS 계열은 false
     private boolean shouldConvertToWebp(ReviewAssetType type) {
         return type == ReviewAssetType.IMAGE;
+    }
+
+    private void validatedToken(final String email) {
+        boolean isEater = eaterRepository.findByEmailAndDeletedFalse(email).isPresent();
+        boolean isMaker = makerRepository.findByEmailAndDeletedFalse(email).isPresent();
+
+        if (!isEater && !isMaker) {
+            throw new ApiException(FORBIDDEN);
+        }
     }
 }

@@ -286,22 +286,23 @@ public class ReviewController {
      * 리뷰 상세 정보 조회
      *
      * @param reviewId 조회할 리뷰 ID (필수)
-     * @param userId   현재 로그인한 사용자 ID (인증 시 자동 주입, 스크랩 여부 판단용)
+     * @param email    현재 로그인한 사용자 email (인증 시 자동 주입, 스크랩 여부 판단용)
      * @return 리뷰 상세 정보
      */
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PreAuthorize("hasAnyAuthority('EATER','MAKER')")
     @GetMapping("/{reviewId}")
     public ResponseEntity<BaseResponse> getReviewDetail(
             @PathVariable
             @NotNull(message = "리뷰 ID는 필수입니다")
             @Positive(message = "리뷰 ID는 양수여야 합니다")
             Long reviewId,
-            @RequestHeader(value = "X-User-Id", required = false)
-            Long userId
-            //            @AuthenticationPrincipal Long userId  //
+            @AuthenticationPrincipal String email
     ) {
-        log.info("Review detail request - reviewId: {}, userId: {}", reviewId, userId);
+        log.info("Review detail request - reviewId: {}", reviewId);
 
-        ReviewDetailResponse reviewDetail = reviewService.getReviewDetail(reviewId, userId);
+        ReviewDetailResponse reviewDetail = reviewService.getReviewDetail(reviewId, email);
 
         SuccessResponse<ReviewDetailResponse> response = SuccessResponse.of(
                 "REVIEW_DETAIL_FETCHED",
