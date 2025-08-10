@@ -1,9 +1,11 @@
 // src/screens/Login/MakerLoginScreen.tsx
-import React from "react";
+import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 import AuthForm, { AuthField } from "../../components/AuthForm";
+import { signIn, ApiError } from "./services/api";
+import { saveTokens } from "./services/tokenStorage";
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
@@ -36,6 +38,8 @@ type Props = {
 
 export default function MakerLoginScreen(props?: Props) {
   const navigation = useNavigation<NavigationProp>();
+
+  const [isLoading, setIsLoading] = useState(false);
 
   // 내장 네비게이션 함수들
   const handleNavigateToRegister = () => {
@@ -72,25 +76,55 @@ export default function MakerLoginScreen(props?: Props) {
     }
   };
 
-  const handleLogin = (formData: Record<string, string>) => {
+  const handleLogin = async (formData: Record<string, string>) => {
     console.log("사장님 로그인 처리", formData);
 
-    // 간단한 유효성 검사
-    if (!formData.email || !formData.password) {
-      loginFailure("이메일과 비밀번호를 모두 입력해주세요.");
-      return;
+    try {
+      setIsLoading(true);
+
+      const response = await signIn({
+        email: formData.email,
+        password: formData.password,
+        role: "MAKER",
+      });
+
+      console.log("로그인 성공 [${response.state}]: ", response);
+
+      await saveTokens(response.data);
+      loginSuccess();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        console.error(
+          "로그인 실패(API ERROR) [${error.status}]: ",
+          error.message
+        );
+        loginFailure(error.message);
+      } else {
+        console.error("로그인 실패 (Unknown Error):", error);
+        loginFailure(
+          "알 수 없는 오류가 발생했습니다. 네트워크를 확인해주세요."
+        );
+      }
+    } finally {
+      setIsLoading(false);
     }
+    // 간단한 유효성 검사 Eater와 동일한 이유로 주석처리
+    // if (!formData.email || !formData.password) {
+    //   loginFailure("이메일과 비밀번호를 모두 입력해주세요.");
+    //   return;
+    // }
 
     // 실제 로그인 API 호출을 시뮬레이션
-    // 여기서는 간단한 검증으로 대체
-    setTimeout(() => {
-      // 더미 검증: 이메일에 '@'가 있고 비밀번호가 4자 이상이면 성공
-      if (formData.email.includes("@") && formData.password.length >= 4) {
-        loginSuccess();
-      } else {
-        loginFailure("이메일 또는 비밀번호가 올바르지 않습니다.");
-      }
-    }, 1000);
+
+    // 여기서는 간단한 검증으로 대체 , Eater와 동일한 이유로 주석처리
+    //   setTimeout(() => {
+    //     // 더미 검증: 이메일에 '@'가 있고 비밀번호가 4자 이상이면 성공
+    //     if (formData.email.includes("@") && formData.password.length >= 4) {
+    //       loginSuccess();
+    //     } else {
+    //       loginFailure("이메일 또는 비밀번호가 올바르지 않습니다.");
+    //     }
+    //   }, 1000);
   };
 
   return (
