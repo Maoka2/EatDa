@@ -88,15 +88,14 @@ export default function MakerLoginScreen(props?: Props) {
         role: "MAKER",
       });
 
-      console.log("로그인 성공 [${response.state}]: ", response);
+      console.log(`로그인 성공 [${response.status}]:`, response);
 
       await saveTokens(response.data);
       loginSuccess();
     } catch (error) {
       if (error instanceof ApiError) {
         console.error(
-          "로그인 실패(API ERROR) [${error.status}]: ",
-          error.message
+          `로그인 실패(API ERROR) [${error.status}]: ${error.message}`
         );
         loginFailure(error.message);
       } else {
@@ -132,7 +131,7 @@ export default function MakerLoginScreen(props?: Props) {
       role="maker"
       fields={loginFields}
       onSubmit={handleLogin}
-      submitButtonText="로그인"
+      submitButtonText={isLoading ? "로그인 중..." : "로그인"}
       linkItems={linkItems}
       onLinkPress={handleLinkPress}
       showLinks={true}
