@@ -5,12 +5,12 @@ OCR 관련 API 라우터
 
 import httpx
 from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, Form
-from models.ocr_menuboard_models import OCRMenuRequest, OCRMenuRespond, OCRCallbackRequest
-from services import ocr_menuboard_service, callback_service
+from models.menuboard_ocr_models import OCRMenuRequest, OCRMenuRespond, OCRCallbackRequest
+from services.menuboard_ocr_service import menuboard_ocr_service
 
 # 라우터 생성
 router = APIRouter(
-    prefix="ai/api",
+    prefix="/api",
     tags=["ocr"]
 )
 
@@ -25,7 +25,7 @@ async def receive_ocr_request(request: OCRMenuRequest, background_tasks: Backgro
     메뉴보드 OCR 요청을 받아서 비동기 처리를 시작합니다.
     """
     try:
-        if not ocr_menuboard_service.is_available():
+        if not menuboard_ocr_service.is_available():
             raise HTTPException(
                 status_code=500,
                 detail="OCR 서비스가 초기화되지 않았습니다. API 키를 확인하세요."
@@ -75,7 +75,7 @@ async def process_ocr_async(request: OCRMenuRequest):
         # 정규화는 서비스 내부에서 처리됨 (jpeg->jpg, tif->tiff)
 
         # 2단계: OCR 처리
-        extracted_menus = await ocr_menuboard_service.extract_menus_from_image(
+        extracted_menus = await menuboard_ocr_service.extract_menus_from_image(
             image_data, image_format
         )
 
@@ -169,7 +169,7 @@ async def process_menu_board_upload(
     - file: [이미지 파일 선택]
     """
     try:
-        if not ocr_menuboard_service.is_available():
+        if not menuboard_ocr_service.is_available():
             raise HTTPException(
                 status_code=500,
                 detail="OCR 서비스가 초기화되지 않았습니다. API 키를 확인하세요."
@@ -203,7 +203,7 @@ async def process_menu_board_upload(
                 image_format = filename.split('.')[-1]
 
         # OCR 처리
-        extracted_menus = await ocr_menuboard_service.extract_menus_from_image(
+        extracted_menus = await menuboard_ocr_service.extract_menus_from_image(
             image_data, image_format
         )
 
