@@ -103,7 +103,7 @@ async def send_callback_to_spring(callback_data: CallbackRequest) -> SpringRespo
     Raises:
         HTTPException: 콜백 전송 실패 시
     """
-    callback_url = os.getenv("SPRING_CALLBACK_URL", "http://localhost:8000/api/reviews/assets/callback")
+    callback_url = os.getenv("SPRING_CALLBACK_URL", "https://i13a609.p.ssafy.io/api/reviews/assets/callback")
     
     try:
         async with aiohttp.ClientSession() as session:
