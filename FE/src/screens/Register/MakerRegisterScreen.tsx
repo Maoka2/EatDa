@@ -42,11 +42,9 @@ import {
   getCoordinatesFromAddressNaver,
 } from "./services/geocoding";
 import {
-  createMaker,
   requestMenuOCR,
   getOCRResult,
-  submitMenus,
-  completeSignup,
+  signupMakerAllInOne, // ✅ 원샷 회원가입
 } from "./services/api";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "MakerRegisterScreen">;
@@ -77,9 +75,7 @@ export default function MakerRegisterScreen({ navigation }: Props) {
     formattedAddress: undefined,
   });
 
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
-    {}
-  );
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [validationTypes, setValidationTypes] = useState<ValidationTypes>({});
   const [duplicateCheckStates, setDuplicateCheckStates] =
     useState<DuplicateCheckStates>({ email: "none" });
@@ -266,7 +262,7 @@ export default function MakerRegisterScreen({ navigation }: Props) {
   const isStep4NextEnabled = () =>
     agreementsState.terms && agreementsState.marketing;
 
-  /** 이메일 중복검사 */
+  /** 이메일 중복검사 (간단 구현 그대로 유지) */
   const checkEmailDuplicate = async (email: string): Promise<boolean> => {
     const response = await fetch(
       `https://i13a609.p.ssafy.io/test/api/makers/check-email`,
@@ -424,7 +420,7 @@ export default function MakerRegisterScreen({ navigation }: Props) {
   };
 
   const pollOCRResult = async (assetId: number) => {
-    const maxAttempts = 30; // 최대 5분
+    const maxAttempts = 60; // 1초 * 60 = 60초 대기
     let attempts = 0;
 
     const poll = async (): Promise<void> => {
@@ -449,8 +445,8 @@ export default function MakerRegisterScreen({ navigation }: Props) {
             setMenuItems(convertedMenus);
             setSignupState((prev) => ({
               ...prev,
-              assetId,
-              storeId: result.storeId ?? prev.storeId, // ⬅️ FastAPI 결과에서 storeId 보관
+              assetId, // 기록만
+              storeId: result.storeId ?? (prev as any).storeId, // 있으면 저장(없어도 OK)
               step3Complete: true,
             }));
 
@@ -471,9 +467,10 @@ export default function MakerRegisterScreen({ navigation }: Props) {
             "메뉴 인식에 실패했습니다. 다시 시도해주세요."
           );
           setIsPolling(false);
-        } else if (result.status === "PENDING") {
+        } else {
+          // PENDING
           if (attempts < maxAttempts) {
-            setTimeout(poll, 10000);
+            setTimeout(poll, 1000); // ⬅️ 1초
           } else {
             Alert.alert(
               "시간 초과",
@@ -485,7 +482,7 @@ export default function MakerRegisterScreen({ navigation }: Props) {
       } catch (error) {
         console.error("OCR polling error:", error);
         if (attempts < maxAttempts) {
-          setTimeout(poll, 10000);
+          setTimeout(poll, 1000); // ⬅️ 1초
         } else {
           Alert.alert("오류", "메뉴 인식 중 오류가 발생했습니다.");
           setIsPolling(false);
@@ -646,25 +643,9 @@ export default function MakerRegisterScreen({ navigation }: Props) {
   };
 
   const handleFinalSubmit = async () => {
-    // 최종 제출: createMaker -> submitMenus -> completeSignup
+    // ✅ 변경: 원샷 회원가입 (기본정보 + license + 메뉴들 + 이미지)
     try {
-      // 1) 사장님 생성 (기본정보 + license)
-      const maker = await createMaker(formData, businessLicenseUri);
-      const makerId = maker.id;
-      setSignupState((prev) => ({ ...prev, makerId }));
-
-      // 2) 메뉴 등록 (OCR 성공 시 받은 storeId 필요)
-      if (!signupState.storeId) {
-        Alert.alert(
-          "오류",
-          "가게 정보(storeId)를 확인할 수 없습니다. 메뉴 OCR을 먼저 진행해주세요."
-        );
-        return;
-      }
-      await submitMenus(makerId, signupState.storeId, menuItems);
-
-      // 3) 약관 동의
-      await completeSignup(makerId, signupState.storeId);
+      await signupMakerAllInOne(formData, businessLicenseUri, menuItems);
 
       setModalType("success");
       setModalVisible(true);
