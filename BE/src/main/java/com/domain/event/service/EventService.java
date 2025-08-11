@@ -2,6 +2,7 @@ package com.domain.event.service;
 
 import com.domain.event.dto.request.EventAssetCreateRequest;
 import com.domain.event.dto.request.EventFinalizeRequest;
+import com.domain.event.dto.response.ActiveStoreEventResponse;
 import com.domain.event.dto.response.EventAssetRequestResponse;
 import com.domain.event.dto.response.EventFinalizeResponse;
 import com.domain.event.dto.response.MyEventResponse;
@@ -19,4 +20,5 @@ public interface EventService {
     EventFinalizeResponse finalizeEvent(final EventFinalizeRequest request);
     Resource downloadEventAsset(final Long assetId, final String makerEmail);
     List<MyEventResponse> getMyEvents(final Long lastEventId, final String makerEmail);
+    List<ActiveStoreEventResponse> getActiveStoreEvents(final Long storeId, final Long lastEventId);
 }
