@@ -3,6 +3,7 @@ package com.domain.event.service.impl;
 import com.domain.event.dto.redis.EventAssetGenerateMessage;
 import com.domain.event.dto.request.EventAssetCreateRequest;
 import com.domain.event.dto.request.EventFinalizeRequest;
+import com.domain.event.dto.response.ActiveStoreEventResponse;
 import com.domain.event.dto.response.EventAssetRequestResponse;
 import com.domain.event.dto.response.EventFinalizeResponse;
 import com.domain.event.dto.response.MyEventResponse;
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -174,6 +176,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<MyEventResponse> getMyEvents(Long lastEventId, String makerEmail) {
         User maker = userRepository.findByEmailAndDeletedFalse(makerEmail)
                 .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
@@ -199,6 +202,44 @@ public class EventServiceImpl implements EventService {
         // Response 생성
         return events.stream()
                 .map(event -> MyEventResponse.from(
+                        event,
+                        assetMap.get(event.getId())
+                ))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ActiveStoreEventResponse> getActiveStoreEvents(Long storeId, Long lastEventId) {
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ApiException(ErrorCode.STORE_NOT_FOUND, storeId));
+
+        LocalDate currentDate = LocalDate.now();
+        List<Event> events = eventRepository.findActiveStoreEvents(
+                storeId,
+                currentDate,
+                lastEventId,
+                PageRequest.of(0, PagingConstants.DEFAULT_SIZE.value)
+        );
+
+        if (events.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .toList();
+
+        Map<Long, EventAsset> assetMap = eventAssetRepository.findByEventIds(eventIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        ea -> ea.getEvent().getId(),
+                        Function.identity()
+                ));
+
+        // Response 생성
+        return events.stream()
+                .map(event -> ActiveStoreEventResponse.from(
                         event,
                         assetMap.get(event.getId())
                 ))
