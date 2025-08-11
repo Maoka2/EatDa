@@ -20,7 +20,7 @@ except Exception as e:  # pragma: no cover
     raise RuntimeError("redis 패키지가 필요합니다. requirements.txt에 redis>=5 를 설치하세요.") from e
 
 from models.event_image_models import EventAssetGenerateMessage
-from services import image_service, gpt_service
+from services import image_service
 from services.event_image_callback import event_image_callback_service
 
 
@@ -69,9 +69,7 @@ class EventImageConsumer:
     async def process_image(self, req: EventAssetGenerateMessage) -> Tuple[str, str | None]:
         if not image_service.is_available():
             return "FAIL", None
-        # 메뉴보드 전용 GPT 보강 후 이미지 생성
-        enhanced = await gpt_service.enhance_prompt_for_menuboard(req.prompt)
-        url = await image_service.generate_image_url(enhanced)
+        url = await image_service.generate_image_url(req.prompt)
         return ("SUCCESS" if url else "FAIL"), url
     
 
