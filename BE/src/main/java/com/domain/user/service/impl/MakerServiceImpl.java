@@ -22,12 +22,14 @@ import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MakerServiceImpl implements MakerService {
 
     private final FileStorageService fileStorageService;
@@ -45,35 +47,52 @@ public class MakerServiceImpl implements MakerService {
 
     @Override
     @Transactional
-    public User registerMaker(final MakerSignUpBaseRequest baseRequest, final List<MakerSignUpMenuRequest> menuRequests,
-                              final MultipartFile licenseImageRequest, final List<MultipartFile> menuImageRequests) {
+    public User registerMaker(final MakerSignUpBaseRequest baseRequest,
+                              final List<MakerSignUpMenuRequest> menuRequests,
+                              final MultipartFile licenseImageRequest,
+                              final List<MultipartFile> menuImageRequests) {
+
+        log.info("===== [Service] registerMaker START =====");
+        log.info("BaseRequest: {}", baseRequest);
+        log.info("menuRequests size: {}", menuRequests != null ? menuRequests.size() : 0);
+        log.info("menuImageRequests size: {}", menuImageRequests != null ? menuImageRequests.size() : 0);
+
         validateSignUpRequest(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
+        log.info("Step1: Validation complete");
 
         User maker = makerMapper.toEntity(baseRequest, passwordEncoder.encode(baseRequest.password()));
+        log.info("Step2: Maker entity mapped");
+
         long h3Index7 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 7);
-        long h3Index8 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 8);
-        long h3Index9 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 9);
-        long h3Index10 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 10);
+        log.info("Step3: h3Index7={}", h3Index7);
+
         Store store = storeMapper.toEntity(baseRequest, maker,
                 storeLicenseImage(licenseImageRequest, "licenses/" + maker.getEmail()),
                 h3Index7,
-                h3Index8,
-                h3Index9,
-                h3Index10
+                h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 8),
+                h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 9),
+                h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 10)
         );
+        log.info("Step4: Store entity mapped");
 
         List<Menu> menus = new ArrayList<>();
         for (int i = 0; i < menuRequests.size(); i++) {
+            log.info("Step5: Processing menu index {}", i);
             MultipartFile imageRequest = menuImageRequests.get(i);
             menus.add(menuMapper.toEntity(menuRequests.get(i), store,
                     storeLicenseImage(imageRequest, "menus/" + maker.getEmail())));
         }
+        log.info("Step6: Menu list created, size={}", menus.size());
 
         maker.addStore(store);
+        log.info("Step7: Store added to Maker");
 
         makerRepository.save(maker);
         storeRepository.save(store);
         menuRepository.saveAll(menus);
+        log.info("Step8: All entities saved");
+
+        log.info("===== [Service] registerMaker END =====");
         return maker;
     }
 
