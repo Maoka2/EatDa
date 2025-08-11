@@ -13,6 +13,7 @@ import com.domain.event.infrastructure.redis.EventAssetRedisPublisher;
 import com.domain.event.repository.EventAssetRepository;
 import com.domain.event.repository.EventRepository;
 import com.domain.event.service.EventService;
+import com.domain.event.validator.EventValidator;
 import com.domain.user.repository.UserRepository;
 import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
@@ -39,7 +40,6 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -55,18 +55,25 @@ public class EventServiceImpl implements EventService {
     private final EventAssetRedisPublisher eventAssetRedisPublisher;
     private final UserRepository userRepository;
 
+    private final EventValidator eventValidator;
+
     @Override
     @Transactional
-    public EventAssetRequestResponse requestEventAsset(EventAssetCreateRequest request, final Long userId) {
+    public EventAssetRequestResponse requestEventAsset(EventAssetCreateRequest request, final String makerEmail) {
         // storeId 유효성 검사
         Store store = storeRepository.findById(request.storeId())
                         .orElseThrow(() -> new ApiException(ErrorCode.STORE_NOT_FOUND));
+
+        // 사용자 ROLE 검사
+        User maker = userRepository.findByEmailAndDeletedFalse(makerEmail)
+                        .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
 
         AssetValidator.validateImages(request.image(), ErrorCode.IMAGE_TOO_LARGE);
 
         LocalDate startDate = LocalDate.parse(request.startDate());
         LocalDate endDate = LocalDate.parse(request.endDate());
 
+        EventValidator.validateDateRange(startDate, endDate);
         Event event = createPendingEvent(store, startDate, endDate);
         EventAsset eventAsset = createPendingEventAsset(event, request);
 
@@ -76,7 +83,7 @@ public class EventServiceImpl implements EventService {
                 request.type(),
                 request.prompt(),
                 store.getId(),
-                userId,
+                maker.getId(),
                 request.title(),
                 startDate,
                 endDate,
@@ -100,13 +107,14 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional(readOnly = true)
-    public AssetResultResponse getEventAssetStatus(Long assetId, Long userId) {
+    public AssetResultResponse getEventAssetStatus(Long assetId, String makerEmail) {
+        User maker = userRepository.findByEmailAndDeletedFalse(makerEmail)
+                .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
+
         EventAsset asset = eventAssetRepository.findByIdWithStore(assetId)
                 .orElseThrow(() -> new ApiException(ErrorCode.ASSET_NOT_FOUND, assetId));
 
-        if (!asset.getEvent().getStore().getMaker().getId().equals(userId)) {
-            throw new ApiException(ErrorCode.FORBIDDEN);
-        }
+        EventValidator.validateOwnership(maker, asset);
 
         return switch (asset.getStatus()) {
             case SUCCESS -> new AssetResultResponse(asset.getType(), asset.getAssetUrl());
@@ -121,20 +129,12 @@ public class EventServiceImpl implements EventService {
         EventAsset asset = eventAssetRepository.findById(request.eventAssetId())
                 .orElseThrow(() -> new ApiException(ErrorCode.ASSET_NOT_FOUND, request.eventAssetId()));
 
-        if (!asset.getStatus().isSuccess()) {
-            throw new ApiException(ErrorCode.ASSET_NOT_SUCCESS, asset.getId());
-        }
-
-        if (!Objects.equals(request.type(), AssetType.IMAGE)) {
-            throw new ApiException(ErrorCode.ASSET_TYPE_MISMATCH, request.type());
-        }
+        EventValidator.validateForFinalization(asset);
 
         Event event = eventRepository.findById(request.eventId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND, request.eventId()));
 
-        if (!event.getStatus().isPending()) {
-            throw new ApiException(ErrorCode.EVENT_NOT_PENDING, event.getId());
-        }
+        EventValidator.validatePendingStatus(event);
 
         event.updateDescription(request.description());
         event.updateStatus(Status.SUCCESS);
@@ -152,9 +152,7 @@ public class EventServiceImpl implements EventService {
         EventAsset asset = eventAssetRepository.findByIdWithStore(assetId)
                 .orElseThrow(() -> new ApiException(ErrorCode.ASSET_NOT_FOUND, assetId));
 
-        if (!asset.getEvent().getStore().getMaker().getId().equals(maker.getId())) {
-            throw new ApiException(ErrorCode.FORBIDDEN);
-        }
+        EventValidator.validateOwnership(maker, asset);
 
         if (asset.getAssetUrl() == null || asset.getAssetUrl().isBlank()) {
             throw new ApiException(ErrorCode.ASSET_URL_REQUIRED, assetId);
@@ -163,7 +161,7 @@ public class EventServiceImpl implements EventService {
         try {
             Resource resource = fileStorageService.loadAsResource(asset.getAssetUrl());
 
-            // 6. 파일 존재 및 읽기 가능 여부 확인
+            // 파일 존재 및 읽기 가능 여부 확인
             if (!resource.exists() || !resource.isReadable()) {
                 throw new ApiException(ErrorCode.FILE_NOT_FOUND, asset.getAssetUrl());
             }
@@ -254,9 +252,7 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findByIdAndDeletedFalse(eventId)
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND, eventId));
 
-        if (!event.getStore().getMaker().getId().equals(maker.getId())) {
-            throw new ApiException(ErrorCode.FORBIDDEN);
-        }
+        EventValidator.validateOwnership(maker, event);
 
         // 소프트 삭제
         event.delete();
