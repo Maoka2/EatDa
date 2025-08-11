@@ -53,8 +53,9 @@ public class LocalFileStorageService implements FileStorageService {
             String originalMimeType = extractAndValidateMimeType(file);
             InputStream optimizedStream = ImageOptimizationUtils.optimize(file, convertToWebp);
             String targetMimeType = convertToWebp ? MIME_TYPE_WEBP : originalMimeType;
-
-            return storeOptimizedImage(optimizedStream, targetMimeType, properties.getImageRoot(), relativePath);
+            String absPath = storeOptimizedImage(optimizedStream, targetMimeType,
+                    properties.getImageRoot(), sanitize(relativePath));
+            return properties.toResponsePath(absPath);
         } catch (IOException e) {
             throw new GlobalException(FILE_UPLOAD_ERROR, originalName, e);
         }
@@ -78,7 +79,7 @@ public class LocalFileStorageService implements FileStorageService {
             file.transferTo(fullPath.toFile());
 
             // 4) 저장된 전체 경로 반환
-            return fullPath.toString();
+            return properties.toResponsePath(fullPath.toString());
         } catch (IOException e) {
             throw new GlobalException(FILE_UPLOAD_ERROR, originalName, e);
         }
@@ -94,7 +95,9 @@ public class LocalFileStorageService implements FileStorageService {
      */
     @Override
     public String storeVideo(final MultipartFile file, final String relativePath, final String originalName) {
-        return storeOptimizedVideo(file, properties.getVideoRoot(), relativePath, originalName);
+        String absPath = storeOptimizedVideo(file, properties.getVideoRoot(), sanitize(relativePath), originalName);
+        // 2) 응답용 변환
+        return properties.toResponsePath(absPath);
     }
 
     /**
