@@ -17,7 +17,7 @@ import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
 import com.domain.user.constants.Role;
 import com.domain.user.entity.User;
-import com.domain.user.repository.UserRepository;
+import com.domain.user.repository.MakerRepository;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
 import com.global.constants.PagingConstants;
@@ -65,7 +65,7 @@ class EventServiceImplTest {
     @Mock
     private EventRepository eventRepository;
     @Mock
-    private UserRepository userRepository;
+    private MakerRepository makerRepository;
     @Mock
     private EventAssetRepository eventAssetRepository;
     @Mock
@@ -88,7 +88,7 @@ class EventServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
 
         given(maker.getId()).willReturn(userId);
@@ -445,7 +445,7 @@ class EventServiceImplTest {
                 .email(otherEmail)
                 .build();
 
-        given(userRepository.findByEmailAndDeletedFalse(otherEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(otherEmail))
                 .willReturn(Optional.of(requestUser));
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.of(eventAsset));
@@ -669,7 +669,7 @@ class EventServiceImplTest {
         Resource mockResource = mock(Resource.class);
 
         given(eventAsset.getAssetUrl()).willReturn("/uploads/events/asset123.webp");
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.of(eventAsset));
@@ -685,7 +685,7 @@ class EventServiceImplTest {
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(mockResource);
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verify(eventAssetRepository).findByIdWithStore(assetId);
         verify(fileStorageService).loadAsResource("/uploads/events/asset123.webp");
         verify(mockResource).exists();
@@ -698,7 +698,7 @@ class EventServiceImplTest {
         // given
         String makerEmail = "notfound@example.com";
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.empty());
 
         // when & then
@@ -706,7 +706,7 @@ class EventServiceImplTest {
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED);
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verifyNoInteractions(eventAssetRepository, fileStorageService);
     }
 
@@ -714,7 +714,7 @@ class EventServiceImplTest {
     @DisplayName("이벤트 에셋 다운로드 - 에셋을 찾을 수 없음")
     void downloadEventAsset_AssetNotFound() {
         // given
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.empty());
@@ -724,7 +724,7 @@ class EventServiceImplTest {
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ASSET_NOT_FOUND);
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verify(eventAssetRepository).findByIdWithStore(assetId);
         verifyNoInteractions(fileStorageService);
     }
@@ -738,7 +738,7 @@ class EventServiceImplTest {
                 .email(otherEmail)
                 .build();
 
-        given(userRepository.findByEmailAndDeletedFalse(otherEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(otherEmail))
                 .willReturn(Optional.of(requestUser));
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.of(eventAsset));
@@ -748,7 +748,7 @@ class EventServiceImplTest {
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
 
-        verify(userRepository).findByEmailAndDeletedFalse(otherEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(otherEmail);
         verify(eventAssetRepository).findByIdWithStore(assetId);
         verifyNoInteractions(fileStorageService);
     }
@@ -758,7 +758,7 @@ class EventServiceImplTest {
     void downloadEventAsset_AssetUrlEmpty() {
         // given
         given(eventAsset.getAssetUrl()).willReturn("");
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.of(eventAsset));
@@ -768,7 +768,7 @@ class EventServiceImplTest {
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ASSET_URL_REQUIRED);
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verify(eventAssetRepository).findByIdWithStore(assetId);
         verifyNoInteractions(fileStorageService);
     }
@@ -778,7 +778,7 @@ class EventServiceImplTest {
     void downloadEventAsset_AssetUrlNull() {
         // given
         given(eventAsset.getAssetUrl()).willReturn(null);
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.of(eventAsset));
@@ -788,7 +788,7 @@ class EventServiceImplTest {
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ASSET_URL_REQUIRED);
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verify(eventAssetRepository).findByIdWithStore(assetId);
         verifyNoInteractions(fileStorageService);
     }
@@ -800,7 +800,7 @@ class EventServiceImplTest {
         Resource mockResource = mock(Resource.class);
 
         given(eventAsset.getAssetUrl()).willReturn("/uploads/events/notfound.webp");
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.of(eventAsset));
@@ -813,7 +813,7 @@ class EventServiceImplTest {
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FILE_NOT_FOUND);
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verify(eventAssetRepository).findByIdWithStore(assetId);
         verify(fileStorageService).loadAsResource("/uploads/events/notfound.webp");
         verify(mockResource).exists();
@@ -843,7 +843,7 @@ class EventServiceImplTest {
 
         Resource mockResource = mock(Resource.class);
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.of(asset));
@@ -857,7 +857,7 @@ class EventServiceImplTest {
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FILE_NOT_FOUND);
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verify(eventAssetRepository).findByIdWithStore(assetId);
         verify(fileStorageService).loadAsResource("/uploads/events/unreadable.webp");
         verify(mockResource).exists();
@@ -882,7 +882,7 @@ class EventServiceImplTest {
                 .assetUrl("/uploads/events/error.webp")
                 .build();
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.of(asset));
@@ -894,7 +894,7 @@ class EventServiceImplTest {
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FILE_DOWNLOAD_ERROR);
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verify(eventAssetRepository).findByIdWithStore(assetId);
         verify(fileStorageService).loadAsResource("/uploads/events/error.webp");
     }
@@ -948,7 +948,7 @@ class EventServiceImplTest {
         List<Event> events = List.of(event1, event2);
         List<EventAsset> assets = List.of(asset1, asset2);
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventRepository.findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class)))
                 .willReturn(events);
@@ -972,7 +972,7 @@ class EventServiceImplTest {
         assertThat(response2.storeName()).isEqualTo("테스트 가게2");
         assertThat(response2.postUrl()).isEqualTo("/uploads/event2.webp");
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verify(eventRepository).findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class));
         verify(eventAssetRepository).findByEventIds(List.of(100L, 99L));
     }
@@ -1003,7 +1003,7 @@ class EventServiceImplTest {
                 .status(Status.SUCCESS)
                 .build();
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventRepository.findMyEventsWithCursor(eq(makerEmail), eq(lastEventId), any(PageRequest.class)))
                 .willReturn(List.of(event));
@@ -1037,7 +1037,7 @@ class EventServiceImplTest {
                 .build();
         setFieldValue(event, 100L);
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventRepository.findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class)))
                 .willReturn(List.of(event));
@@ -1062,7 +1062,7 @@ class EventServiceImplTest {
         String makerEmail = "maker@example.com";
         User maker = User.builder().build();
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventRepository.findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class)))
                 .willReturn(Collections.emptyList());
@@ -1083,7 +1083,7 @@ class EventServiceImplTest {
         // given
         String makerEmail = "notfound@example.com";
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.empty());
 
         // when & then
@@ -1091,7 +1091,7 @@ class EventServiceImplTest {
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNAUTHORIZED);
 
-        verify(userRepository).findByEmailAndDeletedFalse(makerEmail);
+        verify(makerRepository).findByEmailAndDeletedFalse(makerEmail);
         verifyNoInteractions(eventRepository, eventAssetRepository);
     }
 
@@ -1128,7 +1128,7 @@ class EventServiceImplTest {
                 .status(Status.SUCCESS)
                 .build();
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventRepository.findMyEventsWithCursor(eq(makerEmail), isNull(), any(PageRequest.class)))
                 .willReturn(List.of(event1, event2));
@@ -1151,7 +1151,7 @@ class EventServiceImplTest {
         String makerEmail = "maker@example.com";
         User maker = User.builder().build();
 
-        given(userRepository.findByEmailAndDeletedFalse(makerEmail))
+        given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventRepository.findMyEventsWithCursor(any(), any(), any()))
                 .willReturn(Collections.emptyList());
