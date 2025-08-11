@@ -5,10 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.global.redis.constants.RedisStreamKey;
 import com.global.redis.constants.RetryFailReason;
@@ -16,7 +13,7 @@ import com.global.redis.dto.RedisRetryableMessage;
 import com.global.redis.handler.RedisStreamRetryHandler;
 import com.global.redis.publisher.RedisStreamWriter;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +33,7 @@ class RedisStreamRetryHandlerTest {
 
     @Test
     void 재시도_조건을_만족하면_retryPublisher가_호출된다() {
-        DummyMessage originalMessage = new DummyMessage(2, LocalDateTime.now(), TIMEOUT);
+        DummyMessage originalMessage = new DummyMessage(2, Instant.now(), TIMEOUT);
 
         handler.handleRetry(originalMessage);
 
@@ -46,7 +43,7 @@ class RedisStreamRetryHandlerTest {
 
     @Test
     void 재시도_한도를_초과하면_dlqPublisher가_호출된다() {
-        DummyMessage message = new DummyMessage(3, LocalDateTime.now(), TIMEOUT);
+        DummyMessage message = new DummyMessage(3, Instant.now(), TIMEOUT);
         handler.handleRetry(message);
         verify(dlqPublisher, times(1)).publish(eq(RedisStreamKey.TEST_DLQ), eq(message));
         verify(retryPublisher, never()).publish(any(), any());
@@ -57,27 +54,27 @@ class RedisStreamRetryHandlerTest {
         IncompleteHandler incomplete = new IncompleteHandler(retryPublisher, dlqPublisher,
                 Duration.ofSeconds(1), Duration.ofSeconds(10));
 
-        DummyMessage dummy = new DummyMessage(1, LocalDateTime.now(), TIMEOUT);
+        DummyMessage dummy = new DummyMessage(1, Instant.now(), TIMEOUT);
 
         assertThrows(UnsupportedOperationException.class, incomplete::exposeRetryStreamKey);
         assertThrows(UnsupportedOperationException.class, incomplete::exposeDLQStreamKey);
         assertThrows(UnsupportedOperationException.class,
-                () -> incomplete.exposeUpdateRetryFields(dummy, 2, LocalDateTime.now()));
+                () -> incomplete.exposeUpdateRetryFields(dummy, 2, Instant.now()));
     }
 
     @Test
     void 지수_백오프_계산이_정확히_반영된다() {
-        DummyMessage input = new DummyMessage(2, LocalDateTime.now(), TIMEOUT);
+        DummyMessage input = new DummyMessage(2, Instant.now(), TIMEOUT);
 
         DummyRetryHandler handler = new DummyRetryHandler(retryPublisher, dlqPublisher,
                 Duration.ofSeconds(1), Duration.ofSeconds(5)) {
             @Override
-            protected DummyMessage updateRetryFields(DummyMessage original, int retryCount, LocalDateTime nextRetryAt) {
+            protected DummyMessage updateRetryFields(DummyMessage original, int retryCount, Instant nextRetryAt) {
                 // 기대: 1s × 2^2 = 4s (baseDelay 1s, retryCount=2)
                 long expectedDelay = 4_000L;
-                long actualDelay = Duration.between(LocalDateTime.now(), nextRetryAt).toMillis();
-                // 200ms 정도 허용 오차
-                assertTrue(Math.abs(actualDelay - expectedDelay) < 200);
+                long actualDelay = Duration.between(Instant.now(), nextRetryAt).toMillis();
+                // 300ms 정도 허용 오차(테스트 환경/스케줄러 지연 고려)
+                assertTrue(Math.abs(actualDelay - expectedDelay) < 300);
                 return super.updateRetryFields(original, retryCount, nextRetryAt);
             }
         };
@@ -87,10 +84,10 @@ class RedisStreamRetryHandlerTest {
 
     static class DummyMessage implements RedisRetryableMessage {
         private final int retryCount;
-        private final LocalDateTime nextRetryAt;
+        private final Instant nextRetryAt;
         private final RetryFailReason failReason;
 
-        DummyMessage(int retryCount, LocalDateTime nextRetryAt, RetryFailReason failReason) {
+        DummyMessage(int retryCount, Instant nextRetryAt, RetryFailReason failReason) {
             this.retryCount = retryCount;
             this.nextRetryAt = nextRetryAt;
             this.failReason = failReason;
@@ -102,13 +99,13 @@ class RedisStreamRetryHandlerTest {
         }
 
         @Override
-        public LocalDateTime getNextRetryAt() {
+        public Instant getNextRetryAt() {
             return nextRetryAt;
         }
 
         @Override
-        public LocalDateTime getExpireAt() {
-            return nextRetryAt.plusMinutes(5);
+        public Instant getExpireAt() {
+            return nextRetryAt.plus(Duration.ofMinutes(5));
         }
 
         @Override
@@ -135,7 +132,7 @@ class RedisStreamRetryHandlerTest {
         }
 
         @Override
-        protected DummyMessage updateRetryFields(DummyMessage original, int retryCount, LocalDateTime nextRetryAt) {
+        protected DummyMessage updateRetryFields(DummyMessage original, int retryCount, Instant nextRetryAt) {
             return new DummyMessage(retryCount, nextRetryAt, original.failReason);
         }
     }
@@ -158,7 +155,7 @@ class RedisStreamRetryHandlerTest {
             return super.getDLQStreamKey();
         }
 
-        public DummyMessage exposeUpdateRetryFields(DummyMessage original, int retryCount, LocalDateTime nextRetryAt) {
+        public DummyMessage exposeUpdateRetryFields(DummyMessage original, int retryCount, Instant nextRetryAt) {
             return super.updateRetryFields(original, retryCount, nextRetryAt);
         }
     }

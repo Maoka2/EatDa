@@ -3,11 +3,8 @@ package com.a609.eatda.global.redis.publisher;
 import static com.global.redis.constants.RedisStreamKey.MENU_POSTER;
 import static com.global.redis.constants.RedisStreamKey.REVIEW_ASSET;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +12,7 @@ import com.global.redis.constants.RedisStreamKey;
 import com.global.redis.constants.RetryFailReason;
 import com.global.redis.dto.RedisRetryableMessage;
 import com.global.redis.publisher.RedisStreamPublisher;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -139,8 +136,8 @@ class RedisStreamPublisherTest {
 
     record DummyPayload(String name, int value) implements RedisRetryableMessage {
         @Override
-        public LocalDateTime getExpireAt() {
-            return LocalDateTime.now().plusMinutes(5);
+        public Instant getExpireAt() {
+            return Instant.now().plusSeconds(300);
         }
 
         @Override
@@ -149,8 +146,8 @@ class RedisStreamPublisherTest {
         }
 
         @Override
-        public LocalDateTime getNextRetryAt() {
-            return LocalDateTime.now();
+        public Instant getNextRetryAt() {
+            return Instant.now();
         }
 
         @Override

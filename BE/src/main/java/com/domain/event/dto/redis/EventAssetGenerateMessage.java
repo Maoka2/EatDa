@@ -2,19 +2,17 @@ package com.domain.event.dto.redis;
 
 import static com.global.redis.constants.RedisConstants.STREAM_EVENT_ASSET_TTL;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
 import com.global.exception.ApiException;
 import com.global.redis.dto.AbstractRedisStreamMessage;
-import lombok.Getter;
-import lombok.experimental.SuperBuilder;
-
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @SuperBuilder
@@ -28,14 +26,11 @@ public class EventAssetGenerateMessage extends AbstractRedisStreamMessage {
     private final Long userId;
     private final String title;
 
-    @JsonFormat(pattern = "yyyy-MM-dd")
     private final LocalDate startDate;
-
-    @JsonFormat(pattern = "yyyy-MM-dd")
     private final LocalDate endDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private final LocalDateTime requestedAt;
+    // 요청 시각 (UTC, ISO-8601)
+    private final Instant requestedAt;
 
     private final List<String> referenceImages;
 
@@ -56,7 +51,7 @@ public class EventAssetGenerateMessage extends AbstractRedisStreamMessage {
             throw new ApiException(ErrorCode.INVALID_EVENT_DATE_RANGE);
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
         return EventAssetGenerateMessage.builder()
                 .assetId(assetId)
@@ -98,7 +93,7 @@ public class EventAssetGenerateMessage extends AbstractRedisStreamMessage {
         }
     }
 
-    public EventAssetGenerateMessage withRetry(LocalDateTime nextRetryAt) {
+    public EventAssetGenerateMessage withRetry(Instant nextRetryAt) {
         return EventAssetGenerateMessage.builder()
                 // 기존 필드 유지
                 .assetId(this.assetId)

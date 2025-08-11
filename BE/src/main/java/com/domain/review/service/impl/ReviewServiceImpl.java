@@ -575,15 +575,28 @@ public class ReviewServiceImpl implements ReviewService {
     private void publishReviewAssetMessage(final ReviewAsset reviewAsset, final long userId,
                                            final ReviewAssetCreateRequest request,
                                            final Store store, final List<String> uploadedImageUrls) {
+
+        // 메뉴 상세 객체 배열로 변환 (스펙: id/name/description/imageUrl)
+        List<ReviewAssetGenerateMessage.MenuItem> menuItems =
+                menuRepository.findAllById(request.menuIds()).stream()
+                        .map(m -> new ReviewAssetGenerateMessage.MenuItem(
+                                m.getId(),
+                                m.getName(),
+                                m.getDescription(),
+                                m.getImageUrl() // 엔티티 필드명에 맞게 조정 필요
+                        ))
+                        .toList();
+
         ReviewAssetGenerateMessage message = ReviewAssetGenerateMessage.of(
                 reviewAsset.getId(),
                 request.type(),
                 request.prompt(),
                 store.getId(),
                 userId,
-                request.menuIds(),
-                uploadedImageUrls
+                menuItems,
+                uploadedImageUrls // referenceImages
         );
+
         reviewAssetRedisPublisher.publish(message);
     }
 

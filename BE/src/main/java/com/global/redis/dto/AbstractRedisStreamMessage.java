@@ -3,7 +3,7 @@ package com.global.redis.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.global.redis.constants.RetryFailReason;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 
@@ -18,17 +18,17 @@ import lombok.experimental.SuperBuilder;
 public abstract class AbstractRedisStreamMessage implements RedisRetryableMessage {
 
     // ===== 재시도 관련 공통 필드 =====
-    protected final LocalDateTime expireAt;        // 메시지 만료 시간
-    protected final int retryCount;                // 재시도 횟수
-    protected final LocalDateTime nextRetryAt;     // 다음 재시도 예정 시각
+    protected final Instant expireAt;            // 메시지 만료 시간 (UTC, ISO-8601)
+    protected final int retryCount;              // 재시도 횟수
+    protected final Instant nextRetryAt;         // 다음 재시도 예정 시각 (UTC, ISO-8601)
     protected final RetryFailReason retryFailReason; // 최종 실패 사유
 
     /**
-     * 자식 클래스에서 초기 메시지 생성 시 사용할 protected 생성자
+     * 자식 클래스에서 초기 메시지 생성 시 사용할 protected 헬퍼
      * TTL을 받아서 만료 시간을 자동 계산
      */
-    protected static LocalDateTime calculateExpireAt(Duration ttl) {
-        return LocalDateTime.now().plus(ttl);
+    protected static Instant calculateExpireAt(Duration ttl) {
+        return Instant.now().plus(ttl);
     }
 
     /**
@@ -38,7 +38,7 @@ public abstract class AbstractRedisStreamMessage implements RedisRetryableMessag
 
     // ===== RedisRetryableMessage 인터페이스 구현 =====
     @Override
-    public LocalDateTime getExpireAt() {
+    public Instant getExpireAt() {
         return expireAt;
     }
 
@@ -48,7 +48,7 @@ public abstract class AbstractRedisStreamMessage implements RedisRetryableMessag
     }
 
     @Override
-    public LocalDateTime getNextRetryAt() {
+    public Instant getNextRetryAt() {
         return nextRetryAt;
     }
 
@@ -61,7 +61,7 @@ public abstract class AbstractRedisStreamMessage implements RedisRetryableMessag
      * 메시지가 만료되었는지 확인
      */
     public boolean isExpired() {
-        return expireAt != null && LocalDateTime.now().isAfter(expireAt);
+        return expireAt != null && Instant.now().isAfter(expireAt);
     }
 
     /**
@@ -75,6 +75,6 @@ public abstract class AbstractRedisStreamMessage implements RedisRetryableMessag
      * 재시도 예정 시간이 되었는지 확인
      */
     public boolean isRetryTime() {
-        return nextRetryAt != null && LocalDateTime.now().isAfter(nextRetryAt);
+        return nextRetryAt != null && Instant.now().isAfter(nextRetryAt);
     }
 }

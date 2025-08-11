@@ -6,52 +6,55 @@ import com.domain.review.constants.ReviewAssetType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.global.redis.constants.RetryFailReason;
 import com.global.redis.dto.RedisRetryableMessage;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Builder;
 
 /**
- * 리뷰 에셋 생성을 위한 Redis 스트림 메시지 DTO - Redis Stream을 통해 AI 서버에 요청을 보낼 때 사용 - 재시도 관련 정보도 포함함
+ * 리뷰 에셋 생성 스트림 메시지 (스펙 준수)
+ * - menu/referenceImages는 컬렉션 타입으로 보유하고,
+ *   퍼블리셔가 Redis에 넣을 때 JSON 문자열로 직렬화한다.
  */
 @Builder(access = AccessLevel.PRIVATE)
-@JsonInclude(JsonInclude.Include.NON_NULL) // null 값인 필드는 직렬화 시 제외
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ReviewAssetGenerateMessage(
         Long reviewAssetId,                 // 리뷰 에셋 ID
-        ReviewAssetType type,              // 에셋 타입 (예: IMAGE, SHORTS)
-        String prompt,                     // AI 생성용 프롬프트
+        ReviewAssetType type,              // IMAGE | SHORTS_RAY_2 | SHORTS_GEN_4
+        String prompt,                     // 프롬프트
         Long storeId,                      // 가게 ID
         Long userId,                       // 사용자 ID
-        List<Long> menuIds,                // 메뉴 ID 목록
-        List<String> imageUrls,            // 이미지 URL 목록
+        Instant requestedAt,               // 요청 시각 (UTC, ISO-8601)
 
-        // ===== Retry 관련 필드 =====
-        LocalDateTime expireAt,            // 메시지 만료 시간
+        // ===== 스펙: menu (상세 객체 배열) / referenceImages (문자열 배열) =====
+        List<MenuItem> menu,               // 선택한 메뉴 상세 정보 목록
+        List<String> referenceImages,      // 참고 이미지 URL 목록
+
+        // ===== Retry 관련 =====
+        Instant expireAt,                  // 만료 시각 (UTC, ISO-8601)
         int retryCount,                    // 재시도 횟수
-        LocalDateTime nextRetryAt,         // 다음 재시도 예정 시각
-        RetryFailReason retryFailReason    // 최종 실패 사유
+        Instant nextRetryAt,               // 다음 재시도 시각 (UTC, ISO-8601)
+        RetryFailReason retryFailReason    // 실패 사유
 ) implements RedisRetryableMessage {
 
-    private static final String REQUIRED_FIELDS_ERROR_MESSAGE = "reviewAssetId, type, storeId, userId는 필수입니다.";
+    private static final String REQUIRED_FIELDS_ERROR_MESSAGE =
+            "reviewAssetId, type, storeId, userId, requestedAt는 필수입니다.";
 
-    /**
-     * 메시지 생성 팩토리 메서드 - 필수 필드 검증 수행 - 현재 시간 기준 만료 시간 계산
-     */
     public static ReviewAssetGenerateMessage of(
             Long reviewAssetId,
             ReviewAssetType type,
             String prompt,
             Long storeId,
             Long userId,
-            List<Long> menuIds,
-            List<String> imageUrls
+            List<MenuItem> menu,
+            List<String> referenceImages
     ) {
-        // 필수 필드 검증 (나중에 주석 제거)
-        //        validateRequiredFields(reviewAssetId, type, storeId, userId);
+        // 운영 시 검증 활성화 권장
+        // validateRequiredFields(reviewAssetId, type, storeId, userId);
 
-        // TTL 적용
-        LocalDateTime expireAt = LocalDateTime.now().plus(STREAM_REVIEW_ASSET_TTL);
+        Instant now = Instant.now();
+        Instant expireAt = now.plus(STREAM_REVIEW_ASSET_TTL);
 
         return new ReviewAssetGenerateMessage(
                 reviewAssetId,
@@ -59,44 +62,37 @@ public record ReviewAssetGenerateMessage(
                 prompt,
                 storeId,
                 userId,
-                menuIds,
-                imageUrls,
+                now,              // requestedAt
+                menu,
+                referenceImages,  // 스펙 필드명 준수
                 expireAt,
-                0,      // 최초 생성 시 retryCount는 0
-                null,   // 재시도 예정 시각 없음
-                null    // 실패 사유 없음
+                0,                // retryCount
+                null,             // nextRetryAt
+                null              // retryFailReason
         );
     }
 
-    /**
-     * 필수 필드 검증 메서드 - 값이 null이면 예외 발생
-     */
-    private static void validateRequiredFields(Long reviewAssetId, ReviewAssetType type, Long storeId, Long userId) {
-        if (Objects.isNull(reviewAssetId) || Objects.isNull(type) || Objects.isNull(storeId) || Objects.isNull(
-                userId)) {
+    private static void validateRequiredFields(Long reviewAssetId, ReviewAssetType type,
+                                               Long storeId, Long userId) {
+        if (Objects.isNull(reviewAssetId) || Objects.isNull(type)
+                || Objects.isNull(storeId) || Objects.isNull(userId)) {
             throw new IllegalArgumentException(REQUIRED_FIELDS_ERROR_MESSAGE);
         }
     }
 
-    // ===== RedisRetryableMessage 인터페이스 구현부 =====
+    // ===== RedisRetryableMessage =====
+    @Override public Instant getExpireAt() { return expireAt; }
+    @Override public int getRetryCount() { return retryCount; }
+    @Override public Instant getNextRetryAt() { return nextRetryAt; }
+    @Override public RetryFailReason getRetryFailReason() { return retryFailReason; }
 
-    @Override
-    public LocalDateTime getExpireAt() {
-        return expireAt;
-    }
-
-    @Override
-    public int getRetryCount() {
-        return retryCount;
-    }
-
-    @Override
-    public LocalDateTime getNextRetryAt() {
-        return nextRetryAt;
-    }
-
-    @Override
-    public RetryFailReason getRetryFailReason() {
-        return retryFailReason;
-    }
+    /**
+     * 메뉴 상세 스펙 객체
+     */
+    public record MenuItem(
+            Long id,
+            String name,
+            String description,
+            String imageUrl
+    ) {}
 }

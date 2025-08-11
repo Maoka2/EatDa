@@ -10,7 +10,7 @@ import com.global.redis.constants.RedisStreamKey;
 import com.global.redis.dto.RedisRetryableMessage;
 import com.global.redis.publisher.RedisStreamWriter;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,7 +28,6 @@ public class RedisStreamRetryHandler<T extends RedisRetryableMessage> {
     private final Duration baseDelay;                   // 재시도 기본 지연 시간
     private final Duration maxDelay;                    // 재시도 최대 지연 시간
 
-    // @formatter:off
     /**
      * 재시도 처리 진입점
      *
@@ -36,7 +35,6 @@ public class RedisStreamRetryHandler<T extends RedisRetryableMessage> {
      * - 가능하면 다음 재시도 시각 계산 후 retryPublisher 발행
      * - 초과 시 DLQ로 전송
      */
-    // @formatter:on
     public void handleRetry(final T message) {
         int retryCount = message.getRetryCount();
 
@@ -50,7 +48,6 @@ public class RedisStreamRetryHandler<T extends RedisRetryableMessage> {
 
     /**
      * DLQ 전송 처리
-     * <p>
      * 재시도 한도를 초과한 메시지를 Dead Letter Queue로 이동시킨다.
      */
     protected void sendToDlq(final T message) {
@@ -60,11 +57,10 @@ public class RedisStreamRetryHandler<T extends RedisRetryableMessage> {
 
     /**
      * 재시도 메시지 발행 처리
-     * <p>
      * 지수 백오프 기반 nextRetryAt 계산 후, retryCount 증가 및 업데이트된 메시지를 발행한다.
      */
     protected void retryMessage(final T original, final int currentRetryCount) {
-        LocalDateTime nextRetryAt = calculateNextRetryTime(currentRetryCount);
+        Instant nextRetryAt = calculateNextRetryTime(currentRetryCount);
         T updatedMessage = updateRetryFields(original, currentRetryCount + 1, nextRetryAt);
         retryPublisher.publish(getRetryStreamKey(), updatedMessage);
     }
@@ -75,32 +71,35 @@ public class RedisStreamRetryHandler<T extends RedisRetryableMessage> {
      * @param retryCount 현재 재시도 횟수
      * @return 다음 재시도 시각 (now + backoff delay)
      */
-    private LocalDateTime calculateNextRetryTime(final int retryCount) {
-        long backoff = Math.min(
+    private Instant calculateNextRetryTime(final int retryCount) {
+        long backoffMillis = Math.min(
                 baseDelay.toMillis() * (1L << retryCount),  // 2^retryCount 지수 백오프
                 maxDelay.toMillis()
         );
-        return LocalDateTime.now().plus(Duration.ofMillis(backoff));
+        return Instant.now().plus(Duration.ofMillis(backoffMillis));
     }
 
     /**
-     * 재시도 스트림 키 반환 구현체에서 도메인별 스트림 키를 지정해야 함
+     * 재시도 스트림 키 반환
+     * 구현체에서 도메인별 스트림 키를 지정해야 함
      */
     protected RedisStreamKey getRetryStreamKey() {
         throw new UnsupportedOperationException(ERROR_RETRY_STREAM_KEY_NOT_IMPLEMENTED);
     }
 
     /**
-     * DLQ 스트림 키 반환 구현체에서 도메인별 DLQ 스트림 키를 지정해야 함
+     * DLQ 스트림 키 반환
+     * 구현체에서 도메인별 DLQ 스트림 키를 지정해야 함
      */
     protected RedisStreamKey getDLQStreamKey() {
         throw new UnsupportedOperationException(ERROR_DLQ_STREAM_KEY_NOT_IMPLEMENTED);
     }
 
     /**
-     * 재시도 카운트 및 다음 재시도 시각 필드가 반영된 메시지 생성 불변 메시지를 사용하는 경우 새 객체 생성 필요
+     * 재시도 카운트 및 다음 재시도 시각 필드가 반영된 메시지 생성
+     * 불변 메시지를 사용하는 경우 새 객체 생성 필요
      */
-    protected T updateRetryFields(final T original, final int retryCount, final LocalDateTime nextRetryAt) {
+    protected T updateRetryFields(final T original, final int retryCount, final Instant nextRetryAt) {
         throw new UnsupportedOperationException(ERROR_UPDATE_RETRY_FIELDS_NOT_IMPLEMENTED);
     }
 }
