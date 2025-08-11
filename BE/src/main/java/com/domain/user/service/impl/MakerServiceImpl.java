@@ -3,6 +3,7 @@ package com.domain.user.service.impl;
 import com.domain.menu.entity.Menu;
 import com.domain.menu.mapper.MenuMapper;
 import com.domain.menu.repository.MenuRepository;
+import com.domain.review.service.H3Service;
 import com.domain.store.entity.Store;
 import com.domain.store.mapper.StoreMapper;
 import com.domain.store.repository.StoreRepository;
@@ -34,6 +35,8 @@ public class MakerServiceImpl implements MakerService {
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
 
+    private final H3Service h3Service;
+
     private final MakerMapper makerMapper;
     private final StoreMapper storeMapper;
     private final MenuMapper menuMapper;
@@ -47,8 +50,17 @@ public class MakerServiceImpl implements MakerService {
         validateSignUpRequest(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
 
         User maker = makerMapper.toEntity(baseRequest, passwordEncoder.encode(baseRequest.password()));
+        long h3Index7 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 7);
+        long h3Index8 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 8);
+        long h3Index9 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 9);
+        long h3Index10 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 10);
         Store store = storeMapper.toEntity(baseRequest, maker,
-                storeLicenseImage(licenseImageRequest, "licenses/" + maker.getEmail()));
+                storeLicenseImage(licenseImageRequest, "licenses/" + maker.getEmail()),
+                h3Index7,
+                h3Index8,
+                h3Index9,
+                h3Index10
+        );
 
         List<Menu> menus = new ArrayList<>();
         for (int i = 0; i < menuRequests.size(); i++) {
@@ -56,6 +68,8 @@ public class MakerServiceImpl implements MakerService {
             menus.add(menuMapper.toEntity(menuRequests.get(i), store,
                     storeLicenseImage(imageRequest, "menus/" + maker.getEmail())));
         }
+
+        maker.addStore(store);
 
         makerRepository.save(maker);
         storeRepository.save(store);
