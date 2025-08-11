@@ -20,7 +20,6 @@ except Exception as e:  # pragma: no cover
     raise RuntimeError("redis 패키지가 필요합니다. requirements.txt에 redis>=5 를 설치하세요.") from e
 
 from models.menuboard_generate_models import (
-    STREAM_KEY_MENU_POSTER_GENERATE,
     MenuPosterGenerateMessage,
 )
 from services import image_service

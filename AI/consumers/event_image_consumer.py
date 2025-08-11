@@ -19,7 +19,7 @@ try:
 except Exception as e:  # pragma: no cover
     raise RuntimeError("redis 패키지가 필요합니다. requirements.txt에 redis>=5 를 설치하세요.") from e
 
-from models.event_image_models import EventAssetGenerateMessage, STREAM_KEY_EVENT_ASSET_GENERATE
+from models.event_image_models import EventAssetGenerateMessage
 from services import image_service, luma_service, runway_service, gpt_service
 from services.event_image_callback import event_image_callback_service
 

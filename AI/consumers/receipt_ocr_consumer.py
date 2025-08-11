@@ -18,7 +18,6 @@ except Exception as e:  # pragma: no cover
     raise RuntimeError("redis 패키지가 필요합니다. requirements.txt에 redis>=5 를 설치하세요.") from e
 
 from models.receipt_ocr_models import (
-    STREAM_KEY_OCR_RECEIPT_REQUEST,
     OCRReceiptVerificationMessage,
     OCRReceiptCallbackRequest,
 )
@@ -34,7 +33,7 @@ class ReceiptOCRConsumer:
         self.group: str = os.getenv("REDIS_GROUP", "ai-consumers")
         default_consumer = f"ai-{socket.gethostname()}-{os.getpid()}"
         self.consumer_id: str = os.getenv("REDIS_CONSUMER_ID", default_consumer)
-        self.stream_key: str = os.getenv("OCR_RECEIPT_STREAM_KEY", STREAM_KEY_OCR_RECEIPT_REQUEST)
+        self.stream_key: str = os.getenv("OCR_RECEIPT_STREAM_KEY", "ocr.verification.request")
         self.dead_stream: str = os.getenv("REDIS_DEAD_STREAM", "ocr.verification.dead")
 
         self.client: redis.Redis = redis.from_url(self.redis_url, decode_responses=True)
