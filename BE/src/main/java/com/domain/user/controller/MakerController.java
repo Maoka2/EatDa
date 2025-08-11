@@ -41,7 +41,8 @@ public class MakerController {
             @RequestPart(value = "license", required = false) MultipartFile licenseImageRequest,
             @RequestPart(value = "images", required = false) List<MultipartFile> menuImageRequests) {
         User maker = makerService.registerMaker(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
-        return ApiResponseFactory.success(SuccessCode.MAKER_SIGNUP, makerMapper.toResponse(maker));
+        return ApiResponseFactory.success(SuccessCode.MAKER_SIGNUP, makerMapper.toResponse(maker, maker.getStores()
+                .getFirst()));
     }
 
     @Operation(

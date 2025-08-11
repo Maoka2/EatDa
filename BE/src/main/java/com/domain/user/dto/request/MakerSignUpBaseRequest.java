@@ -30,6 +30,12 @@ public record MakerSignUpBaseRequest(
 
         @NotBlank(message = "ADDRESS_REQUIRED")
         @Schema(description = "가게주소", example = "서울 마포구 양화로 12길 34")
-        String address
+        String address,
+
+        @Schema(description = "위도", example = "37.502444")
+        Double latitude,
+
+        @Schema(description = "경도", example = "127.036844")
+        Double longitude
 ) {
 }

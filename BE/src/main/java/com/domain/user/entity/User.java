@@ -111,4 +111,12 @@ public class User extends BaseEntity {
     public void clearScraps() {
         new ArrayList<>(this.scraps).forEach(this::removeScrap);
     }
+
+    public void addStore(Store store) {
+        if (this.stores == null) {
+            this.stores = new ArrayList<>(); // 안전장치
+        }
+        this.stores.add(store);                 // 메모리상 컬렉션 동기화
+        store.addMaker(this);                   // 연관관계의 주인 측 세팅
+    }
 }

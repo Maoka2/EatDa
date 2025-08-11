@@ -1,5 +1,6 @@
 package com.domain.user.mapper;
 
+import com.domain.store.entity.Store;
 import com.domain.user.dto.request.MakerSignUpBaseRequest;
 import com.domain.user.dto.response.MakerSignUpResponse;
 import com.domain.user.entity.User;
@@ -39,5 +40,7 @@ public interface MakerMapper {
     @Mapping(target = "password", source = "encodedPassword")
     User toEntity(MakerSignUpBaseRequest request, String encodedPassword);
 
-    MakerSignUpResponse toResponse(User maker);
+    @Mapping(target = "userId", source = "maker.id")
+    @Mapping(target = "storeId", source = "store.id")
+    MakerSignUpResponse toResponse(User maker, Store store);
 }
