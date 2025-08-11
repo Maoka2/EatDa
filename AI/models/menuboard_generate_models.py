@@ -9,9 +9,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-
-
-
 class MenuItem(BaseModel):
     id: int = Field(..., description="메뉴 ID")
     name: str = Field(..., description="메뉴 이름")
