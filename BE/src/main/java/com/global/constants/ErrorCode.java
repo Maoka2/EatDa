@@ -96,8 +96,10 @@ public enum ErrorCode {
     // 메뉴 포스터 관련 에러 코드
     MENU_POSTER_NOT_FOUND("MENU_POSTER_NOT_FOUND", "요청한 메뉴 포스터를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     MENU_POSTER_NOT_PENDING("MENU_POSTER_NOT_PENDING", "해당 메뉴 포스터는 대기 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
+    MENU_POSTER_NOT_SUCCESS("MENU_POSTER_NOT_SUCCESS", "해당 메뉴 포스터는 완료 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
     MENU_POSTER_ASSET_NOT_FOUND("MENU_POSTER_ASSET_NOT_FOUND", "해당 메뉴 포스터 에셋이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
     REQUIRED_MENU_FIELDS_MISSING("REQUIRED_MENU_FIELDS_MISSING", "assetId, type, prompt, storeId, userId, menus, imagesUrls는 필수입니다.", HttpStatus.BAD_REQUEST.value()),
+    MENU_POSTER_ALREADY_SENT("MENU_POSTER_ALREADY_SENT", "이미 전송된 메뉴 포스터입니다.", HttpStatus.BAD_REQUEST.value()),
 
     // 비즈니스 로직 관련
     DUPLICATE_RESOURCE("DUPLICATE_RESOURCE", "이미 존재하는 리소스입니다.", HttpStatus.CONFLICT.value()),
