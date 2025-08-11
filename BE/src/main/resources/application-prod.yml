@@ -18,7 +18,6 @@ logging:
     org.hibernate.type.descriptor.sql: OFF
 
 filestorage: # 파일 저장소 설정
-  base-dir: ${user.home}/eatda/prod
   public-base-url: https://i13a609.p.ssafy.io
 
 springdoc:
