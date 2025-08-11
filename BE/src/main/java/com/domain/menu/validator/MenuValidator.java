@@ -1,8 +1,11 @@
 package com.domain.menu.validator;
 
 import com.domain.menu.entity.Menu;
+import com.domain.menu.entity.MenuPoster;
+import com.domain.menu.entity.MenuPosterAsset;
 import com.domain.menu.repository.MenuRepository;
 import com.domain.store.entity.Store;
+import com.domain.user.entity.User;
 import com.global.constants.ErrorCode;
 import com.global.exception.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -75,5 +78,15 @@ public class MenuValidator {
                     store.getId(), invalidMenuIds);
             throw new ApiException(ErrorCode.MENU_NOT_BELONG_TO_STORE, invalidMenuIds);
         }
+    }
+
+    public void validatePosterOwnership(User eater, MenuPoster poster) {
+        if (!poster.getUser().getId().equals(eater.getId())) {
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    public void validatePosterOwnership(User eater, MenuPosterAsset asset) {
+        validatePosterOwnership(eater, asset.getMenuPoster());
     }
 }
