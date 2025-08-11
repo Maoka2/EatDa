@@ -13,4 +13,5 @@ public interface MenuPosterService {
     void handleMenuPosterAssetCallback(final AssetCallbackRequest<?> request);
     AssetResultResponse getMenuPosterAssetStatus(final Long assetId, final String eaterMail);
     MenuPosterFinalizeResponse finalizeMenuPoster(final MenuPosterFinalizeRequest request);
+    void sendMenuPosterToMaker(Long menuPosterId, String eaterEmail);
 }
