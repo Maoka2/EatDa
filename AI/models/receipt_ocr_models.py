@@ -6,39 +6,28 @@ OCR 영수증 인증 요청 모델 (Redis Stream 용)
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, Literal, Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
-
-
-class OCRReceiptVerificationMessage(BaseModel):
-    sourceId: int = Field(..., description="OCR 요청 식별자 (asset_source.id)")
-    storeId: int = Field(..., description="인증 대상 가게 ID")
-    userId: int = Field(..., description="요청 사용자 ID")
-    imageUrl: HttpUrl = Field(..., description="업로드된 영수증 이미지 URL")
-    requestedAt: datetime = Field(..., description="요청 시각 (ISO8601)")
-    expireAt: datetime = Field(..., description="만료 시각 (ISO8601)")
-    retryCount: int = Field(0, description="재시도 횟수 (기본 0)")
-
-    def to_xadd_fields(self, mode: Literal["json", "kv"] = "json") -> Dict[str, str]:
-        if mode == "json":
-            return {"payload": self.model_dump_json()}
-        data = self.model_dump()
-        data["requestedAt"] = self.requestedAt.isoformat()
-        data["expireAt"] = self.expireAt.isoformat()
-        return {k: str(v) for k, v in data.items()}
+from pydantic import BaseModel, Field
 
 
-class OCRReceiptCallbackRequest(BaseModel):
-    sourceId: int = Field(..., description="OCR 요청 식별자 (asset_source.id)")
-    result: Literal["SUCCESS", "FAIL"] = Field(..., description="생성 결과")
-    extractedAddress: Optional[str] = Field(None, description="OCR로 추출된 주소 문자열 (실패시 null)")
+class OCRReceiptRequest(BaseModel):
+    file: Optional[bytes] = Field(None, description="업로드된 영수증 이미지 파일")
+
+class ReceiptOCRRespond(BaseModel):
+    code: Literal["RECEIPT_REQUESTED", "RECEIPT_REQUESTED_FAILED"] = Field(..., description="응답 코드")
+    message: str = Field(..., description="응답 메시지")
+    status: int = Field(..., description="HTTP 유사 상태 코드 숫자")
+    assetId: Optional[int] = Field(None, description="OCR 요청 식별자(12자리 숫자, 성공 시 포함)")
+    timestamp: datetime = Field(..., description="응답 생성 시간(ISO8601)")
 
 
-__all__ = [
-    "STREAM_KEY_OCR_RECEIPT_REQUEST",
-    "OCRReceiptVerificationMessage",
-    "OCRReceiptCallbackRequest",
-]
+class ReceiptVerificationResultResponse(BaseModel):
+    code: Literal["RECEIPT_PENDING", "RECEIPT_SUCCESS", "RECEIPT_FAILED"] = Field(..., description="처리 상태 코드")
+    message: str = Field(..., description="처리 상태 메시지")
+    status: int = Field(..., description="HTTP 유사 상태 코드 숫자")
+    result: Literal["PENDING", "SUCCESS", "FAIL"] = Field(..., description="처리 결과 요약")
+    timestamp: datetime = Field(..., description="응답 생성 시간(ISO8601)")
+
 
 

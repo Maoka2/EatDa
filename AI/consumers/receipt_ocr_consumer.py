@@ -18,7 +18,7 @@ except Exception as e:  # pragma: no cover
     raise RuntimeError("redis 패키지가 필요합니다. requirements.txt에 redis>=5 를 설치하세요.") from e
 
 from models.receipt_ocr_models import (
-    OCRReceiptVerificationMessage,
+    OCRReceiptRequest,
     OCRReceiptCallbackRequest,
 )
 from services.receipt_ocr_callback import receipt_ocr_callback_service
@@ -46,14 +46,14 @@ class ReceiptOCRConsumer:
                 raise
 
     @staticmethod
-    def parse_message(fields: Dict[str, str]) -> OCRReceiptVerificationMessage:
+    def parse_message(fields: Dict[str, str]) -> OCRReceiptRequest:
         if "payload" in fields:
             data = json.loads(fields["payload"])  # 단일 JSON 필드
         else:
             data = dict(fields)
-        return OCRReceiptVerificationMessage.model_validate(data)
+        return OCRReceiptRequest.model_validate(data)
 
-    async def process_ocr_receipt(self, msg: OCRReceiptVerificationMessage) -> None:
+    async def process_ocr_receipt(self, msg: OCRReceiptRequest) -> None:
         if not receipt_ocr_callback_service.is_available():
             raise RuntimeError("CLOVA_RECEIPT_* 환경변수가 설정되지 않았습니다.")
 
