@@ -18,10 +18,10 @@ CLOVA_RECEIPT_API_URL =
 CLOVA_MENU_SECRET_KEY = 
 CLOVA_MENU_API_URL =
 
-# 콜백 URL (리뷰 자산 생성)
+# 콜백 URL (리뷰 이미지/영상 생성)
 SPRING_CALLBACK_URL = https://i13a609.p.ssafy.io/api/reviews/assets/callback
 
-# 콜백 URL (이벤트 자산 생성)
+# 콜백 URL (이벤트 포스터 생성)
 SPRING_EVENT_ASSET_CALLBACK_URL = https://i13a609.p.ssafy.io/api/events/assets/callback
 
 # 콜백 URL (메뉴 포스터 생성)
@@ -34,11 +34,11 @@ REDIS_CONSUMER_ID =
 REDIS_DEAD_STREAM = 
 OCR_RECEIPT_STREAM_KEY =
 
-# 리뷰 자산 생성 스트림
+# 리뷰 이미지/영상 생성 스트림
 REVIEW_ASSET_STREAM_KEY = 
 REVIEW_ASSET_DEAD_STREAM =
 
-# 이벤트 자산 생성 스트림
+# 이벤트 포스터 생성 스트림
 EVENT_ASSET_STREAM_KEY = 
 EVENT_ASSET_DEAD_STREAM = 
 
