@@ -6,6 +6,7 @@ import com.domain.menu.entity.MenuPosterAsset;
 import com.domain.menu.repository.MenuRepository;
 import com.domain.store.entity.Store;
 import com.domain.user.entity.User;
+import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
 import com.global.exception.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -88,5 +89,25 @@ public class MenuValidator {
 
     public void validatePosterOwnership(User eater, MenuPosterAsset asset) {
         validatePosterOwnership(eater, asset.getMenuPoster());
+    }
+
+    public void validateForFinalization(MenuPosterAsset asset) {
+        if (!asset.getStatus().isSuccess()) {
+            throw new ApiException(ErrorCode.ASSET_NOT_SUCCESS, asset.getId());
+        }
+
+        if (asset.getType() == null) {
+            throw new ApiException(ErrorCode.ASSET_TYPE_REQUIRED, asset.getId());
+        }
+
+        if (!asset.getType().equals(AssetType.IMAGE)) {
+            throw new ApiException(ErrorCode.ASSET_TYPE_MISMATCH);
+        }
+    }
+
+    public void validatePendingStatus(MenuPoster poster) {
+        if (!poster.getStatus().isPending()) {
+            throw new ApiException(ErrorCode.MENU_POSTER_NOT_PENDING, poster.getId());
+        }
     }
 }
