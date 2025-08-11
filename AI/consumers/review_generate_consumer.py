@@ -44,7 +44,7 @@ class ReviewGenerateConsumer:
     def __init__(self) -> None:
         # 로거 초기화: 이 컨슈머의 실행/에러/처리 상황을 기록
         self.logger = logging.getLogger(__name__)
-        self.redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.redis_url: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
         self.group: str = os.getenv("REDIS_GROUP", "ai-consumers")
         default_consumer = f"ai-{socket.gethostname()}-{os.getpid()}"
         self.consumer_id: str = os.getenv("REDIS_CONSUMER_ID", default_consumer)

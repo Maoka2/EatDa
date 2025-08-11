@@ -26,7 +26,7 @@ load_dotenv()
 router = APIRouter(prefix="/api/test/stream", tags=["stream-test"], include_in_schema=True)
 
 async def _xadd_payload(stream_key: str, model_obj: Any) -> Dict[str, Any]:
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
     client: redis.Redis = redis.from_url(redis_url, decode_responses=True)
     try:
         message_id = await client.xadd(stream_key, {"payload": model_obj.model_dump_json()})

@@ -28,7 +28,7 @@ load_dotenv()
 
 class EventImageConsumer:
     def __init__(self) -> None:
-        self.redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.redis_url: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
         self.group: str = os.getenv("REDIS_GROUP", "ai-consumers")
         default_consumer = f"ai-{socket.gethostname()}-{os.getpid()}"
         self.consumer_id: str = os.getenv("REDIS_CONSUMER_ID", default_consumer)
