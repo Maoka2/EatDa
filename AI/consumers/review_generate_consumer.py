@@ -164,10 +164,22 @@ class ReviewGenerateConsumer:
             raise
 
     async def run_forever(self) -> None:
-        await self.ensure_consumer_group()
-        print(
-            f"[ReviewGenerateConsumer] start: url={self.redis_url}, group={self.group}, consumer={self.consumer_id}, stream={self.stream_key}"
+        # 시작 로그
+        self.logger.info(
+            f"[리뷰컨슈머] 시작: url={self.redis_url}, group={self.group}, consumer={self.consumer_id}, stream={self.stream_key}"
         )
+
+        # 컨슈머 그룹 준비를 재시도하며 보장 (Redis 미기동/네트워크 오류 대비)
+        while True:
+            try:
+                await self.ensure_consumer_group()
+                self.logger.info("[리뷰컨슈머] 컨슈머 그룹 준비 완료")
+                break
+            except Exception as e:
+                self.logger.exception("[리뷰컨슈머] 컨슈머 그룹 준비 실패, 3초 후 재시도: %s", e)
+                await asyncio.sleep(3)
+
+        # 읽기 루프
         while True:
             try:
                 # Redis Stream에서 메시지를 컨슈머 그룹으로 읽어오기
@@ -195,7 +207,7 @@ class ReviewGenerateConsumer:
                         except Exception:
                             await self.client.xack(self.stream_key, self.group, message_id)
             except Exception as loop_err:
-                # 메인 루프 예외 기록 후 잠시 대기
+                # 메인 루프 예외 기록 후 잠시 대기 (예: Redis 연결 끊김 등)
                 self.logger.exception(f"[리뷰컨슈머] 루프 오류: {loop_err}")
                 await asyncio.sleep(2)
 
