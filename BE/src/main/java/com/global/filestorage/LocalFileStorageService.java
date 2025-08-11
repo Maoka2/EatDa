@@ -9,10 +9,12 @@ import static com.global.filestorage.constants.FileStorageConstants.MIME_TYPE_WE
 import static com.global.filestorage.constants.FileStorageConstants.NULL;
 
 import com.global.config.FileStorageProperties;
+import com.global.constants.ErrorCode;
 import com.global.exception.GlobalException;
 import com.global.utils.ImageOptimizationUtils;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +22,8 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -67,6 +71,28 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public String storeVideo(final MultipartFile file, final String relativePath, final String originalName) {
         return storeOptimizedVideo(file, properties.getVideoRoot(), relativePath, originalName);
+    }
+
+    /**
+     * 저장된 파일을 Resource로 로드
+     *
+     * @param filePath 파일 경로 (전체 경로)
+     * @return Spring Resource 객체
+     */
+    @Override
+    public Resource loadAsResource(final String filePath) {
+        try {
+            Path file = Paths.get(filePath);
+            Resource resource = new UrlResource(file.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            } else {
+                throw new GlobalException(ErrorCode.FILE_NOT_FOUND, filePath);
+            }
+        } catch (MalformedURLException e) {
+            throw new GlobalException(ErrorCode.FILE_READ_ERROR, filePath, e);
+        }
     }
 
     /**

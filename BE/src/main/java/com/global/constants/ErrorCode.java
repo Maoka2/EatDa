@@ -71,12 +71,31 @@ public enum ErrorCode {
     RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", "요청한 리소스를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     SCRAP_NOT_FOUND("SCRAP_NOT_FOUND", "해당 스크랩을 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     INVALID_STATUS("INVALID_STATUS", "유효하지 않은 상태값입니다.", HttpStatus.BAD_REQUEST.value()),
+    IMAGE_TOO_LARGE("IMAGE_TOO_LARGE", "이미지 크기는 10MB 이하만 허용됩니다.", HttpStatus.BAD_REQUEST.value()),
+
+    // 이벤트 관련
+    EVENT_NOT_FOUND("EVENT_NOT_FOUND", "요청한 이벤트를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
+    EVENT_NOT_PENDING("EVENT_NOT_PENDING", "해당 이벤트는 보류 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
+    INVALID_EVENT_DATE_RANGE("INVALID_EVENT_DATE_RANGE", "시작일은 종료일보다 이전이어야 합니다.", HttpStatus.BAD_REQUEST.value()),
+    REQUIRED_EVENT_FIELDS_MISSING("REQUIRED_EVENT_FIELDS_MISSING", "assetId, type, prompt, storeId, userId, title, startDate, endDate는 필수입니다.", HttpStatus.BAD_REQUEST.value()),
+    EVENT_INVALID_DATE_RANGE("EVENT_INVALID_DATE_RANGE", "시작 날짜가 종료 날짜보다 늦을 수 없습니다.", HttpStatus.BAD_REQUEST.value()),
+    EVENT_START_DATE_IN_PAST("EVENT_START_DATE_IN_PAST", "시작 날짜는 과거일 수 없습니다.", HttpStatus.BAD_REQUEST.value()),
+
+    // asset 관련
+    ASSET_NOT_FOUND("ASSET_NOT_FOUND", "해당 에셋이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
+    ASSET_NOT_SUCCESS("ASSET_NOT_SUCCESS", "해당 에셋은 성공 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
+    ASSET_URL_REQUIRED("ASSET_URL_REQUIRED", "성공 시 에셋 URL은 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
+    ASSET_TYPE_MISMATCH("ASSET_TYPE_MISMATCH", "요청한 에셋 타입이 일치하지 않습니다.", HttpStatus.BAD_REQUEST.value()),
+    ASSET_TYPE_REQUIRED("ASSET_TYPE_REQUIRED", "에셋 타입이 설정되지 않았습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
     // 비즈니스 로직 관련
     DUPLICATE_RESOURCE("DUPLICATE_RESOURCE", "이미 존재하는 리소스입니다.", HttpStatus.CONFLICT.value()),
 
     // 파일 처리 관련
+    FILE_NOT_FOUND("FILE_NOT_FOUND", "해당 파일이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
+    FILE_READ_ERROR("FILE_READ_ERROR", "해당 파일을 읽을 수 없습니다", HttpStatus.INTERNAL_SERVER_ERROR.value()),
     FILE_UPLOAD_ERROR("FILE_UPLOAD_ERROR", "파일 업로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+    FILE_DOWNLOAD_ERROR("FILE_DOWNLOAD_ERROR", "파일 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
     INVALID_FILE_TYPE("INVALID_FILE_TYPE", "지원하지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST.value()),
     FILE_SIZE_EXCEEDED("FILE_SIZE_EXCEEDED", "파일 크기가 제한을 초과했습니다.", HttpStatus.BAD_REQUEST.value()),
     IMAGE_PROCESSING_FAILED("IMAGE_PROCESSING_FAILED", "이미지 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),

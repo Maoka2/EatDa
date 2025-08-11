@@ -1,5 +1,6 @@
 package com.global.filestorage;
 
+import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -26,4 +27,12 @@ public interface FileStorageService {
      * @return 저장된 파일의 경로
      */
     String storeVideo(MultipartFile file, String relativePath, String originalName);
+
+    /**
+     * 저장된 파일을 Resource로 로드
+     *
+     * @param filePath 파일 경로 (전체 경로)
+     * @return Spring Resource 객체
+     */
+    Resource loadAsResource(String filePath);
 }
