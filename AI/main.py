@@ -10,10 +10,9 @@ from dotenv import load_dotenv
 import logging
 
 # 라우터 임포트
-from routers import stream_test_router, menuboard_ocr_router
+from routers import stream_test_router, menuboard_ocr_router, receipt_ocr_router
 from consumers.event_image_consumer import EventImageConsumer
 from consumers.menuboard_generate_consumer import MenuboardGenerateConsumer
-from consumers.receipt_ocr_consumer import ReceiptOCRConsumer
 from consumers.review_generate_consumer import ReviewGenerateConsumer
 
 # 환경 변수 로드
@@ -42,6 +41,7 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(stream_test_router)
 app.include_router(menuboard_ocr_router)
+app.include_router(receipt_ocr_router)
 
 # API 서버 상태 확인(루트 페이지)
 @app.get("/609")
@@ -63,8 +63,6 @@ async def startup_event():
     asyncio.create_task(EventImageConsumer().run_forever())
     # 메뉴 포스터 (menuboard_generate)
     asyncio.create_task(MenuboardGenerateConsumer().run_forever())
-    # 영수증 OCR (receipt_ocr)
-    asyncio.create_task(ReceiptOCRConsumer().run_forever())
     # 리뷰 생성 (review_generate)
     asyncio.create_task(ReviewGenerateConsumer().run_forever())
 
