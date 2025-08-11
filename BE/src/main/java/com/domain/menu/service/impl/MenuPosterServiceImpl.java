@@ -17,6 +17,8 @@ import com.domain.user.entity.User;
 import com.domain.user.repository.EaterRepository;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
+import com.global.constants.Status;
+import com.global.dto.request.AssetCallbackRequest;
 import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
 import com.global.redis.constants.RedisStreamKey;
@@ -67,6 +69,16 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         menuPosterAssetRedisPublisher.publish(RedisStreamKey.MENU_POSTER, message);
 
         return MenuPosterAssetRequestResponse.from(menuPosterAsset);
+    }
+
+    @Override
+    public void handleMenuPosterAssetCallback(AssetCallbackRequest<?> request) {
+        MenuPosterAsset asset = menuPosterAssetRepository.findById(request.assetId())
+                .orElseThrow(() -> new ApiException(ErrorCode.ASSET_NOT_FOUND));
+
+        AssetValidator.validateCallbackRequest(asset, request);
+        Status status = Status.fromString(request.result());
+        asset.processCallback(status, request.assetUrl());
     }
 
     private User validateEater(final String eaterEmail) {
