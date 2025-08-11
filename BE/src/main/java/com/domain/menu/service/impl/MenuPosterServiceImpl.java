@@ -19,6 +19,7 @@ import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
 import com.global.constants.Status;
 import com.global.dto.request.AssetCallbackRequest;
+import com.global.dto.response.AssetResultResponse;
 import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
 import com.global.redis.constants.RedisStreamKey;
@@ -26,6 +27,7 @@ import com.global.utils.AssetValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -45,6 +47,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
     private final FileStorageService fileStorageService;
 
     @Override
+    @Transactional
     public MenuPosterAssetRequestResponse requestMenuPosterAsset(MenuPosterAssetCreateRequest request, String eaterMail) {
         User eater = validateEater(eaterMail);
         Store store = validateStore(request.storeId());
@@ -72,6 +75,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
     }
 
     @Override
+    @Transactional
     public void handleMenuPosterAssetCallback(AssetCallbackRequest<?> request) {
         MenuPosterAsset asset = menuPosterAssetRepository.findById(request.assetId())
                 .orElseThrow(() -> new ApiException(ErrorCode.ASSET_NOT_FOUND));
@@ -79,6 +83,21 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         AssetValidator.validateCallbackRequest(asset, request);
         Status status = Status.fromString(request.result());
         asset.processCallback(status, request.assetUrl());
+    }
+
+    @Override
+    @Transactional
+    public AssetResultResponse getMenuPosterAssetStatus(Long assetId, String eaterMail) {
+        User eater = validateEater(eaterMail);
+        MenuPosterAsset asset = validateAsset(assetId);
+
+        menuValidator.validatePosterOwnership(eater, asset);
+
+        return switch (asset.getStatus()) {
+            case SUCCESS -> new AssetResultResponse(asset.getType(), asset.getAssetUrl());
+            case PENDING -> new AssetResultResponse(asset.getType(), "");
+            case FAIL -> throw new ApiException(ErrorCode.ASSET_URL_REQUIRED, assetId);
+        };
     }
 
     private User validateEater(final String eaterEmail) {
@@ -94,6 +113,14 @@ public class MenuPosterServiceImpl implements MenuPosterService {
                 .orElseThrow(() -> {
                     log.warn("[MenuPosterService] 가게를 찾을 수 없음 - storeId: {}", storeId);
                     return new ApiException(ErrorCode.STORE_NOT_FOUND);
+                });
+    }
+
+    private MenuPosterAsset validateAsset(final Long assetId) {
+        return menuPosterAssetRepository.findById(assetId)
+                .orElseThrow(() -> {
+                    log.warn("[MenuPosterService] 해당 에셋을 찾을 수 없음 - assetId: {}", assetId);
+                    return new ApiException(ErrorCode.ASSET_NOT_FOUND, assetId);
                 });
     }
 
