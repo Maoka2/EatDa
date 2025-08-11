@@ -18,19 +18,16 @@ public class FileStorageProperties {
     private static final String VIDEOS_PATH = "videos";
 
     private String baseDir;
-    private String publicBaseUrl;
 
-    // Todo: 로컬이면 publicBaseUrl 빼야함
     public String getImageRoot() {
-        return Paths.get(publicBaseUrl, baseDir, DATA_PATH, IMAGES_PATH)
+        return Paths.get(baseDir, DATA_PATH, IMAGES_PATH)
                 .toAbsolutePath()
                 .normalize()
                 .toString();
     }
 
-    // Todo: 로컬이면 publicBaseUrl 빼야함
     public String getVideoRoot() {
-        return Paths.get(publicBaseUrl, baseDir, DATA_PATH, VIDEOS_PATH)
+        return Paths.get(baseDir, DATA_PATH, VIDEOS_PATH)
                 .toAbsolutePath()
                 .normalize()
                 .toString();

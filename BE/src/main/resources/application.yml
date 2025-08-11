@@ -27,7 +27,6 @@ management: # Spring-Actuator 설정
 
 filestorage: # 파일 저장소 설정
   base-dir: ${user.home}/eatda
-  public-base-url: https://i13a609.p.ssafy.io
 
 jwt:
   secret-key: SnnjiquvcPa8IZXG7XyOr36wYRfYLbkAsB6AxbPcnivRyAot428rMAvEXmFKFDH3vAkBmfEmS12YxSrZdTIknQ==
