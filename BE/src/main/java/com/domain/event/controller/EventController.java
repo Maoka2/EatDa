@@ -19,6 +19,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,8 +36,7 @@ public class EventController {
     @PostMapping(value = "/assets/request", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse> requestEventAsset(
             @Valid @ModelAttribute final EventAssetCreateRequest request,
-//            @AuthenticationPrincipal
-            final String email
+            @AuthenticationPrincipal final String email
             ) {
         EventAssetRequestResponse response = eventService.requestEventAsset(request, email);
         return ApiResponseFactory.success(EVENT_ASSET_REQUESTED, response);
@@ -54,8 +54,7 @@ public class EventController {
     @GetMapping("/assets/{eventAssetId}/result")
     public ResponseEntity<BaseResponse> getEventAssetResult(
             @PathVariable("eventAssetId") final Long eventAssetId,
-//            @AuthenticationPrincipal
-            final String email
+            @AuthenticationPrincipal final String email
     ) {
         AssetResultResponse response = eventService.getEventAssetStatus(eventAssetId, email);
 
@@ -70,8 +69,7 @@ public class EventController {
     @PostMapping("/finalize")
     public ResponseEntity<BaseResponse> finalizeEvent(
             @Valid @RequestBody final EventFinalizeRequest request,
-//            @AuthenticationPrincipal
-            final String email
+            @AuthenticationPrincipal final String email
     ) {
         EventFinalizeResponse response = eventService.finalizeEvent(request);
 
@@ -81,8 +79,7 @@ public class EventController {
     @GetMapping("/assets/download")
     public ResponseEntity<Resource> downloadEventAsset(
             @RequestParam("eventAssetId") final Long eventAssetId,
-//            @AuthenticationPrincipal
-            final String email
+            @AuthenticationPrincipal final String email
     ) {
         Resource resource = eventService.downloadEventAsset(eventAssetId, email);
 
@@ -96,8 +93,7 @@ public class EventController {
     @GetMapping("/my")
     public ResponseEntity<BaseResponse> getMyEvents(
             @RequestParam(value = "lastEventId", required = false) final Long lastEventId,
-//            @AuthenticationPrincipal
-            final String email
+            @AuthenticationPrincipal final String email
     ) {
         List<MyEventResponse> response = eventService.getMyEvents(lastEventId, email);
 
@@ -117,8 +113,7 @@ public class EventController {
     @DeleteMapping("/{eventId}")
     public ResponseEntity<BaseResponse> deleteEvent(
             @PathVariable("eventId") final Long eventId,
-//            @AuthenticationPrincipal
-            final String email
+            @AuthenticationPrincipal final String email
     ) {
         eventService.deleteEvent(eventId, email);
 
