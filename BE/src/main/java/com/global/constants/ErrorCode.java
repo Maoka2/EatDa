@@ -88,6 +88,17 @@ public enum ErrorCode {
     ASSET_TYPE_MISMATCH("ASSET_TYPE_MISMATCH", "요청한 에셋 타입이 일치하지 않습니다.", HttpStatus.BAD_REQUEST.value()),
     ASSET_TYPE_REQUIRED("ASSET_TYPE_REQUIRED", "에셋 타입이 설정되지 않았습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 
+    // 메뉴 관련 에러 코드
+    MENU_NOT_FOUND("MENU_NOT_FOUND", "요청한 메뉴를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
+    MENU_NOT_BELONG_TO_STORE("MENU_NOT_BELONG_TO_STORE", "선택한 메뉴가 해당 가게에 속하지 않습니다.", HttpStatus.BAD_REQUEST.value()),
+    MENU_IDS_REQUIRED("MENU_IDS_REQUIRED", "메뉴 ID 목록은 필수 입력입니다.", HttpStatus.BAD_REQUEST.value()),
+
+    // 메뉴 포스터 관련 에러 코드
+    MENU_POSTER_NOT_FOUND("MENU_POSTER_NOT_FOUND", "요청한 메뉴 포스터를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
+    MENU_POSTER_NOT_PENDING("MENU_POSTER_NOT_PENDING", "해당 메뉴 포스터는 대기 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
+    MENU_POSTER_ASSET_NOT_FOUND("MENU_POSTER_ASSET_NOT_FOUND", "해당 메뉴 포스터 에셋이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
+    REQUIRED_MENU_FIELDS_MISSING("REQUIRED_MENU_FIELDS_MISSING", "assetId, type, prompt, storeId, userId, menus, imagesUrls는 필수입니다.", HttpStatus.BAD_REQUEST.value()),
+
     // 비즈니스 로직 관련
     DUPLICATE_RESOURCE("DUPLICATE_RESOURCE", "이미 존재하는 리소스입니다.", HttpStatus.CONFLICT.value()),
 
