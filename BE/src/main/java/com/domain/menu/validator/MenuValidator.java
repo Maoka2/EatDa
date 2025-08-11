@@ -110,4 +110,19 @@ public class MenuValidator {
             throw new ApiException(ErrorCode.MENU_POSTER_NOT_PENDING, poster.getId());
         }
     }
+
+    public void validateSuccessStatus(MenuPoster menuPoster) {
+        if (!menuPoster.getStatus().isSuccess()) {
+            log.warn("[MenuPosterService] 포스터가 아직 완성되지 않음 - menuPosterId: {}, status: {}",
+                    menuPoster.getId(), menuPoster.getStatus());
+            throw new ApiException(ErrorCode.MENU_POSTER_NOT_SUCCESS, menuPoster.getId());
+        }
+    }
+
+    public void validateNotSent(MenuPoster menuPoster) {
+        if (menuPoster.isSent()) {
+            log.warn("[MenuValidator] 이미 전송된 포스터 - menuPosterId: {}", menuPoster.getId());
+            throw new ApiException(ErrorCode.MENU_POSTER_ALREADY_SENT, menuPoster.getId());
+        }
+    }
 }
