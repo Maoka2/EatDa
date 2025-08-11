@@ -36,7 +36,7 @@ class MenuboardGenerateConsumer:
         self.group: str = os.getenv("REDIS_GROUP", "ai-consumers")
         default_consumer = f"ai-{socket.gethostname()}-{os.getpid()}"
         self.consumer_id: str = os.getenv("REDIS_CONSUMER_ID", default_consumer)
-        self.stream_key: str = os.getenv("MENU_POSTER_STREAM_KEY", STREAM_KEY_MENU_POSTER_GENERATE)
+        self.stream_key: str = os.getenv("MENU_POSTER_STREAM_KEY", "menu.poster.generate")
         self.dead_stream: str = os.getenv("MENU_POSTER_DEAD_STREAM", "menu.poster.dead")
 
         self.client: redis.Redis = redis.from_url(self.redis_url, decode_responses=True)
