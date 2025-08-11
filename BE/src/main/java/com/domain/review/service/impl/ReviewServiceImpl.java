@@ -98,7 +98,7 @@ public class ReviewServiceImpl implements ReviewService {
         boolean convertToWebp = shouldConvertToWebp(request.type());
         // 변환 여부를 넘겨서 업로드
         List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(),
-                convertToWebp);
+                true);
 
         publishReviewAssetMessage(reviewAsset, eater.getId(), request, store, uploadedImageUrls); // Redis 메시지 발행
 
