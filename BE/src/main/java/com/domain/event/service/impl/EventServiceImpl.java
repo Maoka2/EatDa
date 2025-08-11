@@ -246,6 +246,23 @@ public class EventServiceImpl implements EventService {
                 .toList();
     }
 
+    @Override
+    public void deleteEvent(Long eventId, String makerEmail) {
+        User maker = userRepository.findByEmailAndDeletedFalse(makerEmail)
+                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
+
+        Event event = eventRepository.findByIdAndDeletedFalse(eventId)
+                .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND, eventId));
+
+        if (!event.getStore().getMaker().getId().equals(maker.getId())) {
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        // 소프트 삭제
+        event.delete();
+        eventRepository.save(event);
+    }
+
     private Event createPendingEvent(final Store store, final LocalDate startDate, final LocalDate endDate) {
         return eventRepository.save(Event.createPending(store, startDate, endDate));
     }
