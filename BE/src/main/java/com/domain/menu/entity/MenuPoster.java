@@ -55,6 +55,13 @@ public class MenuPoster extends BaseEntity {
                 .build();
     }
 
+    public void updateDescription(String description) {
+        this.description = description;
+    }
+
+    public void updateStatus(Status status) {
+        this.status = status;
+    }
     public void markAsSent() {
         this.isSent = true;
     }
