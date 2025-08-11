@@ -9,9 +9,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-STREAM_KEY_EVENT_ASSET_GENERATE = "event.asset.generate"
-
-
 class EventAssetGenerateMessage(BaseModel):
     eventAssetId: int = Field(..., description="에셋 생성 요청의 식별자 (event_asset.id)")
     type: str = Field(..., description="생성 타입 (IMAGE 또는 SHORTS)")
