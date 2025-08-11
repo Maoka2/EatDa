@@ -19,10 +19,15 @@ ocr_requests = {}
 
 
 @router.post("/reviews/menu-extraction", response_model=dict)
-async def receive_ocr_request(request: OCRMenuRequest, background_tasks: BackgroundTasks):
+async def receive_ocr_request(
+    background_tasks: BackgroundTasks,
+    meta: str = Form(...),  # OCRMenuRequest JSON 문자열
+    file: UploadFile = File(...),
+):
     """
-    1단계: RN → FastAPI
-    메뉴보드 OCR 요청을 받아서 비동기 처리를 시작합니다.
+    1단계: RN → FastAPI (파일 업로드 방식)
+    메뉴보드 이미지를 form-data로 업로드 받아 비동기 처리합니다.
+    파일은 본문에서 바로 읽어 바이트로 처리하며, 콜백은 고정 엔드포인트로 전송합니다.
     """
     try:
         if not menuboard_ocr_service.is_available():
@@ -31,28 +36,52 @@ async def receive_ocr_request(request: OCRMenuRequest, background_tasks: Backgro
                 detail="OCR 서비스가 초기화되지 않았습니다. API 키를 확인하세요."
             )
 
+        # 메타데이터 파싱(OCRMenuRequest 모델 사용)
+        try:
+            request = OCRMenuRequest.model_validate_json(meta)
+        except Exception as parse_err:
+            raise HTTPException(status_code=422, detail=f"meta 파싱 실패: {parse_err}")
+
+        # 파일 타입 검증
+        if not file.content_type or not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
+
+        # 이미지 데이터 미리 읽어서 백그라운드 태스크로 전달 (요청 종료 후 파일 핸들 닫힘 방지)
+        image_data = await file.read()
+
+        # 이미지 포맷 추출 (Content-Type 및 파일명 기반)
+        image_format = "jpg"
+        ct = (file.content_type or "").lower()
+        if ct in ("image/jpeg", "image/jpg"):
+            image_format = "jpg"
+        elif ct == "image/png":
+            image_format = "png"
+        elif ct in ("image/tiff", "image/tif"):
+            image_format = "tiff"
+        elif ct == "application/pdf":
+            image_format = "pdf"
+        else:
+            filename = (file.filename or "").lower()
+            if any(filename.endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".pdf", ".tif", ".tiff")):
+                image_format = filename.split(".")[-1]
+
         # 요청 정보를 메모리에 저장
         ocr_requests[request.sourceId] = {
-            "request": request,
             "status": "PROCESSING",
-            "created_at": request.requestedAt
+            "created_at": request.requestedAt,
+            "storeId": request.storeId,
+            "userId": request.userId,
+            "type": request.type,
         }
 
         # 백그라운드에서 OCR 처리 시작
-        background_tasks.add_task(process_ocr_async, request)
+        background_tasks.add_task(process_ocr_async_upload, request, image_data, image_format)
 
-        return {
-            "message": "OCR 요청이 접수되었습니다.",
-            "sourceId": request.sourceId,
-            "status": "PROCESSING"
-        }
+        return {"message": "OCR 요청이 접수되었습니다.", "sourceId": request.sourceId, "status": "PROCESSING"}
 
     except Exception as e:
         print(f"❌ OCR 요청 접수 실패: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"OCR 요청 처리 실패: {e}"
-        )
+        raise HTTPException(status_code=500, detail=f"OCR 요청 처리 실패: {e}")
 
 
 async def process_ocr_async(request: OCRMenuRequest):
@@ -103,6 +132,34 @@ async def process_ocr_async(request: OCRMenuRequest):
         await handle_ocr_failure(request, f"OCR 처리 실패: {e}")
 
 
+async def process_ocr_async_upload(request: OCRMenuRequest, image_data: bytes, image_format: str):
+    """업로드된 파일 바이트로 OCR 처리 후 콜백 (모델 활용)"""
+    try:
+        extracted_menus = await menuboard_ocr_service.extract_menus_from_image(image_data, image_format)
+        callback_data = OCRCallbackRequest(
+            sourceId=request.sourceId,
+            result="SUCCESS",
+            extractedMenus=extracted_menus,
+            type=request.type,
+        )
+        await send_ocr_callback(callback_data)
+        if request.sourceId in ocr_requests:
+            ocr_requests[request.sourceId]["status"] = "SUCCESS"
+    except Exception as e:
+        print(f"❌ 업로드 OCR 처리 실패: {e}")
+        try:
+            callback_data = OCRCallbackRequest(
+                sourceId=request.sourceId,
+                result="FAIL",
+                extractedMenus=[],
+                type=request.type,
+            )
+            await send_ocr_callback(callback_data)
+        finally:
+            if request.sourceId in ocr_requests:
+                ocr_requests[request.sourceId]["status"] = "FAIL"
+
+
 async def handle_ocr_failure(request: OCRMenuRequest, error_message: str):
     """OCR 실패 시 콜백 처리"""
     try:
@@ -134,7 +191,6 @@ async def send_ocr_callback(callback_data: OCRCallbackRequest):
     try:
         # TODO[SPRING]: 스프링 서버 도메인/포트로 변경
         #   예) http://spring.mycompany.com:8080/api/reviews/menu-extraction/callback
-        #   로컬에서 스프링을 9090으로 띄운다면: http://localhost:9090/api/reviews/menu-extraction/callback
         callback_url = "https://i13a609.p.ssafy.io/api/reviews/menu-extraction/callback"
         
         async with httpx.AsyncClient() as client:
