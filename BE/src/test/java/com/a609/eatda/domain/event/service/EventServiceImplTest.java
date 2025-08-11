@@ -132,6 +132,7 @@ class EventServiceImplTest {
     @DisplayName("이벤트 에셋 요청 성공")
     void requestEventAsset_Success() {
         // given
+        String expectedPath = "events/" + makerEmail;
         MultipartFile mockFile = mock(MultipartFile.class);
         given(mockFile.getSize()).willReturn(5L * 1024 * 1024); // 5MB
         given(mockFile.getOriginalFilename()).willReturn("test.jpg");
@@ -145,8 +146,12 @@ class EventServiceImplTest {
         given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
         given(eventRepository.save(any(Event.class))).willReturn(event);
         given(eventAssetRepository.save(any(EventAsset.class))).willReturn(eventAsset);
-        given(fileStorageService.storeImage(any(MultipartFile.class), eq("events"), anyString()))
-                .willReturn("uploaded/path/image.jpg");
+        given(fileStorageService.storeImage(
+                mockFile,
+                expectedPath,
+                "test.jpg",
+                true
+        )).willReturn("uploaded/path/image.jpg");
 
         // when
         EventAssetRequestResponse response = eventService.requestEventAsset(request, makerEmail);
@@ -159,7 +164,12 @@ class EventServiceImplTest {
         verify(storeRepository).findById(storeId);
         verify(eventRepository).save(any(Event.class));
         verify(eventAssetRepository).save(any(EventAsset.class));
-        verify(fileStorageService).storeImage(mockFile, "events", "test.jpg");
+        verify(fileStorageService).storeImage(
+                mockFile,
+                expectedPath,
+                "test.jpg",
+                true // WebP 변환 적용 검증
+        );
 
         // Redis 메시지 발행 검증
         ArgumentCaptor<EventAssetGenerateMessage> messageCaptor =
@@ -225,6 +235,7 @@ class EventServiceImplTest {
     @DisplayName("여러 이미지 업로드 성공")
     void requestEventAsset_MultipleImages() {
         // given
+        String expectedPath = "events/" + makerEmail;
         MultipartFile file1 = mock(MultipartFile.class);
         MultipartFile file2 = mock(MultipartFile.class);
         given(file1.getSize()).willReturn(3L * 1024 * 1024);
@@ -241,10 +252,20 @@ class EventServiceImplTest {
         given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
         given(eventRepository.save(any(Event.class))).willReturn(event);
         given(eventAssetRepository.save(any(EventAsset.class))).willReturn(eventAsset);
-        given(fileStorageService.storeImage(file1, "events", "image1.jpg"))
-                .willReturn("uploaded/image1.jpg");
-        given(fileStorageService.storeImage(file2, "events", "image2.jpg"))
-                .willReturn("uploaded/image2.jpg");
+        given(fileStorageService.storeImage(
+                file1,
+                expectedPath,
+                "image1.jpg",
+                true // WebP 변환 적용
+        )).willReturn("uploaded/path/image1.jpg");
+
+        given(fileStorageService.storeImage(
+                file2,
+                expectedPath,
+                "image2.jpg",
+                true // WebP 변환 적용
+        )).willReturn("uploaded/path/image2.jpg");
+
         // when
         EventAssetRequestResponse response = eventService.requestEventAsset(request, makerEmail);
 
@@ -254,10 +275,11 @@ class EventServiceImplTest {
         ArgumentCaptor<EventAssetGenerateMessage> messageCaptor =
                 ArgumentCaptor.forClass(EventAssetGenerateMessage.class);
         verify(eventAssetRedisPublisher).publish(eq(RedisStreamKey.EVENT_ASSET), messageCaptor.capture());
-
+        verify(fileStorageService).storeImage(file1, expectedPath, "image1.jpg", true);
+        verify(fileStorageService).storeImage(file2, expectedPath, "image2.jpg", true);
         assertThat(messageCaptor.getValue().getReferenceImages())
                 .hasSize(2)
-                .containsExactly("uploaded/image1.jpg", "uploaded/image2.jpg");
+                .containsExactly("uploaded/path/image1.jpg", "uploaded/path/image2.jpg");
     }
 
     @Test
