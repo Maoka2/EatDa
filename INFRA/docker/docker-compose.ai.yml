@@ -3,7 +3,7 @@ services:
     image: eatda-ai:latest
     container_name: eatda-ai
     ports:
-      - "8085:8000"
+      - "8000:8000"
     volumes:
       - /home/ubuntu/eatda/ai:/root/eatda
     networks:
