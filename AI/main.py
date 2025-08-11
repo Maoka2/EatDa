@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 # 라우터 임포트
-from routers import ocr_router, ocr_receipt_router, stream_test_router
+from routers import ocr_router, stream_test_router
 from consumers.event_image_consumer import EventImageConsumer
 from consumers.menuboard_generate_consumer import MenuboardGenerateConsumer
 from consumers.receipt_ocr_consumer import ReceiptOCRConsumer
@@ -37,7 +37,6 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(ocr_router)
-app.include_router(ocr_receipt_router)
 app.include_router(stream_test_router)
 
 # API 서버 상태 확인(루트 페이지)
