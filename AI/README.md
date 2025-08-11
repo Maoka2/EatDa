@@ -83,5 +83,4 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ## HTTP 엔드포인트(테스트/연동)
 - 헬스: `GET /ai/health`
 - 라우트 확인: `GET /ai/609`
-- 리뷰 생성(HTTP) - 테스트트: `POST /ai/api/reviews/assets/generate`
-- 메뉴보드 OCR: `POST /ai/api/reviews/menu-extraction`
+- 메뉴판 OCR: `POST /ai/api/reviews/menu-extraction`
