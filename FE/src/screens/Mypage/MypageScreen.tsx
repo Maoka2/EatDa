@@ -61,7 +61,6 @@ export default function MypageScreen({ navigation, route }: Props) {
             {/* 햄버거 아이콘 */}
             <HamburgerButton
               userRole={isMaker ? "maker" : "eater"}
-              onLogout={handleLogout}
               onMypage={() => {}}
             />
           </TouchableOpacity>

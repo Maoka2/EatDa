@@ -110,7 +110,6 @@ export default function StoreScreen(props?: StoreProps) {
       <View style={styles.headerContainer}>
         <HamburgerButton
           userRole="eater"
-          onLogout={handleLogout}
           onMypage={handleMypage}
         />
         <HeaderLogo />

@@ -191,7 +191,6 @@ export default function Reviews(props?: ReviewProps) {
               >
                 <HamburgerButton
                   userRole={isMaker ? "maker" : "eater"}
-                  onLogout={onLogout}
                   onMypage={onMypage}
                 />
               </TouchableOpacity>

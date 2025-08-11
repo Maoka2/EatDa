@@ -144,7 +144,6 @@ export default function ActiveEventScreen() {
       <View style={styles.headerContainer}>
         <HamburgerButton
           userRole={isMaker ? "maker" : "eater"}
-          onLogout={() => console.log("logout")}
           onMypage={handleMypage}
         />
         <HeaderLogo />

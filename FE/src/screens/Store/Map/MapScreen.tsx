@@ -30,7 +30,7 @@ interface StoreMapScreenProps {
   onClose: () => void;
 }
 
-export default function MapScreen2({ onClose }: StoreMapScreenProps) {
+export default function MapScreen({ onClose }: StoreMapScreenProps) {
   const { width, height } = useWindowDimensions();
   const horizontalMargin = width * 0.06;
 
@@ -64,11 +64,10 @@ export default function MapScreen2({ onClose }: StoreMapScreenProps) {
           { marginHorizontal: horizontalMargin, marginTop: height * 0.057 },
         ]}
       >
-        <HamburgerButton
+        {/* <HamburgerButton
           userRole="eater"
-          onLogout={() => console.log("logout")}
-          activePage="mapPage"
-        ></HamburgerButton>
+         onMypage={}
+        ></HamburgerButton> */}
         <HeaderLogo></HeaderLogo>
       </View>
 

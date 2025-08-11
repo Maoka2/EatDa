@@ -10,7 +10,7 @@ import {
   Text,
   Modal,
 } from "react-native";
-
+import { useRoute } from "@react-navigation/native";
 //
 
 // 사이드바에 사용될 숟가락, 포크 이미지
@@ -18,19 +18,16 @@ import Sidebar from "./Sidebar";
 
 export interface Props {
   userRole: "eater" | "maker";
-  onLogout: () => void;
   onMypage: () => void;
-  activePage?: string; // activePage prop 추가
 }
 
-export default function HamburgerButton({
-  userRole,
-  onLogout,
-  onMypage,
-  activePage = "reviewPage", // 기본값 설정
-}: Props) {
+export default function HamburgerButton({ userRole, onMypage }: Props) {
   const [isOpen, setIsOpen] = useState(false);
-
+  
+  const route = useRoute();
+  const handleClose = () => {
+    setIsOpen(false);
+  };
   return (
     // 사이드바 열고 닫기 관리
     <>
@@ -40,12 +37,10 @@ export default function HamburgerButton({
 
       <Modal visible={isOpen} transparent animationType="none">
         <Sidebar
-          isOpen={true}
-          onClose={() => setIsOpen(false)}
+          onClose={handleClose}
           userRole={userRole}
-          onLogout={onLogout}
-          activePage={activePage} // props로 받은 activePage 전달
           onMypage={onMypage}
+          activePage={route.name as string}
         />
       </Modal>
     </>
