@@ -19,6 +19,7 @@ import os
 import socket
 from typing import Any, Dict, Tuple
 import logging
+import time
 
 from dotenv import load_dotenv
 
@@ -44,6 +45,10 @@ class ReviewGenerateConsumer:
     def __init__(self) -> None:
         # 로거 초기화: 이 컨슈머의 실행/에러/처리 상황을 기록
         self.logger = logging.getLogger(__name__)
+        # 연결 상태 및 로그 억제 변수 (상태 변화 시에만 강한 로그)
+        self._conn_state: str = "INIT"  # INIT | CONNECTED | FAILED
+        self._last_fail_log_ts: float = 0.0
+        self._fail_log_interval_sec: float = 60.0  # 실패 지속 시 로그 최소 간격
         self.redis_url: str = os.getenv("REDIS_URL", "redis://redis:6379/0")
         self.group: str = os.getenv("REDIS_GROUP", "ai-consumers")
         default_consumer = f"ai-{socket.gethostname()}-{os.getpid()}"
@@ -173,10 +178,18 @@ class ReviewGenerateConsumer:
         while True:
             try:
                 await self.ensure_consumer_group()
-                self.logger.info("[리뷰컨슈머] 컨슈머 그룹 준비 완료")
+                # 상태 변화 로그: FAILED/INIT -> CONNECTED
+                if self._conn_state != "CONNECTED":
+                    self.logger.info("[리뷰컨슈머] 컨슈머 그룹 준비 완료")
+                self._conn_state = "CONNECTED"
                 break
             except Exception as e:
-                self.logger.exception("[리뷰컨슈머] 컨슈머 그룹 준비 실패, 3초 후 재시도: %s", e)
+                now = time.time()
+                # 상태 변화 또는 주기적으로만 에러 로그 출력
+                if self._conn_state != "FAILED" or (now - self._last_fail_log_ts) > self._fail_log_interval_sec:
+                    self.logger.exception("[리뷰컨슈머] 컨슈머 그룹 준비 실패, 3초 후 재시도: %s", e)
+                    self._last_fail_log_ts = now
+                self._conn_state = "FAILED"
                 await asyncio.sleep(3)
 
         # 읽기 루프
@@ -207,8 +220,12 @@ class ReviewGenerateConsumer:
                         except Exception:
                             await self.client.xack(self.stream_key, self.group, message_id)
             except Exception as loop_err:
-                # 메인 루프 예외 기록 후 잠시 대기 (예: Redis 연결 끊김 등)
-                self.logger.exception(f"[리뷰컨슈머] 루프 오류: {loop_err}")
+                # 상태 변화 또는 주기적으로만 에러 로그 출력 (예: Redis 연결 끊김 등)
+                now = time.time()
+                if self._conn_state != "FAILED" or (now - self._last_fail_log_ts) > self._fail_log_interval_sec:
+                    self.logger.exception(f"[리뷰컨슈머] 루프 오류: {loop_err}")
+                    self._last_fail_log_ts = now
+                self._conn_state = "FAILED"
                 await asyncio.sleep(2)
 
 
