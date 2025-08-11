@@ -18,7 +18,7 @@ logging:
     com.domain..controller: INFO
     com.domain..service: INFO
     com.domain..repository: INFO
-    org.hibernate.SQL: INFO
+    org.hibernate.SQL: OFF
 
 springdoc:
   swagger-ui:
