@@ -67,7 +67,7 @@ public class MakerServiceImpl implements MakerService {
         log.info("Step3: h3Index7={}", h3Index7);
 
         Store store = storeMapper.toEntity(baseRequest, maker,
-                storeLicenseImage(licenseImageRequest, "licenses/" + maker.getEmail()),
+                storeImage(licenseImageRequest, "licenses/" + maker.getEmail()),
                 h3Index7,
                 h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 8),
                 h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 9),
@@ -80,7 +80,7 @@ public class MakerServiceImpl implements MakerService {
             log.info("Step5: Processing menu index {}", i);
             MultipartFile imageRequest = menuImageRequests.get(i);
             menus.add(menuMapper.toEntity(menuRequests.get(i), store,
-                    storeLicenseImage(imageRequest, "menus/" + maker.getEmail())));
+                    storeImage(imageRequest, "menus/" + maker.getEmail())));
         }
         log.info("Step6: Menu list created, size={}", menus.size());
 
@@ -102,8 +102,8 @@ public class MakerServiceImpl implements MakerService {
         validateDuplicateEmail(request.email());
     }
 
-    private String storeLicenseImage(MultipartFile imageRequest, String path) {
-        return fileStorageService.storeImage(imageRequest, path, imageRequest.getOriginalFilename(), true
+    private String storeImage(MultipartFile imageRequest, String path) {
+        return fileStorageService.storeImage(imageRequest, path, imageRequest.getOriginalFilename(), false
         );
     }
 

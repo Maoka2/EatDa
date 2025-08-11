@@ -44,7 +44,7 @@ public class User extends BaseEntity {
     private String password;
 
     @NotNull
-    @Column(length = 50, unique = true)
+    @Column(length = 50)
     private String nickname;
 
     @NotNull
