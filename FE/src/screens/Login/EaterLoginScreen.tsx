@@ -9,7 +9,7 @@ import GoogleIcon from "../../../assets/google-icon.svg";
 import KakaoIcon from "../../../assets/kakao-icon.svg";
 import { ApiError, signIn } from "./services/api";
 import { saveAuth, getAuth, hasTokens, Role } from "./services/tokenStorage";
-
+import { useAuth } from "../../contexts/AuthContext";
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
   "EaterLoginScreen"
@@ -42,6 +42,8 @@ type Props = {
 export default function EaterLoginScreen(props?: Props) {
   const navigation = useNavigation<NavigationProp>();
   const [isLoading, setIsLoading] = useState(false);
+
+  const { login } = useAuth();
 
   const handleNavigateToRegister = () => {
     // 역할 선택 화면으로 먼저 이동
@@ -94,6 +96,7 @@ export default function EaterLoginScreen(props?: Props) {
       const role: Role = "EATER";
       await saveAuth(response.data, role);
 
+      login(role);
       // 저장 확인 (콘솔)
       const ok = await hasTokens();
       const auth = await getAuth();

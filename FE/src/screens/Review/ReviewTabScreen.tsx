@@ -42,6 +42,9 @@ import ColoredBookMark from "../../../assets/coloredBookMark.svg";
 import GoToStore from "../../../assets/goToStore.svg";
 import ColoredGoToStore from "../../../assets/coloredGoToStore.svg";
 
+// 분기처리용 import
+import { useAuth } from "../../contexts/AuthContext";
+
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
   "ReviewTabScreen"
@@ -58,6 +61,11 @@ export default function Reviews(props?: ReviewProps) {
   const { height } = useWindowDimensions();
   const screenHeight = Dimensions.get("window").height;
 
+  // 분기처리용
+  const { isLoggedIn, userRole } = useAuth();
+  const isMaker = isLoggedIn && userRole === "MAKER";
+  const isEater = isLoggedIn && userRole === "EATER";
+
   // 내장 네비게이션 함수들
   const handleLogout = () => {
     navigation.navigate("Login");
@@ -69,7 +77,6 @@ export default function Reviews(props?: ReviewProps) {
   };
 
   // props가 있으면 props 함수 사용, 없으면 내장 함수 사용
-  const userRole = props?.userRole || "eater";
   const onLogout = props?.onLogout || handleLogout;
   const onMypage = props?.onMypage || handleMypage;
 
@@ -183,7 +190,7 @@ export default function Reviews(props?: ReviewProps) {
                 }}
               >
                 <HamburgerButton
-                  userRole={userRole}
+                  userRole={isMaker ? "maker" : "eater"}
                   onLogout={onLogout}
                   onMypage={onMypage}
                 />
@@ -269,15 +276,17 @@ export default function Reviews(props?: ReviewProps) {
                         </TouchableOpacity>
 
                         {/* 북마크 */}
-                        <TouchableOpacity
-                          onPress={() => setIsBookMarked((prev) => !prev)}
-                        >
-                          {isBookMarked ? (
-                            <ColoredBookMark style={styles.bookMark} />
-                          ) : (
-                            <BookMark style={styles.bookMark} />
-                          )}
-                        </TouchableOpacity>
+                        {isEater && (
+                          <TouchableOpacity
+                            onPress={() => setIsBookMarked((prev) => !prev)}
+                          >
+                            {isBookMarked ? (
+                              <ColoredBookMark style={styles.bookMark} />
+                            ) : (
+                              <BookMark style={styles.bookMark} />
+                            )}
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   )}

@@ -14,8 +14,7 @@ import HeaderLogo from "../../components/HeaderLogo";
 import EaterMypage from "./EaterMypage";
 import MakerMypage from "./MakerMypage";
 import { COLORS } from "../../constants/theme";
-
-type TabKey = "eater" | "maker";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Navigation Props 타입 정의
 type Props = NativeStackScreenProps<AuthStackParamList, "MypageScreen">;
@@ -23,6 +22,9 @@ type Props = NativeStackScreenProps<AuthStackParamList, "MypageScreen">;
 export default function MypageScreen({ navigation, route }: Props) {
   const { width, height } = useWindowDimensions();
 
+  const { isLoggedIn, userRole } = useAuth();
+  const isMaker = isLoggedIn && userRole === "MAKER";
+  const isEater = isLoggedIn && userRole === "EATER";
   // 사용자 역할을 어떻게 가져올지에 따라 다음 중 하나를 선택:
   // 1. route params에서 가져오기 (추천)
   // const userRole = route.params?.userRole || "eater";
@@ -34,18 +36,12 @@ export default function MypageScreen({ navigation, route }: Props) {
   // const [userRole, setUserRole] = useState<"eater" | "maker">("eater");
 
   // 임시로 기본값 설정 (실제로는 위의 방법 중 하나 사용)
-  const [userRole, setUserRole] = useState<"eater" | "maker">("eater");
 
-  const [activeTab, setActiveTab] = useState<TabKey>(userRole);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 
-  const primaryColor =
-    activeTab === "eater" ? COLORS.primaryEater : COLORS.primaryMaker;
+  const primaryColor = isEater ? COLORS.primaryEater : COLORS.primaryMaker;
 
-  // 탭 변경 핸들러
-  const handleTabChange = (tab: TabKey) => {
-    setActiveTab(tab);
-  };
+ 
 
   // 로그아웃 핸들러
   const handleLogout = () => {
@@ -64,7 +60,7 @@ export default function MypageScreen({ navigation, route }: Props) {
           <TouchableOpacity style={styles.hamburgerButton}>
             {/* 햄버거 아이콘 */}
             <HamburgerButton
-              userRole={activeTab}
+              userRole={isMaker ? "maker" : "eater"}
               onLogout={handleLogout}
               onMypage={() => {}}
             />
@@ -80,7 +76,7 @@ export default function MypageScreen({ navigation, route }: Props) {
       >
         {/* 마이페이지 컨텐츠 */}
         <View style={{ flex: 1 }} pointerEvents="box-none">
-          {activeTab === "eater" ? (
+          {isEater ? (
             <EaterMypage
               onLogout={handleLogout}
               setHeaderVisible={setIsHeaderVisible}

@@ -26,6 +26,9 @@ import MapScreen from "./Map/MapScreen";
 // import MapScreen from "./Map/MapScreen";
 import MenuCustomScreen from "./Menu/MenuCustomScreen";
 
+// 분기처리용
+import { useAuth } from "../../contexts/AuthContext";
+
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
   "StoreScreen"
@@ -37,6 +40,11 @@ interface StoreProps {
 
 export default function StoreScreen(props?: StoreProps) {
   const navigation = useNavigation<NavigationProp>();
+
+  // 분기처리용
+  const { isLoggedIn, userRole } = useAuth();
+  const isMaker = isLoggedIn && userRole === "MAKER";
+  const isEater = isLoggedIn && userRole === "EATER";
 
   // 내장 네비게이션 함수들
   const handleGoBack = () => {
@@ -133,7 +141,7 @@ export default function StoreScreen(props?: StoreProps) {
       </View>
 
       {/* 하단 버튼 3개 */}
-      <BottomButton onPress={handleBottomButtonPress} />
+      {isEater && <BottomButton onPress={handleBottomButtonPress} />}
     </SafeAreaView>
   );
 }

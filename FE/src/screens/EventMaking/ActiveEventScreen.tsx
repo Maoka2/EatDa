@@ -17,7 +17,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { Ionicons } from "@expo/vector-icons";
-
+import { useAuth } from "../../contexts/AuthContext";
 // 더미데이터
 import { eventData } from "../../data/eventData";
 import { eventItem } from "../../components/GridComponent";
@@ -49,6 +49,10 @@ export default function ActiveEventScreen() {
     console.log("이벤트 포스터 생성하기 클릭");
     navigation.navigate("EventMakingScreen");
   };
+
+  // 생성하기 버튼 role 따라 분기
+  const { isLoggedIn, userRole } = useAuth();
+  const isMaker = isLoggedIn && userRole === "MAKER";
 
   // 진행중인 이벤트 눌렀을 때 날짜안에 들어있는거만 보여주기
   const [selectedEvent, setSelectedEvent] = useState<eventItem | null>(null);
@@ -139,7 +143,7 @@ export default function ActiveEventScreen() {
       {/* 헤더 */}
       <View style={styles.headerContainer}>
         <HamburgerButton
-          userRole="maker"
+          userRole={isMaker ? "maker" : "eater"}
           onLogout={() => console.log("logout")}
           onMypage={handleMypage}
         />
@@ -162,7 +166,7 @@ export default function ActiveEventScreen() {
         )}
       />
       {/* 이벤트 포스터 생성하기 버튼 */}
-      {!selectedEvent && (
+      {!selectedEvent && isMaker && (
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.createEventButton}

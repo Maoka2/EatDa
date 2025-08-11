@@ -6,7 +6,7 @@ import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 import AuthForm, { AuthField } from "../../components/AuthForm";
 import { signIn, ApiError } from "./services/api";
 import { saveAuth, getAuth, hasTokens, Role } from "./services/tokenStorage";
-
+import { useAuth } from "../../contexts/AuthContext";
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
   "MakerLoginScreen"
@@ -39,6 +39,8 @@ type Props = {
 export default function MakerLoginScreen(props?: Props) {
   const navigation = useNavigation<NavigationProp>();
   const [isLoading, setIsLoading] = useState(false);
+
+  const { login } = useAuth();
 
   // 내장 네비게이션 함수들
   const handleNavigateToRegister = () => {
@@ -91,6 +93,7 @@ export default function MakerLoginScreen(props?: Props) {
       const role: Role = "MAKER";
       await saveAuth(response.data, role);
 
+      login(role);
       // 저장 확인 (콘솔)
       const ok = await hasTokens();
       const auth = await getAuth();
