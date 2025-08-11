@@ -5,13 +5,13 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 
 
 class EventAssetGenerateMessage(BaseModel):
     eventAssetId: int = Field(..., description="에셋 생성 요청의 식별자 (event_asset.id)")
-    type: str = Field(..., description="생성 타입 (IMAGE 또는 SHORTS)")
+    type: Literal["IMAGE"] = Field("IMAGE", description="생성 타입 (항상 IMAGE)")
     prompt: str = Field(..., description="사용자 입력 프롬프트")
     storeId: int = Field(..., description="이벤트 대상 가게 ID")
     userId: int = Field(..., description="요청 사용자 ID")
@@ -28,6 +28,6 @@ class EventAssetCallbackRequest(BaseModel):
     eventAssetId: int = Field(...)
     result: str = Field(..., description='"SUCCESS" 또는 "FAIL"')
     assetUrl: Optional[str] = Field(None)
-    type: str = Field(..., description='"IMAGE" 또는 "SHORTS"')
+    type: Literal["IMAGE"] = Field("IMAGE", description='항상 "IMAGE"')
 
 
