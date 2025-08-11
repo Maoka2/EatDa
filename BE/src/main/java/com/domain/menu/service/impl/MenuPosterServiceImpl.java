@@ -1,14 +1,18 @@
 package com.domain.menu.service.impl;
 
 import com.domain.menu.dto.redis.MenuPosterAssetGenerateMessage;
+import com.domain.menu.dto.request.AdoptMenuPostersRequest;
 import com.domain.menu.dto.request.MenuPosterAssetCreateRequest;
 import com.domain.menu.dto.request.MenuPosterFinalizeRequest;
+import com.domain.menu.dto.response.AdoptMenuPostersResponse;
 import com.domain.menu.dto.response.MenuPosterAssetRequestResponse;
 import com.domain.menu.dto.response.MenuPosterFinalizeResponse;
+import com.domain.menu.entity.AdoptedMenuPoster;
 import com.domain.menu.entity.Menu;
 import com.domain.menu.entity.MenuPoster;
 import com.domain.menu.entity.MenuPosterAsset;
 import com.domain.menu.redis.MenuPosterAssetRedisPublisher;
+import com.domain.menu.repository.AdoptedMenuPosterRepository;
 import com.domain.menu.repository.MenuPosterAssetRepository;
 import com.domain.menu.repository.MenuPosterRepository;
 import com.domain.menu.service.MenuPosterService;
@@ -17,11 +21,13 @@ import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
 import com.domain.user.entity.User;
 import com.domain.user.repository.EaterRepository;
+import com.domain.user.repository.MakerRepository;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
 import com.global.constants.Status;
 import com.global.dto.request.AssetCallbackRequest;
 import com.global.dto.response.AssetResultResponse;
+import com.global.entity.BaseEntity;
 import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
 import com.global.redis.constants.RedisStreamKey;
@@ -42,8 +48,10 @@ public class MenuPosterServiceImpl implements MenuPosterService {
 
     private final StoreRepository storeRepository;
     private final EaterRepository eaterRepository;
+    private final MakerRepository makerRepository;
     private final MenuPosterRepository menuPosterRepository;
     private final MenuPosterAssetRepository menuPosterAssetRepository;
+    private final AdoptedMenuPosterRepository adoptedMenuPosterRepository;
     private final MenuValidator menuValidator;
     private final MenuPosterAssetRedisPublisher menuPosterAssetRedisPublisher;
     private final FileStorageService fileStorageService;
@@ -131,10 +139,48 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         menuPoster.markAsSent();
     }
 
+    @Override
+    @Transactional
+    public AdoptMenuPostersResponse adoptMenuPosters(AdoptMenuPostersRequest request, String makerEmail) {
+        User maker = validateMater(makerEmail);
+        Store store = validateStore(request.storeId());
+
+        menuValidator.validateStoreOwnership(maker, store);
+        menuValidator.validateMenuPosterCount(request.menuPosterIds());
+
+        List<MenuPoster> menuPosters = menuPosterRepository.findAllById(request.menuPosterIds());
+        menuValidator.validateMenuPostersExist(menuPosters, request.menuPosterIds());
+        menuValidator.validateAllPostersSent(menuPosters);
+        menuValidator.validatePostersBelongToStore(menuPosters, request.storeId());
+
+        List<AdoptedMenuPoster> existingAdopted = adoptedMenuPosterRepository.findByStoreIdAndNotDeleted(request.storeId());
+        if (!existingAdopted.isEmpty()) {
+            existingAdopted.forEach(BaseEntity::delete);
+            adoptedMenuPosterRepository.saveAll(existingAdopted);
+        }
+
+        List<AdoptedMenuPoster> newAdopted = menuPosters.stream()
+                .map(poster -> AdoptedMenuPoster.builder()
+                        .store(store)
+                        .menuPoster(poster)
+                        .build()
+                ).toList();
+        adoptedMenuPosterRepository.saveAll(newAdopted);
+        return AdoptMenuPostersResponse.of(request.storeId(), request.menuPosterIds());
+    }
+
     private User validateEater(final String eaterEmail) {
         return eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
                 .orElseThrow(() -> {
                     log.warn("[MenuPosterService] 권한 없음 - eaterEmail: {}", eaterEmail);
+                    return new ApiException(ErrorCode.FORBIDDEN);
+                });
+    }
+
+    private User validateMater(final String makerEmail) {
+        return makerRepository.findByEmailAndDeletedFalse(makerEmail)
+                .orElseThrow(() -> {
+                    log.warn("[MenuPosterService] 권한 없음 - makerEmail: {}", makerEmail);
                     return new ApiException(ErrorCode.FORBIDDEN);
                 });
     }
