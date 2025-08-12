@@ -31,7 +31,7 @@ class MenuPosterCallbackService:
 
                     if response.status == 200:
                         print(
-                            f"콜백 전송 성공: menuPosterAssetId={callback_data.get('menuPosterAssetId')}, result={callback_data.get('result')}"
+                            f"콜백 전송 성공: assetId={callback_data.get('assetId')}, result={callback_data.get('result')}"
                         )
                         return response_json or {
                             "code": "OK",
@@ -42,7 +42,7 @@ class MenuPosterCallbackService:
                         }
                     elif response.status in (400, 422):
                         print(
-                            f"유효성 검증 실패: menuPosterAssetId={callback_data.get('menuPosterAssetId')}"
+                            f"유효성 검증 실패: assetId={callback_data.get('assetId')}"
                         )
                         return response_json or {
                             "code": "VALIDATION_ERROR",
@@ -62,7 +62,7 @@ class MenuPosterCallbackService:
                         }
                     elif response.status >= 500:
                         print(
-                            f"서버 오류: menuPosterAssetId={callback_data.get('menuPosterAssetId')}"
+                            f"서버 오류: assetId={callback_data.get('assetId')}"
                         )
                         return response_json or {
                             "code": "SPRING_ERROR",

@@ -30,8 +30,8 @@ load_dotenv()
 
 class EventImageConsumer:
     def __init__(self) -> None:
-            # 로거 초기화: 이 컨슈머의 실행/에러/처리 상황을 기록
-        self.logger = logging.getLogger(__name__)
+        # 로거 초기화: 이 컨슈머의 실행/에러/처리 상황을 기록
+        self.logger = logging.getLogger(__name__) 
         # 연결 상태 및 로그 억제 변수 (상태 변화 시에만 강한 로그)
         self._conn_state: str = "INIT"  # INIT | CONNECTED | FAILED
         self._last_fail_log_ts: float = 0.0
@@ -57,10 +57,40 @@ class EventImageConsumer:
 
     @staticmethod
     def _deserialize_fields(fields: Dict[str, str]) -> Dict[str, Any]:
+        """스트림 필드를 dict로 변환하고, 필드명/타입을 최신 스키마에 맞게 보정한다."""
+        # 1) 기본 역직렬화
         if "payload" in fields:
-            data = json.loads(fields["payload"])  # 단일 JSON 필드
+            try:
+                data: Dict[str, Any] = json.loads(fields["payload"])  # 단일 JSON 필드
+            except Exception:
+                data = dict(fields)
         else:
             data = dict(fields)
+
+        # 2) 필드명 보정 (BE 키 변경 대응)
+        # assetId -> eventAssetId
+        if "eventAssetId" not in data:
+            asset_id = data.get("assetId")
+            if asset_id is not None:
+                try:
+                    data["eventAssetId"] = int(asset_id)
+                except Exception:
+                    data["eventAssetId"] = asset_id
+
+        # retryTime (true/false/1/0) -> retryCount (int)
+        if "retryCount" not in data and "retryTime" in data:
+            rt = data.get("retryTime")
+            if isinstance(rt, str):
+                val = rt.strip().lower()
+                data["retryCount"] = 1 if val in ("true", "1", "yes") else 0
+            else:
+                data["retryCount"] = 1 if rt else 0
+
+        # images -> referenceImages
+        if "referenceImages" not in data and "images" in data:
+            data["referenceImages"] = data.get("images")
+
+        # 3) 문자열로 온 referenceImages를 배열로 파싱
         ref_val = data.get("referenceImages")
         if isinstance(ref_val, str):
             try:
@@ -68,7 +98,10 @@ class EventImageConsumer:
                 if isinstance(parsed, list):
                     data["referenceImages"] = parsed
             except Exception:
-                pass
+                items = [s.strip() for s in ref_val.split(",") if s.strip()]
+                if items:
+                    data["referenceImages"] = items
+
         return data
 
     @classmethod
@@ -92,7 +125,7 @@ class EventImageConsumer:
             result, url = await self.process_image(req)
 
             callback_data = {
-                "AssetId": req.AssetId,
+                "AssetId": req.eventAssetId,
                 "result": result,
                 "assetUrl": url,
                 "type": "IMAGE",

@@ -61,17 +61,56 @@ class MenuboardGenerateConsumer:
 
     @staticmethod
     def _deserialize_fields(fields: Dict[str, str]) -> Dict[str, Any]:
+        """스트림 필드를 dict로 변환하고, 필드명/타입을 최신 스키마에 맞게 보정한다."""
+        # 1) 기본 역직렬화
         if "payload" in fields:
-            data = json.loads(fields["payload"])  # 단일 JSON 필드
+            try:
+                data: Dict[str, Any] = json.loads(fields["payload"])  # 단일 JSON 필드
+            except Exception:
+                data = dict(fields)
         else:
             data = dict(fields)
+
+        # 2) 필드명 보정 (BE 키 변경 대응)
+        # assetId or menuPosterAssetId -> menuPosterId
+        if "menuPosterId" not in data:
+            mp_asset_id = data.get("menuPosterAssetId")
+            if mp_asset_id is None:
+                mp_asset_id = data.get("assetId")
+            if mp_asset_id is not None:
+                try:
+                    data["menuPosterId"] = int(mp_asset_id)
+                except Exception:
+                    data["menuPosterId"] = mp_asset_id
+
+        # retryTime (true/false/1/0) -> retryCount (int)
+        if "retryCount" not in data and "retryTime" in data:
+            rt = data.get("retryTime")
+            if isinstance(rt, str):
+                val = rt.strip().lower()
+                data["retryCount"] = 1 if val in ("true", "1", "yes") else 0
+            else:
+                data["retryCount"] = 1 if rt else 0
+
+        # images -> referenceImages
+        if "referenceImages" not in data and "images" in data:
+            data["referenceImages"] = data.get("images")
+
+        # 3) 문자열로 온 복합 필드를 배열로 파싱
         for k in ("menu", "referenceImages"):
             val = data.get(k)
             if isinstance(val, str):
                 try:
                     data[k] = json.loads(val)
                 except Exception:
-                    pass
+                    items = [s.strip() for s in val.split(",") if s.strip()]
+                    if items and k == "referenceImages":
+                        data[k] = items
+
+        # 4) type 기본값 보정
+        if not data.get("type"):
+            data["type"] = "IMAGE"
+
         return data
 
     @classmethod
@@ -92,7 +131,7 @@ class MenuboardGenerateConsumer:
             req = self.parse_message(fields)
             result, url = await self.process_image(req)
             callback_data = {
-                "menuPosterAssetId": req.menuPosterAssetId,
+                "assetId": req.menuPosterId,
                 "result": result,
                 "assetUrl": url,
                 "type": req.type,
