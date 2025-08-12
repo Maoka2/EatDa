@@ -32,16 +32,21 @@ import com.domain.review.repository.ReviewRepository;
 import com.domain.review.service.PoiStoreDistanceService;
 import com.domain.review.service.ReviewAssetService;
 import com.domain.review.service.ReviewService;
+import com.domain.review.service.ReviewThumbnailService;
 import com.domain.review.validator.ReviewValidator;
 import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
 import com.domain.user.entity.User;
 import com.domain.user.repository.EaterRepository;
 import com.domain.user.repository.MakerRepository;
+import com.global.config.FileStorageProperties;
 import com.global.constants.ErrorCode;
 import com.global.constants.Status;
 import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
+import com.global.filestorage.FileUrlResolver;
+import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -61,6 +66,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class ReviewServiceImpl implements ReviewService {
 
     private static final String IMAGE_BASE_PATH = "reviews/";
+    private static final String DATA_DIR = "data";
+    private static final String SHORTS_DIR = "shorts";
 
     // === Repository 및 의존성 주입 ===
     private final ReviewRepository reviewRepository;
@@ -75,6 +82,10 @@ public class ReviewServiceImpl implements ReviewService {
     private final FileStorageService fileStorageService;
     private final PoiStoreDistanceService poiStoreDistanceService;
     private final ReviewAssetService reviewAssetService;
+
+    private final ReviewThumbnailService reviewThumbnailService;
+    private final FileStorageProperties fileStorageProperties;
+    private final FileUrlResolver fileUrlResolver;
 
     // @formatter:off
     /**
@@ -589,7 +600,27 @@ public class ReviewServiceImpl implements ReviewService {
 
         switch (type) {
             case IMAGE -> asset.updateImageUrl(url);
-            case SHORTS_RAY_2, SHORTS_GEN_4 -> asset.updateShortsUrl(url);
+            case SHORTS_RAY_2, SHORTS_GEN_4 -> {
+                // 1) SHORTS URL 저장
+                asset.updateShortsUrl(url);
+
+                // 2) 썸네일 생성 대상 경로/파일명 구성: {baseDir}/data/shorts/{email}/{fileName}.jpg
+                final String email = asset.getReview().getUser().getEmail();
+                final Path baseDir = fileStorageProperties.getBaseDirPath();
+                final Path targetDir = baseDir
+                        .resolve(DATA_DIR)
+                        .resolve(SHORTS_DIR)
+                        .resolve(email);
+
+                final String fileName = deriveBaseName(url, "shorts-" + asset.getId());
+
+                // 3) ffmpeg로 썸네일 추출
+                final Path savedPath = reviewThumbnailService.extractThumbnail(url, targetDir.toString(), fileName);
+
+                // 4) 퍼블릭 URL로 변환해서 엔티티에 저장
+                final String publicUrl = fileUrlResolver.toPublicUrl(savedPath.toString());
+                asset.updateThumbnailPath(publicUrl);
+            }
             default -> throw new ApiException(ErrorCode.REVIEW_TYPE_INVALID, asset.getId());
         }
     }
@@ -656,5 +687,18 @@ public class ReviewServiceImpl implements ReviewService {
     private User findEaterByEmail(final String eaterEmail) {
         return eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
                 .orElseThrow(() -> new ApiException(FORBIDDEN));
+    }
+
+    // URL에서 파일명(확장자 제거)을 추출. 실패 시 fallbackName 사용
+    private String deriveBaseName(String url, String fallbackName) {
+        try {
+            String path = new URI(url).getPath();
+            if (path == null || path.isBlank()) return fallbackName;
+            String name = path.substring(path.lastIndexOf('/') + 1);
+            int dot = name.lastIndexOf('.');
+            return (dot > 0 ? name.substring(0, dot) : name);
+        } catch (Exception e) {
+            return fallbackName;
+        }
     }
 }
