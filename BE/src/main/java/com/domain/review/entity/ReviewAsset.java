@@ -38,7 +38,13 @@ public class ReviewAsset {
     private ReviewAssetType type;
 
     @Column(columnDefinition = "TEXT")
-    private String assetUrl;
+    private String imageUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String shortsUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String thumbnailPath;
 
     @NotNull
     @Column(columnDefinition = "TEXT", nullable = false)
@@ -53,7 +59,10 @@ public class ReviewAsset {
                        final Status status) {
         this.review = review;
         this.type = type;
-        this.assetUrl = assetUrl;
+        switch (type) {
+            case IMAGE -> this.imageUrl = assetUrl;
+            case SHORTS_RAY_2, SHORTS_GEN_4 -> this.shortsUrl = assetUrl;
+        }
         this.prompt = prompt;
         this.status = status != null ? status : Status.PENDING;
     }
@@ -65,8 +74,13 @@ public class ReviewAsset {
         this.status = status;
     }
 
-    public void updateAssetUrl(final String assetUrl) {
-        this.assetUrl = assetUrl;
+    public void updateImageUrl(final String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public void updateShortsUrl(final String shortsUrl) {
+        this.shortsUrl = shortsUrl;
+        this.thumbnailPath = null; // Todo: 썸네일 추출
     }
 
     public void registerReview(final Review review) {
