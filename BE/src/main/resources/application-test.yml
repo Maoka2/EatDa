@@ -24,7 +24,7 @@ logging:
     org.hibernate.SQL: OFF
 
 filestorage: # 파일 저장소 설정
-  base-url: "https://i13a609.p.ssafy.io"
+  base-url: "https://i13a609.p.ssafy.io/test"
 
 springdoc:
   swagger-ui:
