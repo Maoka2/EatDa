@@ -1,6 +1,5 @@
 package com.domain.menu.dto.redis;
 
-import com.domain.menu.entity.Menu;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
@@ -24,10 +23,17 @@ public class MenuPosterAssetGenerateMessage extends AbstractRedisStreamMessage {
     private final String prompt;
     private final Long storeId;
     private final Long userId;
-    private final List<Menu> menus;
+    private final List<MenuItem> menuItems;  // Menu 엔티티 → MenuItem DTO로 변경
     private final List<String> imageUrls;
+    private final Instant requestedAt;
 
-    public final Instant requestedAt;
+    // MenuItem 내부 레코드 추가
+    public static record MenuItem(
+            Long id,
+            String name,
+            String description,
+            String imageUrl
+    ) {}
 
     public static MenuPosterAssetGenerateMessage of(
             Long menuPostAssetId,
@@ -35,10 +41,10 @@ public class MenuPosterAssetGenerateMessage extends AbstractRedisStreamMessage {
             String prompt,
             Long storeId,
             Long userId,
-            List<Menu> menus,
+            List<MenuItem> menuItems,  // 파라미터 타입 변경
             List<String> imageUrls
     ) {
-        validateRequiredFields(menuPostAssetId,  type, prompt, storeId, userId, menus, imageUrls);
+        validateRequiredFields(menuPostAssetId, type, prompt, storeId, userId, menuItems, imageUrls);
 
         Instant requestedAt = Instant.now();
 
@@ -48,7 +54,7 @@ public class MenuPosterAssetGenerateMessage extends AbstractRedisStreamMessage {
                 .prompt(prompt)
                 .storeId(storeId)
                 .userId(userId)
-                .menus(menus)
+                .menuItems(menuItems)  // 필드명 변경
                 .imageUrls(imageUrls)
                 .requestedAt(requestedAt)
                 .expireAt(calculateExpireAt(STREAM_EVENT_ASSET_TTL))
@@ -64,7 +70,7 @@ public class MenuPosterAssetGenerateMessage extends AbstractRedisStreamMessage {
             String prompt,
             Long storeId,
             Long userId,
-            List<Menu> menus,
+            List<MenuItem> menuItems,  // 파라미터 타입 변경
             List<String> imageUrls
     ) {
         if (Objects.isNull(menuPostAssetId) ||
@@ -72,8 +78,8 @@ public class MenuPosterAssetGenerateMessage extends AbstractRedisStreamMessage {
                 Objects.isNull(prompt) || prompt.isBlank() ||
                 Objects.isNull(storeId) ||
                 Objects.isNull(userId) ||
-                Objects.isNull(menus) ||
-                Objects.isNull(imageUrls)) {
+                Objects.isNull(menuItems) || menuItems.isEmpty() ||  // 빈 리스트 체크 추가
+                Objects.isNull(imageUrls) || imageUrls.isEmpty()) {  // 빈 리스트 체크 추가
             throw new ApiException(ErrorCode.REQUIRED_MENU_FIELDS_MISSING);
         }
     }

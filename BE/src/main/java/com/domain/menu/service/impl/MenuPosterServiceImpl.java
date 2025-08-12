@@ -69,14 +69,23 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         MenuPosterAsset menuPosterAsset = createPendingAsset(menuPoster, request);
 
         boolean convertToWebp = shouldConvertToWebp(request.type());
-        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(), convertToWebp);
+        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(), true);
+        List<MenuPosterAssetGenerateMessage.MenuItem> menuItems = menus.stream()
+                .map(m -> new MenuPosterAssetGenerateMessage.MenuItem(
+                        m.getId(),
+                        m.getName(),
+                        m.getDescription(),
+                        m.getImageUrl()
+                ))
+                .toList();
+
         MenuPosterAssetGenerateMessage message = MenuPosterAssetGenerateMessage.of(
                 menuPosterAsset.getId(),
                 request.type(),
                 request.prompt(),
                 store.getId(),
                 eater.getId(),
-                menus,
+                menuItems,  // MenuItem DTO 리스트 전달
                 uploadedImageUrls
         );
         menuPosterAssetRedisPublisher.publish(RedisStreamKey.MENU_POSTER, message);
