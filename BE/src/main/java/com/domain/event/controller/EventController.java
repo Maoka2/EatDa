@@ -129,7 +129,7 @@ public class EventController {
     public ResponseEntity<BaseResponse> getActiveEvents(
             @RequestParam(value = "lastEventId", required = false) final Long lastEventId
     ) {
-        List<ActiveStoreEventResponse> response = eventService.getActiveStoreEvents(lastEventId);
+        List<ActiveStoreEventResponse> response = eventService.getActiveEvents(lastEventId);
 
         return ApiResponseFactory.success(ACTIVE_STORE_EVENTS_FETCHED, response);
     }
