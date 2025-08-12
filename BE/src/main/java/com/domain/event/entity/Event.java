@@ -3,20 +3,33 @@ package com.domain.event.entity;
 import com.domain.store.entity.Store;
 import com.global.constants.Status;
 import com.global.entity.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Event extends BaseEntity {
+
+    @NotNull
+    LocalDate startDate;
+
+    @NotNull
+    LocalDate endDate;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,25 +46,21 @@ public class Event extends BaseEntity {
     private String description;
 
     @NotNull
-    LocalDate startDate;
-
-    @NotNull
-    LocalDate endDate;
-
-    @NotNull
     @Enumerated(EnumType.STRING)
     private Status status = Status.PENDING;
 
     @Builder
-    public Event(final Store store, final LocalDate startDate, final LocalDate endDate, Status status) {
+    public Event(String title, final Store store, final LocalDate startDate, final LocalDate endDate, Status status) {
+        this.title = title;
         this.store = store;
         this.startDate = startDate;
         this.endDate = endDate;
         this.status = status != null ? status : Status.PENDING;
     }
 
-    public static Event createPending(Store store, LocalDate startDate, LocalDate endDate) {
+    public static Event createPending(String title, Store store, LocalDate startDate, LocalDate endDate) {
         return Event.builder()
+                .title(title)
                 .store(store)
                 .startDate(startDate)
                 .endDate(endDate)

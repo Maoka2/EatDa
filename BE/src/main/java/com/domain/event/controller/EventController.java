@@ -69,7 +69,7 @@ public class EventController {
 
     @PostMapping("/assets/callback")
     public ResponseEntity<BaseResponse> handleEventAssetCallback(
-            @Valid @RequestBody final AssetCallbackRequest<AssetType> request
+            @Valid @ModelAttribute final AssetCallbackRequest<AssetType> request
     ) {
         eventService.handleEventAssetCallback(request);
 

@@ -63,7 +63,6 @@ public class EventServiceImpl implements EventService {
 
         log.info("===== [Service] requestEventAsset START =====");
 
-        // Step1: 메이커 사용자 조회 + 권한 확인
         log.info("Step1: Find maker by email={}", makerEmail);
         User maker = makerRepository.findByEmailAndDeletedFalse(makerEmail)
                 .orElseThrow(() -> {
@@ -95,7 +94,7 @@ public class EventServiceImpl implements EventService {
 
         // Step6: 이벤트 생성
         log.info("Step6: Create pending event");
-        Event event = createPendingEvent(store, startDate, endDate);
+        Event event = createPendingEvent(request.title(), store, startDate, endDate);
         log.info("Step6: OK - eventId={}", event.getId());
 
         // Step7: 이벤트 에셋 생성
@@ -305,8 +304,9 @@ public class EventServiceImpl implements EventService {
         eventRepository.save(event);
     }
 
-    private Event createPendingEvent(final Store store, final LocalDate startDate, final LocalDate endDate) {
-        return eventRepository.save(Event.createPending(store, startDate, endDate));
+    private Event createPendingEvent(final String title, final Store store, final LocalDate startDate,
+                                     final LocalDate endDate) {
+        return eventRepository.save(Event.createPending(title, store, startDate, endDate));
     }
 
     private EventAsset createPendingEventAsset(final Event event, final EventAssetCreateRequest request) {

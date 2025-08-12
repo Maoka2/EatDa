@@ -15,7 +15,7 @@ public record EventAssetCreateRequest(
         @NotBlank(message = "EVENT_TITLE_REQUIRED")
         String title,
 
-        @NotBlank
+        @NotNull
         @Enumerated(EnumType.STRING)
         AssetType type,
 
