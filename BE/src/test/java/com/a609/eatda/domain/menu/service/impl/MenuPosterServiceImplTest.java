@@ -199,7 +199,7 @@ class MenuPosterServiceImplTest {
             // Given
             String eaterEmail = "nonexistent@test.com";
             MenuPosterAssetCreateRequest request = new MenuPosterAssetCreateRequest(
-                    1L, AssetType.IMAGE, List.of(1L), "프롬프트", List.of(mock(MultipartFile.class))
+                    1L, "IMAGE", List.of(1L), "프롬프트", List.of(mock(MultipartFile.class))
             );
 
             when(eaterRepository.findByEmailAndDeletedFalse(eaterEmail))
@@ -218,7 +218,7 @@ class MenuPosterServiceImplTest {
             String eaterEmail = "eater@test.com";
             Long nonExistentStoreId = 999L;
             MenuPosterAssetCreateRequest request = new MenuPosterAssetCreateRequest(
-                    nonExistentStoreId, AssetType.IMAGE, List.of(1L), "프롬프트", List.of(mock(MultipartFile.class))
+                    nonExistentStoreId, "IMAGE", List.of(1L), "프롬프트", List.of(mock(MultipartFile.class))
             );
 
             when(eaterRepository.findByEmailAndDeletedFalse(eaterEmail))
