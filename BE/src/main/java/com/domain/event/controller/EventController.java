@@ -125,12 +125,11 @@ public class EventController {
         return ApiResponseFactory.success(EVENT_LIST_RETRIEVED, response);
     }
 
-    @GetMapping("/store/active")
-    public ResponseEntity<BaseResponse> getActiveStoreEvents(
-            @RequestParam("storeId") final Long storeId,
+    @GetMapping("/active")
+    public ResponseEntity<BaseResponse> getActiveEvents(
             @RequestParam(value = "lastEventId", required = false) final Long lastEventId
     ) {
-        List<ActiveStoreEventResponse> response = eventService.getActiveStoreEvents(storeId, lastEventId);
+        List<ActiveStoreEventResponse> response = eventService.getActiveStoreEvents(lastEventId);
 
         return ApiResponseFactory.success(ACTIVE_STORE_EVENTS_FETCHED, response);
     }
