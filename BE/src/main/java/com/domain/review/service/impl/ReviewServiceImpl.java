@@ -137,8 +137,24 @@ public class ReviewServiceImpl implements ReviewService {
             throw new ApiException(ErrorCode.REVIEW_ASSET_NOT_READY, reviewAssetId);
         }
 
-        if (Objects.isNull(asset.getAssetUrl()) || asset.getAssetUrl().isBlank()) {
-            throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
+        if (Objects.isNull(asset.getType())) {
+            throw new ApiException(ErrorCode.ASSET_TYPE_REQUIRED, reviewAssetId);
+        }
+
+        switch (asset.getType()) {
+            case IMAGE -> {
+                String imageUrl = asset.getImageUrl();
+                if (Objects.isNull(imageUrl) || imageUrl.isBlank()) {
+                    throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
+                }
+            }
+            case SHORTS_RAY_2, SHORTS_GEN_4 -> {
+                String shortsUrl = asset.getShortsUrl();
+                if (Objects.isNull(shortsUrl)|| shortsUrl.isBlank()) {
+                    throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
+                }
+            }
+            default -> throw new ApiException(ErrorCode.REVIEW_TYPE_INVALID, reviewAssetId);
         }
 
         return reviewMapper.toAssetResultResponse(asset);
@@ -459,7 +475,8 @@ public class ReviewServiceImpl implements ReviewService {
                 .reviewId(review.getId())
                 .storeName(review.getStore().getName())
                 .description(review.getDescription())
-                .assetUrl(review.getReviewAsset().getAssetUrl())
+                .imageUrl(review.getReviewAsset().getImageUrl())
+                .shortsUrl(review.getReviewAsset().getShortsUrl())
                 .menuNames(List.of()) // TODO: 메뉴 연결 시 수정
                 .build();
     }
@@ -475,7 +492,8 @@ public class ReviewServiceImpl implements ReviewService {
                 .storeName(review.getStore().getName())
                 .description(review.getDescription())
                 .menuNames(List.of()) // TODO: 메뉴 연결 시 수정
-                .assetUrl(review.getReviewAsset().getAssetUrl())
+                .imageUrl(review.getReviewAsset().getImageUrl())
+                .shortsUrl(review.getReviewAsset().getShortsUrl())
                 .createdAt(review.getCreatedAt())
                 .build();
     }
@@ -510,7 +528,8 @@ public class ReviewServiceImpl implements ReviewService {
                 .createdAt(review.getCreatedAt())
                 .asset(ReviewDetailResponse.AssetInfo.builder()
                         .type(reviewAsset.getType().name())
-                        .assetUrl(reviewAsset.getAssetUrl())
+                        .imageUrl(reviewAsset.getImageUrl())
+                        .shortsUrl(reviewAsset.getShortsUrl())
                         .build())
                 .scrapCount(scrapCount)
                 .isScrapped(isScrapped)
@@ -549,11 +568,29 @@ public class ReviewServiceImpl implements ReviewService {
                 .toList();
     }
 
+    // java
     private void updateAssetUrlIfSuccess(final ReviewAssetCallbackRequest request,
                                          final Status status,
                                          final ReviewAsset asset) {
-        if (status.isSuccess() && request.assetUrl() != null) {
-            asset.updateAssetUrl(request.assetUrl());
+        if (!status.isSuccess()) {
+            return; // 실패면 URL 업데이트 없음
+        }
+
+        final String url = request.assetUrl();
+        if (url == null || url.isBlank()) {
+            throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, asset.getId());
+        }
+
+        // 요청에 타입이 포함되어 있으므로 우선 사용하고, 없으면 엔티티 타입 사용
+        final var type = request.type() != null ? request.type() : asset.getType();
+        if (type == null) {
+            throw new ApiException(ErrorCode.ASSET_TYPE_REQUIRED, asset.getId());
+        }
+
+        switch (type) {
+            case IMAGE -> asset.updateImageUrl(url);
+            case SHORTS_RAY_2, SHORTS_GEN_4 -> asset.updateShortsUrl(url);
+            default -> throw new ApiException(ErrorCode.REVIEW_TYPE_INVALID, asset.getId());
         }
     }
 
