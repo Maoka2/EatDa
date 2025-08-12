@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "filestorage")
 @Getter
 @Setter
-@Slf4j
 public class FileStorageProperties {
 
     private static final String DATA_PATH = "data";
@@ -38,10 +37,6 @@ public class FileStorageProperties {
     }
 
     public Path getBaseDirPath() {
-        log.info("[DEBUG] FileStorageProperties Loaded:");
-        System.out.println("baseDir = " + baseDir);
-        System.out.println("baseUrl = " + baseUrl);
-        log.info(String.valueOf(Paths.get(baseDir).toAbsolutePath().normalize()));
         return Paths.get(baseDir).toAbsolutePath().normalize();
     }
 }
