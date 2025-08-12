@@ -8,6 +8,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+
+import jakarta.validation.constraints.Pattern;
 import org.springframework.web.multipart.MultipartFile;
 
 public record EventAssetCreateRequest(
@@ -15,9 +17,9 @@ public record EventAssetCreateRequest(
         @NotBlank(message = "EVENT_TITLE_REQUIRED")
         String title,
 
-        @NotNull
-        @Enumerated(EnumType.STRING)
-        AssetType type,
+        @NotBlank
+        @Pattern(regexp = "IMAGE", message = "INVALID_ASSET_TYPE")
+        String type,
 
         @NotBlank(message = "EVENT_START_DATE_REQUIRED")
         String startDate,
@@ -32,10 +34,4 @@ public record EventAssetCreateRequest(
         @ExcludeFromLogging
         List<@NotNull MultipartFile> image
 ) {
-    public EventAssetCreateRequest {
-        // compact constructor에서 기본값 설정
-        if (type == null) {
-            type = AssetType.IMAGE;
-        }
-    }
 }

@@ -117,7 +117,7 @@ public class EventServiceImpl implements EventService {
         log.info("Step10: Create EventAssetGenerateMessage");
         EventAssetGenerateMessage message = EventAssetGenerateMessage.of(
                 eventAsset.getId(),
-                request.type(),
+                AssetType.IMAGE,
                 request.prompt(),
                 store.getId(),
                 maker.getId(),
@@ -325,7 +325,7 @@ public class EventServiceImpl implements EventService {
                 .toList();
     }
 
-    private boolean shouldConvertToWebp(AssetType type) {
-        return type == AssetType.IMAGE;
+    private boolean shouldConvertToWebp(String type) {
+        return AssetType.IMAGE.name().equals(type);
     }
 }

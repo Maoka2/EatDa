@@ -124,7 +124,7 @@ class EventServiceImplTest {
                                                   String prompt, List<MultipartFile> files) {
         return new EventAssetCreateRequest(
                 title,
-                AssetType.IMAGE,
+                "IMAGE",
                 "2025-12-20",
                 "2025-12-25",
                 prompt,
