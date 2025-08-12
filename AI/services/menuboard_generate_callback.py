@@ -8,17 +8,14 @@ import os
 from datetime import datetime
 from typing import Any, Dict
 import logging
-
 import aiohttp
 
 
 class MenuPosterCallbackService:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
-        self.callback_url: str = os.getenv(
-            "SPRING_MENU_POSTER_CALLBACK_URL",
-            "https://i13a609.p.ssafy.io/test/api/menu-posters/assets/callback",
-        )
+        self.callback_url= "https://i13a609.p.ssafy.io/test/api/menu-posters/assets/callback"
+        
 
     async def send_callback_to_spring(self, callback_data: Dict[str, Any]) -> Dict[str, Any]:
         try:
