@@ -10,9 +10,10 @@ from dotenv import load_dotenv
 
 try:
     # 런타임에 라이브러리가 없을 수도 있으므로 지연 임포트 처리
-    from runwayml import AsyncRunwayML
+    from runwayml import AsyncRunwayML, AuthenticationError
 except Exception:  # pragma: no cover - 환경에 따라 optional
     AsyncRunwayML = None  # type: ignore
+    AuthenticationError = Exception  # type: ignore
 
 
 load_dotenv()
@@ -35,8 +36,10 @@ class RunwayService:
                 return
 
             # base_url을 명시하여 dev/prod 키-엔드포인트 불일치로 인한 401을 방지
-            self.client = AsyncRunwayML(api_key=api_key, base_url=base_url)
-            print(f"Successfully initialized Runway ML client (base_url={base_url})")
+            self.api_key = api_key
+            self.base_url = base_url
+            self.client = AsyncRunwayML(api_key=self.api_key, base_url=self.base_url)
+            print(f"Successfully initialized Runway ML client (base_url={self.base_url})")
         except Exception as e:
             print(f"Failed to initialize Runway ML client: {e}")
             self.client = None
@@ -71,13 +74,39 @@ class RunwayService:
 
         prompt_image = reference_images[0]
 
-        task = await self.client.image_to_video.create(  # type: ignore[union-attr]
-            model=model_name,
-            prompt_image=prompt_image,
-            prompt_text=enhanced_prompt,
-            ratio=ratio,
-            duration=duration_seconds,
-        )
+        # 401 발생 시 dev/prod 엔드포인트 자동 전환을 1회 시도 (옵션)
+        fallback_enabled = os.getenv("RUNWAY_API_FALLBACK_ENABLED", "false").lower() == "true"
+        fallback_base_url = os.getenv("RUNWAY_API_FALLBACK_BASE_URL")
+
+        async def _create_task() -> Any:
+            return await self.client.image_to_video.create(  # type: ignore[union-attr]
+                model=model_name,
+                prompt_image=prompt_image,
+                prompt_text=enhanced_prompt,
+                ratio=ratio,
+                duration=duration_seconds,
+            )
+
+        try:
+            task = await _create_task()
+        except AuthenticationError as auth_err:
+            # 키-엔드포인트 불일치 또는 비활성 키일 수 있음
+            if not fallback_enabled:
+                raise
+            # 기본 전환 규칙: dev → prod, prod → dev (또는 지정된 fallback URL)
+            target_base = (
+                fallback_base_url
+                or ("https://api.runwayml.com" if "api.dev.runwayml.com" in getattr(self, "base_url", "") else "https://api.dev.runwayml.com")
+            )
+            try:
+                # 클라이언트 재초기화 후 1회 재시도
+                self.client = AsyncRunwayML(api_key=self.api_key, base_url=target_base)  # type: ignore[arg-type]
+                self.base_url = target_base
+                print(f"[Runway] Authentication failed, retrying with base_url={target_base}")
+                task = await _create_task()
+            except Exception:
+                # 원래 예외를 다시 던져 상위에서 처리
+                raise auth_err
 
         return {
             "id": getattr(task, "id", None),
