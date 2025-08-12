@@ -51,7 +51,7 @@ class MenuboardGenerateConsumer:
 
     async def ensure_consumer_group(self) -> None:
         try:
-            await self.client.xgroup_create(self.stream_key, self.group, id="$", mkstream=True)
+            await self.client.xgroup_create(self.stream_key, self.group, id="$")
             self.logger.info(
                 f"[메뉴판 컨슈머] 컨슈머 그룹 생성: stream={self.stream_key}, group={self.group}"
             )
@@ -72,16 +72,20 @@ class MenuboardGenerateConsumer:
             data = dict(fields)
 
         # 2) 필드명 보정 (BE 키 변경 대응)
-        # assetId or menuPosterAssetId -> menuPosterId
-        if "menuPosterId" not in data:
+        # assetId or menuPosterAssetId or menuPostAssetId or menuPosterId -> menuPosterAssetId
+        if "menuPosterAssetId" not in data:
             mp_asset_id = data.get("menuPosterAssetId")
             if mp_asset_id is None:
+                mp_asset_id = data.get("menuPosterId")
+            if mp_asset_id is None:
                 mp_asset_id = data.get("assetId")
+            if mp_asset_id is None:
+                mp_asset_id = data.get("menuPostAssetId")  # 오타 변형 대응(BE 측 키)
             if mp_asset_id is not None:
                 try:
-                    data["menuPosterId"] = int(mp_asset_id)
+                    data["menuPosterAssetId"] = int(mp_asset_id)
                 except Exception:
-                    data["menuPosterId"] = mp_asset_id
+                    data["menuPosterAssetId"] = mp_asset_id
 
         # retryTime (true/false/1/0) -> retryCount (int)
         if "retryCount" not in data and "retryTime" in data:
@@ -92,9 +96,15 @@ class MenuboardGenerateConsumer:
             else:
                 data["retryCount"] = 1 if rt else 0
 
-        # images -> referenceImages
+        # images/imageUrls -> referenceImages
         if "referenceImages" not in data and "images" in data:
             data["referenceImages"] = data.get("images")
+        if "referenceImages" not in data and "imageUrls" in data:
+            data["referenceImages"] = data.get("imageUrls")
+
+        # menuItems -> menu
+        if "menu" not in data and "menuItems" in data:
+            data["menu"] = data.get("menuItems")
 
         # 3) 문자열로 온 복합 필드를 배열로 파싱
         for k in ("menu", "referenceImages"):
@@ -131,7 +141,7 @@ class MenuboardGenerateConsumer:
             req = self.parse_message(fields)
             result, url = await self.process_image(req)
             callback_data = {
-                "assetId": req.menuPosterId,
+                "assetId": req.menuPosterAssetId,
                 "result": result,
                 "assetUrl": url,
                 "type": req.type,
