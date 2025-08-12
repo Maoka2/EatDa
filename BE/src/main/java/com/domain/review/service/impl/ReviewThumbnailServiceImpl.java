@@ -40,6 +40,7 @@ public class ReviewThumbnailServiceImpl implements ReviewThumbnailService {
 
         List<String> cmd = List.of(
                 FFMPEG,
+                "-y",                                                   //  파일이 있으면 덮어쓰기
                 "-hide_banner",
                 "-loglevel", "error",
                 "-nostdin",

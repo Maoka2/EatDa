@@ -458,7 +458,7 @@ public class ReviewController {
         }
     }
 
-    @GetMapping("/thumbnail")
+    @PostMapping("/thumbnail")
     public ResponseEntity<BaseResponse> extractThumbnail(@RequestParam("videoUrl") String videoUrl,
                                                          @RequestParam("filePath") String filePath,
                                                          @RequestParam("fileName") String fileName) {
