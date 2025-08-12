@@ -42,7 +42,7 @@ class MenuboardGenerateConsumer:
 
     async def ensure_consumer_group(self) -> None:
         try:
-            await self.client.xgroup_create(self.stream_key, self.group, id="0", mkstream=True)
+            await self.client.xgroup_create(self.stream_key, self.group, id="0-0", mkstream=True)
         except redis.ResponseError as e:
             if "BUSYGROUP" not in str(e):
                 raise
