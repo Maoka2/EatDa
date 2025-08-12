@@ -182,7 +182,7 @@ class EventServiceImplTest {
         verify(eventAssetRedisPublisher).publish(eq(RedisStreamKey.EVENT_ASSET), messageCaptor.capture());
 
         EventAssetGenerateMessage capturedMessage = messageCaptor.getValue();
-        assertThat(capturedMessage.getAssetId()).isEqualTo(assetId);
+        assertThat(capturedMessage.getEventAssetId()).isEqualTo(assetId);
         assertThat(capturedMessage.getStoreId()).isEqualTo(storeId);
         assertThat(capturedMessage.getUserId()).isEqualTo(userId);
         assertThat(capturedMessage.getTitle()).isEqualTo("크리스마스 이벤트");

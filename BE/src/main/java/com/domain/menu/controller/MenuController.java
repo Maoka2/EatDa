@@ -8,8 +8,8 @@ import com.global.dto.response.BaseResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 
@@ -21,8 +21,8 @@ public class MenuController {
     private final MenuService menuService;
     private final MenuMapper menuMapper;
 
-    @GetMapping
-    public ResponseEntity<BaseResponse> getMenuList(@RequestParam("storeId") Long storeId) {
+    @GetMapping("/{storeId}")
+    public ResponseEntity<BaseResponse> getMenuListByPath(@PathVariable("storeId") Long storeId) {
         return ApiResponseFactory.success(SuccessCode.MENU_GET,
                 menuMapper.toResponse(menuService.getMenuList(storeId)));
     }

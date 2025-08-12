@@ -19,7 +19,7 @@ import lombok.experimental.SuperBuilder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EventAssetGenerateMessage extends AbstractRedisStreamMessage {
 
-    private final Long assetId;
+    private final Long eventAssetId;
     private final AssetType type;
     private final String prompt;
     private final Long storeId;
@@ -35,7 +35,7 @@ public class EventAssetGenerateMessage extends AbstractRedisStreamMessage {
     private final List<String> referenceImages;
 
     public static EventAssetGenerateMessage of(
-            Long assetId,
+            Long eventAssetId,
             AssetType type,
             String prompt,
             Long storeId,
@@ -45,7 +45,7 @@ public class EventAssetGenerateMessage extends AbstractRedisStreamMessage {
             LocalDate endDate,
             List<String> referenceImages
     ) {
-        validateRequiredFields(assetId, type, prompt, storeId, userId, title, startDate, endDate, referenceImages);
+        validateRequiredFields(eventAssetId, type, prompt, storeId, userId, title, startDate, endDate, referenceImages);
 
         if (startDate.isAfter(endDate)) {
             throw new ApiException(ErrorCode.INVALID_EVENT_DATE_RANGE);
@@ -54,7 +54,7 @@ public class EventAssetGenerateMessage extends AbstractRedisStreamMessage {
         Instant now = Instant.now();
 
         return EventAssetGenerateMessage.builder()
-                .assetId(assetId)
+                .eventAssetId(eventAssetId)
                 .type(type)
                 .prompt(prompt)
                 .storeId(storeId)
@@ -98,7 +98,7 @@ public class EventAssetGenerateMessage extends AbstractRedisStreamMessage {
     public EventAssetGenerateMessage withRetry(Instant nextRetryAt) {
         return EventAssetGenerateMessage.builder()
                 // 기존 필드 유지
-                .assetId(this.assetId)
+                .eventAssetId(this.eventAssetId)
                 .type(this.type)
                 .prompt(this.prompt)
                 .storeId(this.storeId)
