@@ -4,6 +4,7 @@ import com.domain.menu.dto.response.MenuGetResponse;
 import com.domain.menu.entity.Menu;
 import com.domain.store.entity.Store;
 import com.domain.user.dto.request.MakerSignUpMenuRequest;
+import com.global.filestorage.FileUrlResolver;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -15,7 +16,8 @@ import org.mapstruct.ReportingPolicy;
  */
 @Mapper(
         componentModel = ComponentModel.SPRING,         // Spring Bean으로 등록 (@Component)
-        unmappedTargetPolicy = ReportingPolicy.IGNORE   // 매핑되지 않은 필드는 무시
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,   // 매핑되지 않은 필드는 무시
+        uses = FileUrlResolver .class
 )
 public interface MenuMapper {
 
@@ -26,6 +28,9 @@ public interface MenuMapper {
     @Mapping(target = "store", source = "store")
     @Mapping(target = "imageUrl", source = "imageUrl")
     Menu toEntity(MakerSignUpMenuRequest request, Store store, String imageUrl);
+
+    @Mapping(target = "imageUrl", source = "imageUrl", qualifiedByName = "toPublicUrl")
+    MenuGetResponse toResponse(Menu menu);
 
     List<MenuGetResponse> toResponse(List<Menu> menuList);
 }
