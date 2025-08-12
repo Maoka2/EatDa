@@ -31,7 +31,7 @@ public class ReviewThumbnailServiceImpl implements ReviewThumbnailService {
     public Path extractThumbnail(final String videoUrl, final String filePath, final String fileName) {
         validateURL(videoUrl);
 
-        Path out = Path.of(filePath, THUMBNAIL_PATH, fileName, EXTENSION);
+        Path out = Path.of(filePath, THUMBNAIL_PATH, fileName + EXTENSION);
         try {
             Files.createDirectories(out.getParent());
         } catch (IOException e) {
