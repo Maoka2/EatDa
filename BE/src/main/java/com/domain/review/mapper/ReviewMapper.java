@@ -50,18 +50,22 @@ public interface ReviewMapper {
     // 리뷰 에셋 → 결과 조회 응답 DTO
     default ReviewAssetResultResponse toAssetResultResponse(ReviewAsset asset) {
         if (Objects.isNull(asset) || asset.getType() == null) {
-            return new ReviewAssetResultResponse(null, null, null);
+            return new ReviewAssetResultResponse(null, null, null, null);
         }
 
         String imageUrl = null;
         String shortsUrl = null;
+        String thumbnailPath = null;
 
         ReviewAssetType type = asset.getType();
         switch (type) {
             case IMAGE -> imageUrl = asset.getImageUrl();
-            case SHORTS_RAY_2, SHORTS_GEN_4 -> shortsUrl = asset.getShortsUrl();
+            case SHORTS_RAY_2, SHORTS_GEN_4 -> {
+                shortsUrl = asset.getShortsUrl();
+                thumbnailPath = asset.getThumbnailPath();
+            }
         }
 
-        return new ReviewAssetResultResponse(type, imageUrl, shortsUrl);
+        return new ReviewAssetResultResponse(type, imageUrl, shortsUrl, thumbnailPath);
     }
 }
