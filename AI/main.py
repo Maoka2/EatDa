@@ -70,4 +70,4 @@ async def startup_event():
 if __name__ == "__main__":
     import uvicorn
     print("🚀 AI Video Generation API 서버를 시작합니다...")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
