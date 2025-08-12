@@ -80,10 +80,13 @@ public class ReviewAsset {
 
     public void updateShortsUrl(final String shortsUrl) {
         this.shortsUrl = shortsUrl;
-        this.thumbnailPath = null; // Todo: 썸네일 추출
     }
 
     public void registerReview(final Review review) {
         this.review = review;
+    }
+
+    public void updateThumbnailPath(final String thumbnailPath) {
+        this.thumbnailPath = thumbnailPath;
     }
 }

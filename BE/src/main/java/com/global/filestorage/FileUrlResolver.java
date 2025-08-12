@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class FileUrlResolver {
     private final FileStorageProperties properties;
 
@@ -17,17 +16,10 @@ public class FileUrlResolver {
         Path full = Paths.get(fullPath).toAbsolutePath().normalize();
         Path base = properties.getBaseDirPath();
 
-        log.info("[DEBUG] FileUrlResolver");
-        log.info(full.toString());
-        log.info(base.toString());
         Path relative = base.relativize(full);
         String rel = relative.toString().replace("\\", "/");
 
-        log.info(relative.toString());
-        log.info(rel);
-
         String baseUrl = properties.getBaseUrl();
-        log.info(baseUrl);
 
         if (baseUrl == null || baseUrl.isBlank()) {
             return fullPath;
