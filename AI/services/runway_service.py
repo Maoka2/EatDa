@@ -28,7 +28,7 @@ class RunwayService:
             base_url = os.getenv("RUNWAY_API_BASE_URL")
             # dev 키를 기본으로 사용할 가능성이 높으므로 기본값을 dev로 둠
             if not base_url:
-                base_url = "https://api.dev.runwayml.com"
+                base_url = "https://api.runwayml.com"
 
             if not api_key or AsyncRunwayML is None:
                 print("RUNWAY_API_KEY not found or runwayml SDK unavailable, Runway service will be disabled")
