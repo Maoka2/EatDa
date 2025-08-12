@@ -32,7 +32,7 @@ public class MenuPosterController {
 
     @PostMapping(value = "/assets/request", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse> requestMenuPosterAsset(
-            @Valid @ModelAttribute final MenuPosterAssetCreateRequest request,
+            @ModelAttribute final MenuPosterAssetCreateRequest request,
             @AuthenticationPrincipal final String email
     ) {
         log.info("메뉴 포스터 자산 요청 수신 (이메일: {})", email);
