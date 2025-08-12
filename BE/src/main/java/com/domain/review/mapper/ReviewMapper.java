@@ -1,5 +1,6 @@
 package com.domain.review.mapper;
 
+import com.domain.review.constants.ReviewAssetType;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
 import com.domain.review.dto.response.ReviewAssetRequestResponse;
 import com.domain.review.dto.response.ReviewAssetResultResponse;
@@ -9,6 +10,7 @@ import com.domain.review.entity.ReviewAsset;
 import com.domain.store.entity.Store;
 import com.domain.user.entity.User;
 import com.global.constants.Status;
+import java.util.Objects;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
@@ -47,9 +49,19 @@ public interface ReviewMapper {
 
     // 리뷰 에셋 → 결과 조회 응답 DTO
     default ReviewAssetResultResponse toAssetResultResponse(ReviewAsset asset) {
-        if (asset.getAssetUrl() != null) {
-            return new ReviewAssetResultResponse(asset.getType(), asset.getAssetUrl());
+        if (Objects.isNull(asset) || asset.getType() == null) {
+            return new ReviewAssetResultResponse(null, null, null);
         }
-        return new ReviewAssetResultResponse(asset.getType(), "");
+
+        String imageUrl = null;
+        String shortsUrl = null;
+
+        ReviewAssetType type = asset.getType();
+        switch (type) {
+            case IMAGE -> imageUrl = asset.getImageUrl();
+            case SHORTS_RAY_2, SHORTS_GEN_4 -> shortsUrl = asset.getShortsUrl();
+        }
+
+        return new ReviewAssetResultResponse(type, imageUrl, shortsUrl);
     }
 }

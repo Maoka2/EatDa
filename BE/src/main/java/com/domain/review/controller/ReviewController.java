@@ -171,7 +171,8 @@ public class ReviewController {
                                                       "status": 200,
                                                       "data": {
                                                         "type": "IMAGE",
-                                                        "assetUrl": "https://cdn.example.com/reviews/abc123.png"
+                                                        "imageUrl": "https://cdn.example.com/reviews/abc123.png",
+                                                        "shortsUrl": null,
                                                       },
                                                       "timestamp": "2025-07-25T16:00:00Z"
                                                     }
