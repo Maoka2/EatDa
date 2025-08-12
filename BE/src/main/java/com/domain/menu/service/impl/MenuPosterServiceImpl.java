@@ -69,7 +69,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         MenuPosterAsset menuPosterAsset = createPendingAsset(menuPoster, request);
 
         boolean convertToWebp = shouldConvertToWebp(request.type());
-        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(), true);
+        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(), convertToWebp);
         List<MenuPosterAssetGenerateMessage.MenuItem> menuItems = menus.stream()
                 .map(m -> new MenuPosterAssetGenerateMessage.MenuItem(
                         m.getId(),
@@ -81,7 +81,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
 
         MenuPosterAssetGenerateMessage message = MenuPosterAssetGenerateMessage.of(
                 menuPosterAsset.getId(),
-                request.type(),
+                AssetType.IMAGE,
                 request.prompt(),
                 store.getId(),
                 eater.getId(),
@@ -238,7 +238,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
                 .toList();
     }
 
-    private boolean shouldConvertToWebp(AssetType type) {
-        return type == AssetType.IMAGE;
+    private boolean shouldConvertToWebp(String type) {
+        return AssetType.IMAGE.name().equals(type);
     }
 }

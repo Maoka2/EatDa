@@ -1,12 +1,10 @@
 package com.domain.menu.dto.request;
 
 import com.global.annotation.ExcludeFromLogging;
-import com.global.constants.AssetType;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -16,8 +14,8 @@ public record MenuPosterAssetCreateRequest(
         Long storeId,
 
         @NotBlank
-        @Enumerated(EnumType.STRING)
-        AssetType type,
+        @Pattern(regexp = "IMAGE", message = "INVALID_ASSET_TYPE")
+        String type,
 
         @NotEmpty(message = "MENU_IDS_REQUIRED")
         @ExcludeFromLogging
