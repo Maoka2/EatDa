@@ -42,14 +42,16 @@ class MenuboardGenerateConsumer:
 
     async def ensure_consumer_group(self) -> None:
         try:
-            await self.client.xgroup_create(self.stream_key, self.group, id="0-0", mkstream=True)
+            await self.client.xgroup_create(self.stream_key, self.group, id="$", mkstream=True)
+            self.logger.info(
+                f"[메뉴판 컨슈머] 컨슈머 그룹 생성: stream={self.stream_key}, group={self.group}"
+            )
         except redis.ResponseError as e:
             if "BUSYGROUP" not in str(e):
                 raise
 
     @staticmethod
     def _deserialize_fields(fields: Dict[str, str]) -> Dict[str, Any]:
-        data: Dict[str, Any]
         if "payload" in fields:
             data = json.loads(fields["payload"])  # 단일 JSON 필드
         else:
@@ -58,8 +60,7 @@ class MenuboardGenerateConsumer:
             val = data.get(k)
             if isinstance(val, str):
                 try:
-                    parsed = json.loads(val)
-                    data[k] = parsed
+                    data[k] = json.loads(val)
                 except Exception:
                     pass
         return data
@@ -97,9 +98,18 @@ class MenuboardGenerateConsumer:
             raise
 
     async def run_forever(self) -> None:
-        await self.ensure_consumer_group()
+        # 컨슈머 그룹 준비를 재시도하며 보장 (Redis 미기동/네트워크 오류 대비)
+        while True:
+            try:
+                await self.ensure_consumer_group()
+                print("[메뉴판컨슈머] consumer group ready")
+                break
+            except Exception as e:
+                print(f"[메뉴판컨슈머] failed to prepare consumer group, retry in 3s: {e}")
+                await asyncio.sleep(3)
+
         print(
-            f"[MenuboardGenerateConsumer] start: url={self.redis_url}, group={self.group}, consumer={self.consumer_id}, stream={self.stream_key}"
+            f"[메뉴판컨슈머] start: url={self.redis_url}, group={self.group}, consumer={self.consumer_id}, stream={self.stream_key}"
         )
         while True:
             try:
@@ -117,10 +127,11 @@ class MenuboardGenerateConsumer:
                         try:
                             await self.handle_message(message_id, fields)
                             await self.client.xack(self.stream_key, self.group, message_id)
-                        except Exception:
+                        except Exception as handle_err:
+                            print(f"[메뉴판컨슈머] handle_message error: {handle_err}")
                             await self.client.xack(self.stream_key, self.group, message_id)
             except Exception as loop_err:
-                print(f"[MenuboardGenerateConsumer] loop error: {loop_err}")
+                print(f"[메뉴판컨슈머] loop error: {loop_err}")
                 await asyncio.sleep(2)
 
 

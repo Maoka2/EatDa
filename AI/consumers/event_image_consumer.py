@@ -43,10 +43,12 @@ class EventImageConsumer:
         except redis.ResponseError as e:
             if "BUSYGROUP" not in str(e):
                 raise
+            self.logger.debug(
+                f"[이벤트이미지컨슈머] 컨슈머 그룹 이미 존재: stream={self.stream_key}, group={self.group}"
+            )
 
     @staticmethod
     def _deserialize_fields(fields: Dict[str, str]) -> Dict[str, Any]:
-        data: Dict[str, Any]
         if "payload" in fields:
             data = json.loads(fields["payload"])  # 단일 JSON 필드
         else:
@@ -75,6 +77,9 @@ class EventImageConsumer:
 
     async def handle_message(self, message_id: str, fields: Dict[str, str]) -> None:
         try:
+            self.logger.debug(
+                f"[이벤트이미지컨슈머] 메시지 처리 시작: id={message_id}, keys={list(fields.keys())}"
+            )
             req = self.parse_message(fields)
             result, url = await self.process_image(req)
 
@@ -94,9 +99,18 @@ class EventImageConsumer:
             raise
 
     async def run_forever(self) -> None:
-        await self.ensure_consumer_group()
+        # 컨슈머 그룹 준비를 재시도하며 보장 (Redis 미기동/네트워크 오류 대비)
+        while True:
+            try:
+                await self.ensure_consumer_group()
+                print("[이벤트이미지컨슈머] consumer group ready")
+                break
+            except Exception as e:
+                print(f"[이벤트이미지컨슈머] failed to prepare consumer group, retry in 3s: {e}")
+                await asyncio.sleep(3)
+
         print(
-            f"[EventImageConsumer] start: url={self.redis_url}, group={self.group}, consumer={self.consumer_id}, stream={self.stream_key}"
+            f"[이벤트이미지컨슈머] start: url={self.redis_url}, group={self.group}, consumer={self.consumer_id}, stream={self.stream_key}"
         )
         while True:
             try:
@@ -114,10 +128,11 @@ class EventImageConsumer:
                         try:
                             await self.handle_message(message_id, fields)
                             await self.client.xack(self.stream_key, self.group, message_id)
-                        except Exception:
+                        except Exception as handle_err:
+                            print(f"[이벤트이미지컨슈머] handle_message error: {handle_err}")
                             await self.client.xack(self.stream_key, self.group, message_id)
             except Exception as loop_err:
-                print(f"[EventImageConsumer] loop error: {loop_err}")
+                print(f"[이벤트이미지컨슈머] loop error: {loop_err}")
                 await asyncio.sleep(2)
 
 
