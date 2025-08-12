@@ -1,6 +1,8 @@
 import { getTokens } from "../../Login/services/tokenStorage";
 import { normalizeImageForUpload } from "../../../utils/normalizeImage";
 import * as FileSystem from "expo-file-system";
+import * as MediaLibrary from "expo-media-library";
+import { Alert } from "react-native";
 
 const BASE_URL = "https://i13a609.p.ssafy.io/test";
 
@@ -176,6 +178,103 @@ export const getEventAssetResult = async (eventAssetId: number) => {
   }
 
   return json;
+};
+
+// 이벤트 최종 등록
+export interface FinalizeEventData {
+  eventId: number;
+  eventAssetId: number;
+  description: string;
+}
+
+export const finalizeEvent = async (data: FinalizeEventData) => {
+  // 토큰 받아오기
+  const { accessToken } = await getTokens();
+  if (!accessToken) {
+    throw new Error("인증 정보가 없습니다. 다시 로그인 해주세요.");
+  }
+
+  const body = {
+    eventId: data.eventId,
+    eventAssetId: data.eventAssetId,
+    description: data.description,
+    type: "IMAGE",
+  };
+
+  console.log("🚀 이벤트 최종 등록 요청 데이터:", body);
+
+  const res = await fetch(`${BASE_URL}/api/events/finalize`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const raw = await res.text();
+  let json: any = null;
+  try {
+    json = JSON.parse(raw);
+  } catch {}
+  if (!res.ok) {
+    console.error("FINALIZE EVENT ERROR", { status: res.status, raw, json });
+
+    throw new Error(
+      (json && (json.message || json.details)) || raw || `HTTP ${res.status}`
+    );
+  }
+
+  console.log("✅ 이벤트 최종 등록 성공 응답:", json);
+  return json;
+};
+
+// 이벤트 asset 다운로드
+export const downloadEventAsset = async (eventAssetId: number) => {
+  const { status } = await MediaLibrary.requestPermissionsAsync();
+  if (status !== "granted") {
+    Alert.alert(
+      "권한 필요",
+      "이미지를 앨범에 저장하려면 접근 권한이 필요합니다."
+    );
+    return;
+  }
+
+
+  const { accessToken } = await getTokens();
+  if (!accessToken) {
+    throw new Error("인증 정보가 없습니다.");
+  }
+
+  const fileName = `event-poster-${eventAssetId}.webp`;
+  const fileUri = FileSystem.cacheDirectory + fileName;
+  const downloadUrl = `${BASE_URL} /api/events/assets/download?eventAssetId=${eventAssetId}`;
+  console.log(`🚀 이미지 다운로드 시작: ${downloadUrl}`);
+
+  try{
+    const downloadResult = await FileSystem.downloadAsync(
+      downloadUrl,
+      fileUri,
+      {
+        headers:{
+          Authorization : `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if(downloadResult.status !== 200){
+      throw new Error("파일을 다운로드 하는데 실패하였습니다.")
+    }
+
+    console.log(`다운로드 완료, 임시 경로 : ${downloadResult.uri}`);
+
+    const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
+    await MediaLibrary.createAlbumAsync("EatDa",asset,false);
+    Alert.alert("저장 완료", "이미지가 갤러리에 성공적으로 저장되었습니다.")
+  } catch (error: any){
+    console.error("이미지 저장 실패 : ", error);
+    Alert.alert("오류", "이미지를 저장하는 중 오류가 발생했습니다.")
+  }
 };
 
 // 사장님별 이벤트 조회
