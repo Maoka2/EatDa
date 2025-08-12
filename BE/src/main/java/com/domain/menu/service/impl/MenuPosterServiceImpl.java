@@ -98,9 +98,12 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         MenuPosterAsset asset = menuPosterAssetRepository.findById(request.assetId())
                 .orElseThrow(() -> new ApiException(ErrorCode.ASSET_NOT_FOUND));
 
+        log.info("handleMenuPosterAssetCallback: assetId={}", asset.getId());
         AssetValidator.validateCallbackRequest(asset, request);
         Status status = Status.fromString(request.result());
+        log.info("Success 처리 중: assetId={}", asset.getId());
         asset.processCallback(status, request.assetUrl());
+        log.info("Success 완료 중: assetId={}", asset.getId());
     }
 
     @Override
