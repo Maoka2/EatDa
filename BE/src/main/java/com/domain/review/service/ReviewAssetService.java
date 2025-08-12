@@ -6,10 +6,12 @@ import com.domain.review.dto.redis.ReviewAssetGenerateMessage.MenuItem;
 import com.global.filestorage.FileUrlResolver;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ReviewAssetService {
     private final FileUrlResolver fileUrlResolver;
 
@@ -26,6 +28,9 @@ public class ReviewAssetService {
                 .map(fileUrlResolver::toPublicUrl)
                 .toList();
 
+        log.info("ReviewAssetService");
+        log.info("referenceImagesLocalPaths: {}", referenceImagesLocalPaths);
+        log.info(publicUrls.toString());
         return ReviewAssetGenerateMessage.of(
                 reviewAssetId,
                 type,
