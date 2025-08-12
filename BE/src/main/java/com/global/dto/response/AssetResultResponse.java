@@ -5,10 +5,10 @@ import com.global.entity.BaseAssetEntity;
 
 public record AssetResultResponse(
         AssetType type,
-        String assetUrl
+        String path
 ) {
     public static AssetResultResponse from(BaseAssetEntity asset) {
-        String url = asset.getAssetUrl() != null ? asset.getAssetUrl() : "";
+        String url = asset.getPath() != null ? asset.getPath() : "";
         return new AssetResultResponse(asset.getType(), url);
     }
 }

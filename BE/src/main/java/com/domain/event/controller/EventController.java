@@ -59,7 +59,7 @@ public class EventController {
         AssetResultResponse response = eventService.getEventAssetStatus(eventAssetId, email);
 
         // response에 assetUrl이 있으면 SUCCESS, 빈 문자열이면 PENDING
-        SuccessCode successCode = !response.assetUrl().isEmpty()
+        SuccessCode successCode = !response.path().isEmpty()
                 ? ASSET_GENERATION_SUCCESS
                 : ASSET_GENERATION_PENDING;
 

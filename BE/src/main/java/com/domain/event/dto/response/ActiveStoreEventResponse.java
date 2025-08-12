@@ -18,7 +18,7 @@ public record ActiveStoreEventResponse(
                 event.getTitle(),
                 event.getStartDate(),
                 event.getEndDate(),
-                asset != null ? asset.getAssetUrl() : null
+                asset != null ? asset.getPath() : null
         );
     }
 }

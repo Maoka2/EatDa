@@ -379,7 +379,7 @@ class EventServiceImplTest {
         // given
         String assetUrl = "https://cdn.example.com/asset.jpg";
         given(eventAsset.getStatus()).willReturn(Status.SUCCESS);
-        given(eventAsset.getAssetUrl()).willReturn(assetUrl);
+        given(eventAsset.getPath()).willReturn(assetUrl);
         given(eventAssetRepository.findByIdWithStore(assetId))
                 .willReturn(Optional.of(eventAsset));
 
@@ -389,7 +389,7 @@ class EventServiceImplTest {
         // then
         assertThat(response).isNotNull();
         assertThat(response.type()).isEqualTo(AssetType.IMAGE);
-        assertThat(response.assetUrl()).isEqualTo(assetUrl);
+        assertThat(response.path()).isEqualTo(assetUrl);
 
         verify(eventAssetRepository).findByIdWithStore(assetId);
     }
@@ -407,7 +407,7 @@ class EventServiceImplTest {
         // then
         assertThat(response).isNotNull();
         assertThat(response.type()).isEqualTo(AssetType.IMAGE);
-        assertThat(response.assetUrl()).isEqualTo("");  // PENDING 상태는 빈 문자열
+        assertThat(response.path()).isEqualTo("");  // PENDING 상태는 빈 문자열
 
         verify(eventAssetRepository).findByIdWithStore(assetId);
     }
@@ -675,7 +675,7 @@ class EventServiceImplTest {
         // given
         Resource mockResource = mock(Resource.class);
 
-        given(eventAsset.getAssetUrl()).willReturn("/uploads/events/asset123.webp");
+        given(eventAsset.getPath()).willReturn("/uploads/events/asset123.webp");
         given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
@@ -764,7 +764,7 @@ class EventServiceImplTest {
     @DisplayName("이벤트 에셋 다운로드 - URL이 없음")
     void downloadEventAsset_AssetUrlEmpty() {
         // given
-        given(eventAsset.getAssetUrl()).willReturn("");
+        given(eventAsset.getPath()).willReturn("");
         given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
@@ -784,7 +784,7 @@ class EventServiceImplTest {
     @DisplayName("이벤트 에셋 다운로드 - URL이 null")
     void downloadEventAsset_AssetUrlNull() {
         // given
-        given(eventAsset.getAssetUrl()).willReturn(null);
+        given(eventAsset.getPath()).willReturn(null);
         given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
@@ -806,7 +806,7 @@ class EventServiceImplTest {
         // given
         Resource mockResource = mock(Resource.class);
 
-        given(eventAsset.getAssetUrl()).willReturn("/uploads/events/notfound.webp");
+        given(eventAsset.getPath()).willReturn("/uploads/events/notfound.webp");
         given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
                 .willReturn(Optional.of(maker));
         given(eventAssetRepository.findByIdWithStore(assetId))
@@ -845,7 +845,7 @@ class EventServiceImplTest {
 
         EventAsset asset = EventAsset.builder()
                 .event(event)
-                .assetUrl("/uploads/events/unreadable.webp")
+                .path("/uploads/events/unreadable.webp")
                 .build();
 
         Resource mockResource = mock(Resource.class);
@@ -886,7 +886,7 @@ class EventServiceImplTest {
 
         EventAsset asset = EventAsset.builder()
                 .event(event)
-                .assetUrl("/uploads/events/error.webp")
+                .path("/uploads/events/error.webp")
                 .build();
 
         given(makerRepository.findByEmailAndDeletedFalse(makerEmail))
@@ -941,14 +941,14 @@ class EventServiceImplTest {
         EventAsset asset1 = EventAsset.builder()
                 .event(event1)
                 .type(AssetType.IMAGE)
-                .assetUrl("/uploads/event1.webp")
+                .path("/uploads/event1.webp")
                 .status(Status.SUCCESS)
                 .build();
 
         EventAsset asset2 = EventAsset.builder()
                 .event(event2)
                 .type(AssetType.IMAGE)
-                .assetUrl("/uploads/event2.webp")
+                .path("/uploads/event2.webp")
                 .status(Status.SUCCESS)
                 .build();
 
@@ -1006,7 +1006,7 @@ class EventServiceImplTest {
         EventAsset asset = EventAsset.builder()
                 .event(event)
                 .type(AssetType.IMAGE)
-                .assetUrl("/uploads/event45.webp")
+                .path("/uploads/event45.webp")
                 .status(Status.SUCCESS)
                 .build();
 
@@ -1131,7 +1131,7 @@ class EventServiceImplTest {
         EventAsset asset1 = EventAsset.builder()
                 .event(event1)
                 .type(AssetType.IMAGE)
-                .assetUrl("/uploads/event1.webp")
+                .path("/uploads/event1.webp")
                 .status(Status.SUCCESS)
                 .build();
 
@@ -1208,7 +1208,7 @@ class EventServiceImplTest {
         EventAsset asset1 = EventAsset.builder()
                 .event(activeEvent1)
                 .type(AssetType.IMAGE)
-                .assetUrl("/uploads/event50.webp")
+                .path("/uploads/event50.webp")
                 .status(Status.SUCCESS)
                 .build();
 

@@ -11,10 +11,10 @@ import com.global.dto.response.AssetResultResponse;
 
 public interface MenuPosterService {
 
-    MenuPosterAssetRequestResponse requestMenuPosterAsset(final MenuPosterAssetCreateRequest request, final String eaterMail);
-    void handleMenuPosterAssetCallback(final AssetCallbackRequest<?> request);
-    AssetResultResponse getMenuPosterAssetStatus(final Long assetId, final String eaterMail);
-    MenuPosterFinalizeResponse finalizeMenuPoster(final MenuPosterFinalizeRequest request);
+    MenuPosterAssetRequestResponse requestMenuPosterAsset(MenuPosterAssetCreateRequest request, String eaterMail);
+    void handleMenuPosterAssetCallback(AssetCallbackRequest<?> request);
+    AssetResultResponse getMenuPosterAssetStatus(Long assetId, String eaterMail);
+    MenuPosterFinalizeResponse finalizeMenuPoster(MenuPosterFinalizeRequest request);
     void sendMenuPosterToMaker(Long menuPosterId, String eaterEmail);
     AdoptMenuPostersResponse adoptMenuPosters(AdoptMenuPostersRequest request, String makerEmail);
 }

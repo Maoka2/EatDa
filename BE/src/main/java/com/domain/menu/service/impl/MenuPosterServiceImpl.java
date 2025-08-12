@@ -104,7 +104,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         menuValidator.validatePosterOwnership(eater, asset);
 
         return switch (asset.getStatus()) {
-            case SUCCESS -> new AssetResultResponse(asset.getType(), asset.getAssetUrl());
+            case SUCCESS -> new AssetResultResponse(asset.getType(), asset.getPath());
             case PENDING -> new AssetResultResponse(asset.getType(), "");
             case FAIL -> throw new ApiException(ErrorCode.ASSET_URL_REQUIRED, assetId);
         };
@@ -153,7 +153,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         menuValidator.validateAllPostersSent(menuPosters);
         menuValidator.validatePostersBelongToStore(menuPosters, request.storeId());
 
-        List<AdoptedMenuPoster> existingAdopted = adoptedMenuPosterRepository.findByStoreIdAndNotDeleted(request.storeId());
+        List<AdoptedMenuPoster> existingAdopted = adoptedMenuPosterRepository.findByStoreIdAndDeletedFalse(request.storeId());
         if (!existingAdopted.isEmpty()) {
             existingAdopted.forEach(BaseEntity::delete);
             adoptedMenuPosterRepository.saveAll(existingAdopted);

@@ -19,7 +19,7 @@ public abstract class BaseAssetEntity extends BaseEntity{
     @Enumerated(EnumType.STRING)
     protected AssetType type;
 
-    protected String assetUrl;
+    protected String path;
 
     @NotBlank
     protected String prompt;
@@ -38,8 +38,8 @@ public abstract class BaseAssetEntity extends BaseEntity{
     /**
      * Asset URL 업데이트
      */
-    public void updateAssetUrl(String assetUrl) {
-        this.assetUrl = assetUrl;
+    public void updatePath(String assetUrl) {
+        this.path = assetUrl;
     }
 
     /**
@@ -64,10 +64,10 @@ public abstract class BaseAssetEntity extends BaseEntity{
         return Status.FAIL == this.status;
     }
 
-    public void processCallback(Status status, String assetUrl) {
+    public void processCallback(Status status, String path) {
         this.updateStatus(status);
-        if (status.isSuccess() && assetUrl != null && !assetUrl.isBlank()) {
-            this.updateAssetUrl(assetUrl);
+        if (status.isSuccess() && path != null && !path.isBlank()) {
+            this.updatePath(path);
         }
     }
 

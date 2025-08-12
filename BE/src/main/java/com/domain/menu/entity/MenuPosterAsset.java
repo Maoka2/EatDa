@@ -24,10 +24,10 @@ public class MenuPosterAsset extends BaseAssetEntity {
     private MenuPoster menuPoster;
 
     @Builder
-    public MenuPosterAsset(final MenuPoster menuPoster, final AssetType type, final String assetUrl, final String prompt, final Status status) {
+    public MenuPosterAsset(final MenuPoster menuPoster, final AssetType type, final String path, final String prompt, final Status status) {
         this.menuPoster = menuPoster;
         this.type = type;
-        this.assetUrl = assetUrl;
+        this.path = path;
         this.prompt = prompt;
         this.status = status != null ? status : Status.PENDING;
     }

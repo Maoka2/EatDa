@@ -74,7 +74,7 @@ public class MenuPosterAssetGenerateMessage extends AbstractRedisStreamMessage {
                 Objects.isNull(userId) ||
                 Objects.isNull(menus) ||
                 Objects.isNull(imageUrls)) {
-            throw new ApiException(ErrorCode.REQUIRED_EVENT_FIELDS_MISSING);
+            throw new ApiException(ErrorCode.REQUIRED_MENU_FIELDS_MISSING);
         }
     }
 }

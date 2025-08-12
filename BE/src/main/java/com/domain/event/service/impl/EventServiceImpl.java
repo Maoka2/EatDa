@@ -117,7 +117,7 @@ public class EventServiceImpl implements EventService {
         EventValidator.validateOwnership(maker, asset);
 
         return switch (asset.getStatus()) {
-            case SUCCESS -> new AssetResultResponse(asset.getType(), asset.getAssetUrl());
+            case SUCCESS -> new AssetResultResponse(asset.getType(), asset.getPath());
             case PENDING -> new AssetResultResponse(asset.getType(), "");
             case FAIL -> throw new ApiException(ErrorCode.ASSET_URL_REQUIRED, assetId);
         };
@@ -154,23 +154,23 @@ public class EventServiceImpl implements EventService {
 
         EventValidator.validateOwnership(maker, asset);
 
-        if (asset.getAssetUrl() == null || asset.getAssetUrl().isBlank()) {
+        if (asset.getPath() == null || asset.getPath().isBlank()) {
             throw new ApiException(ErrorCode.ASSET_URL_REQUIRED, assetId);
         }
 
         try {
-            Resource resource = fileStorageService.loadAsResource(asset.getAssetUrl());
+            Resource resource = fileStorageService.loadAsResource(asset.getPath());
 
             // 파일 존재 및 읽기 가능 여부 확인
             if (!resource.exists() || !resource.isReadable()) {
-                throw new ApiException(ErrorCode.FILE_NOT_FOUND, asset.getAssetUrl());
+                throw new ApiException(ErrorCode.FILE_NOT_FOUND, asset.getPath());
             }
 
             return resource;
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
-            log.error("파일 다운로드 실패: eventAssetId={}, assetUrl={}", assetId, asset.getAssetUrl(), e);
+            log.error("파일 다운로드 실패: eventAssetId={}, assetUrl={}", assetId, asset.getPath(), e);
             throw new ApiException(ErrorCode.FILE_DOWNLOAD_ERROR, e.getMessage());
         }
     }

@@ -21,10 +21,10 @@ public class EventAsset extends BaseAssetEntity {
     private Event event;
 
     @Builder
-    public EventAsset(final Event event, final AssetType type, final String assetUrl, final String prompt, final Status status) {
+    public EventAsset(final Event event, final AssetType type, final String path, final String prompt, final Status status) {
         this.event = event;
         this.type = type;
-        this.assetUrl = assetUrl;
+        this.path = path;
         this.prompt = prompt;
         this.status = status != null ? status : Status.PENDING;
     }

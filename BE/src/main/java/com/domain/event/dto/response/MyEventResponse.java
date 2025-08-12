@@ -20,7 +20,7 @@ public record MyEventResponse(
                 event.getTitle(),
                 event.getStartDate().atStartOfDay(),
                 event.getEndDate().atTime(23, 59, 59),
-                asset != null ? asset.getAssetUrl() : null
+                asset != null ? asset.getPath() : null
         );
     }
 }

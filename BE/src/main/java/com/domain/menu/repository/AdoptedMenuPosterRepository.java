@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface AdoptedMenuPosterRepository extends JpaRepository<AdoptedMenuPoster, Long> {
-    List<AdoptedMenuPoster> findByStoreIdAndNotDeleted(Long storeId);
+    List<AdoptedMenuPoster> findByStoreIdAndDeletedFalse(Long storeId);
 }
