@@ -14,10 +14,10 @@ import com.domain.event.repository.EventAssetRepository;
 import com.domain.event.repository.EventRepository;
 import com.domain.event.service.EventService;
 import com.domain.event.validator.EventValidator;
-import com.domain.user.repository.MakerRepository;
 import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
 import com.domain.user.entity.User;
+import com.domain.user.repository.MakerRepository;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
 import com.global.constants.PagingConstants;
@@ -28,6 +28,12 @@ import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
 import com.global.redis.constants.RedisStreamKey;
 import com.global.utils.AssetValidator;
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -35,13 +41,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -60,13 +59,12 @@ public class EventServiceImpl implements EventService {
     @Override
     @Transactional
     public EventAssetRequestResponse requestEventAsset(EventAssetCreateRequest request, final String makerEmail) {
-        // storeId 유효성 검사
-        Store store = storeRepository.findById(request.storeId())
-                        .orElseThrow(() -> new ApiException(ErrorCode.STORE_NOT_FOUND));
-
         // 사용자 ROLE 검사
         User maker = makerRepository.findByEmailAndDeletedFalse(makerEmail)
-                        .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
+                .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
+
+        // storeId 유효성 검사
+        Store store = maker.getStores().getFirst();
 
         AssetValidator.validateImages(request.image(), ErrorCode.IMAGE_TOO_LARGE);
 
@@ -78,7 +76,8 @@ public class EventServiceImpl implements EventService {
         EventAsset eventAsset = createPendingEventAsset(event, request);
 
         boolean convertToWebp = shouldConvertToWebp(request.type());
-        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + maker.getEmail(), convertToWebp);
+        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + maker.getEmail(),
+                convertToWebp);
         EventAssetGenerateMessage message = EventAssetGenerateMessage.of(
                 eventAsset.getId(),
                 request.type(),
