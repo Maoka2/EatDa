@@ -85,6 +85,71 @@ class EventCallbackService:
                                 ]
                             )
                         )
+                        # JSON 바디가 파싱되지 않는 환경(폼 파라미터 요구) 대비 1회 form 재시도
+                        should_retry_form = False
+                        try:
+                            if response_json and isinstance(response_json, dict):
+                                data_obj = response_json.get("data")
+                                if isinstance(data_obj, dict):
+                                    keys = set(data_obj.keys())
+                                    if {"result", "assetId", "type"}.issubset(keys):
+                                        should_retry_form = True
+                        except Exception:
+                            pass
+
+                        if should_retry_form:
+                            form_headers = {"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"}
+                            try:
+                                self.logger.info(
+                                    "\n".join(
+                                        [
+                                            "[EventCallback] Retry with form-encoded due to 4xx validation",
+                                            f"- url: {self.callback_url}",
+                                            f"- headers: {form_headers}",
+                                            f"- form: {callback_data}",
+                                        ]
+                                    )
+                                )
+                            except Exception:
+                                pass
+
+                            async with session.post(self.callback_url, data=callback_data, headers=form_headers) as resp2:
+                                raw_text2 = await resp2.text()
+                                try:
+                                    resp2_json = await resp2.json(content_type=None)
+                                except Exception:
+                                    resp2_json = None
+
+                                if resp2.status == 200:
+                                    self.logger.info(
+                                        f"콜백 전송 성공(form): assetId={callback_data.get('assetId')}, result={callback_data.get('result')}"
+                                    )
+                                    return resp2_json or {
+                                        "code": "OK",
+                                        "message": "Callback returned non-JSON body (form)",
+                                        "status": 200,
+                                        "data": {"rawBody": raw_text2[:1000]},
+                                        "timestamp": datetime.utcnow().isoformat(),
+                                    }
+                                else:
+                                    self.logger.warning(
+                                        "\n".join(
+                                            [
+                                                "[EventCallback] Form retry failed",
+                                                f"- status: {resp2.status}",
+                                                f"- response.headers: {dict(resp2.headers)}",
+                                                f"- rawBody(first 1000B): {raw_text2[:1000]}",
+                                            ]
+                                        )
+                                    )
+                                    return resp2_json or {
+                                        "code": "VALIDATION_ERROR",
+                                        "message": "Validation failed at Spring callback (form retry failed)",
+                                        "status": resp2.status,
+                                        "data": {"rawBody": raw_text2[:1000]},
+                                        "timestamp": datetime.utcnow().isoformat(),
+                                    }
+
                         return response_json or {
                             "code": "VALIDATION_ERROR",
                             "message": "Validation failed at Spring callback",
