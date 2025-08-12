@@ -92,7 +92,7 @@ class MenuboardGenerateConsumer:
             req = self.parse_message(fields)
             result, url = await self.process_image(req)
             callback_data = {
-                "menuPosterId": req.menuPosterId,
+                "menuPosterAssetId": req.menuPosterAssetId,
                 "result": result,
                 "assetUrl": url,
                 "type": req.type,
