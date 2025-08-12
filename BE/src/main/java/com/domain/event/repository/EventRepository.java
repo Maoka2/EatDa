@@ -30,16 +30,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     // 진행 중인 가게 이벤트 조회 (deleted = false 조건 추가)
     @Query("SELECT e FROM Event e " +
-            "WHERE e.store.id = :storeId " +
-            "AND e.store.deleted = false " +  // Store deleted 체크
+            "WHERE e.store.deleted = false " +  // Store deleted 체크
             "AND e.deleted = false " +  // Event deleted 체크 추가
             "AND e.status = 'SUCCESS' " +
             "AND e.startDate <= :currentDate " +
             "AND e.endDate >= :currentDate " +
             "AND (:lastEventId IS NULL OR e.id < :lastEventId) " +
             "ORDER BY e.id DESC")
-    List<Event> findActiveStoreEvents(@Param("storeId") Long storeId,
-                                      @Param("currentDate") LocalDate currentDate,
-                                      @Param("lastEventId") Long lastEventId,
-                                      Pageable pageable);
+    List<Event> findActiveEvents(@Param("currentDate") LocalDate currentDate,
+                                 @Param("lastEventId") Long lastEventId,
+                                 Pageable pageable);
 }

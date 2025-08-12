@@ -25,7 +25,7 @@ public interface EventService {
 
     List<MyEventResponse> getMyEvents(Long lastEventId, String makerEmail);
 
-    List<ActiveStoreEventResponse> getActiveStoreEvents(Long storeId, Long lastEventId);
+    List<ActiveStoreEventResponse> getActiveEvents(Long lastEventId);
 
     void deleteEvent(Long eventId, String makerEmail);
 }

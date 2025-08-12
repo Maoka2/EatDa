@@ -1216,13 +1216,13 @@ class EventServiceImplTest {
 
         given(storeRepository.findById(storeId))
                 .willReturn(Optional.of(store));
-        given(eventRepository.findActiveStoreEvents(eq(storeId), any(LocalDate.class), isNull(), any(Pageable.class)))
+        given(eventRepository.findActiveEvents( any(LocalDate.class), isNull(), any(Pageable.class)))
                 .willReturn(events);
         given(eventAssetRepository.findByEventIds(List.of(50L, 45L)))
                 .willReturn(List.of(asset1));  // event2는 에셋 없음
 
         // when
-        List<ActiveStoreEventResponse> responses = eventService.getActiveStoreEvents(storeId, null);
+        List<ActiveStoreEventResponse> responses = eventService.getActiveEvents(null);
 
         // then
         assertThat(responses).hasSize(2);
@@ -1238,8 +1238,7 @@ class EventServiceImplTest {
         assertThat(response2.eventId()).isEqualTo(45L);
         assertThat(response2.postUrl()).isNull();  // 에셋 없음
 
-        verify(storeRepository).findById(storeId);
-        verify(eventRepository).findActiveStoreEvents(eq(storeId), any(LocalDate.class), isNull(), any(Pageable.class));
+        verify(eventRepository).findActiveEvents(any(LocalDate.class), isNull(), any(Pageable.class));
         verify(eventAssetRepository).findByEventIds(List.of(50L, 45L));
     }
 
@@ -1265,64 +1264,21 @@ class EventServiceImplTest {
 
         given(storeRepository.findById(storeId))
                 .willReturn(Optional.of(store));
-        given(eventRepository.findActiveStoreEvents(eq(storeId), any(LocalDate.class), eq(lastEventId),
+        given(eventRepository.findActiveEvents(any(LocalDate.class), eq(lastEventId),
                 any(Pageable.class)))
                 .willReturn(List.of(event));
         given(eventAssetRepository.findByEventIds(any()))
                 .willReturn(Collections.emptyList());
 
         // when
-        List<ActiveStoreEventResponse> responses = eventService.getActiveStoreEvents(storeId, lastEventId);
+        List<ActiveStoreEventResponse> responses = eventService.getActiveEvents(lastEventId);
 
         // then
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().eventId()).isEqualTo(25L);
 
-        verify(eventRepository).findActiveStoreEvents(eq(storeId), any(LocalDate.class), eq(lastEventId),
+        verify(eventRepository).findActiveEvents(any(LocalDate.class), eq(lastEventId),
                 any(Pageable.class));
-    }
-
-    @Test
-    @DisplayName("진행 중인 가게 이벤트 조회 - 가게를 찾을 수 없음")
-    void getActiveStoreEvents_StoreNotFound() {
-        // given
-        Long storeId = 999L;
-
-        given(storeRepository.findById(storeId))
-                .willReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> eventService.getActiveStoreEvents(storeId, null))
-                .isInstanceOf(ApiException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.STORE_NOT_FOUND);
-
-        verify(storeRepository).findById(storeId);
-        verifyNoInteractions(eventRepository, eventAssetRepository);
-    }
-
-    @Test
-    @DisplayName("진행 중인 가게 이벤트 조회 - 진행 중인 이벤트 없음")
-    void getActiveStoreEvents_NoActiveEvents() {
-        // given
-        Long storeId = 100L;
-        Store store = Store.builder()
-                .name("테스트 가게")
-                .build();
-
-        given(storeRepository.findById(storeId))
-                .willReturn(Optional.of(store));
-        given(eventRepository.findActiveStoreEvents(any(), any(), any(), any()))
-                .willReturn(Collections.emptyList());
-
-        // when
-        List<ActiveStoreEventResponse> responses = eventService.getActiveStoreEvents(storeId, null);
-
-        // then
-        assertThat(responses).isEmpty();
-
-        verify(storeRepository).findById(storeId);
-        verify(eventRepository).findActiveStoreEvents(any(), any(), any(), any());
-        verify(eventAssetRepository, never()).findByEventIds(any());  // 이벤트가 없으므로 호출 안됨
     }
 
     @Test
@@ -1347,13 +1303,13 @@ class EventServiceImplTest {
 
         given(storeRepository.findById(storeId))
                 .willReturn(Optional.of(store));
-        given(eventRepository.findActiveStoreEvents(eq(storeId), any(LocalDate.class), isNull(), any(Pageable.class)))
+        given(eventRepository.findActiveEvents(any(LocalDate.class), isNull(), any(Pageable.class)))
                 .willReturn(List.of(activeEvent));  // 진행 중인 이벤트만 반환
         given(eventAssetRepository.findByEventIds(any()))
                 .willReturn(Collections.emptyList());
 
         // when
-        List<ActiveStoreEventResponse> responses = eventService.getActiveStoreEvents(storeId, null);
+        List<ActiveStoreEventResponse> responses = eventService.getActiveEvents(null);
 
         // then
         assertThat(responses).hasSize(1);

@@ -253,13 +253,9 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ActiveStoreEventResponse> getActiveStoreEvents(Long storeId, Long lastEventId) {
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new ApiException(ErrorCode.STORE_NOT_FOUND, storeId));
-
+    public List<ActiveStoreEventResponse> getActiveEvents(Long lastEventId) {
         LocalDate currentDate = LocalDate.now();
-        List<Event> events = eventRepository.findActiveStoreEvents(
-                storeId,
+        List<Event> events = eventRepository.findActiveEvents(
                 currentDate,
                 lastEventId,
                 PageRequest.of(0, PagingConstants.DEFAULT_SIZE.value)
@@ -277,14 +273,15 @@ public class EventServiceImpl implements EventService {
                 .stream()
                 .collect(Collectors.toMap(
                         ea -> ea.getEvent().getId(),
-                        Function.identity()
+                        Function.identity(),
+                        (existing, replacement) -> existing  // 중복 키 처리 추가
                 ));
 
         // Response 생성
         return events.stream()
                 .map(event -> ActiveStoreEventResponse.from(
                         event,
-                        assetMap.get(event.getId())
+                        assetMap.get(event.getId())  // null일 수 있음을 고려
                 ))
                 .toList();
     }
