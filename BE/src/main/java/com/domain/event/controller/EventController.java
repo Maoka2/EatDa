@@ -31,17 +31,15 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
@@ -53,27 +51,21 @@ public class EventController {
 
     @PostMapping(value = "/assets/request", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse> requestEventAsset(
-            @Validated @RequestPart("base") EventAssetCreateRequest baseRequest,
-            @RequestPart(value = "images", required = false) List<MultipartFile> eventImageRequests,
+            @Valid @ModelAttribute final EventAssetCreateRequest request,
             @AuthenticationPrincipal final String email
     ) {
-        final int imageCount = (eventImageRequests == null) ? 0 : eventImageRequests.size();
         log.info("===== [Controller] requestEventAsset START =====");
-        log.info("BaseRequest: title={}, type={}, startDate={}, endDate={}, prompt.length={}",
-                baseRequest.title(), baseRequest.type(), baseRequest.startDate(), baseRequest.endDate(),
-                baseRequest.prompt() == null ? 0 : baseRequest.prompt().length());
-        log.info("images size: {}", imageCount);
+        log.info("BaseRequest: title={}, type={}, startDate={}, endDate={}, prompt.length={}, imageCount={}",
+                request.title(), request.type(), request.startDate(), request.endDate(),
+                request.prompt() == null ? 0 : request.prompt().length(),
+                request.image() != null ? request.image().size() : 0);
         log.info("makerEmail(principal): {}", email);
-        EventAssetRequestResponse response = eventService.requestEventAsset(baseRequest, email, eventImageRequests);
+
+        EventAssetRequestResponse response = eventService.requestEventAsset(request, email);
+
+        log.info("===== [Controller] requestEventAsset END =====");
         return ApiResponseFactory.success(EVENT_ASSET_REQUESTED, response);
     }
-
-    //
-
-    // @NotEmpty(message = "IMAGES_REQUIRED")
-    // @ExcludeFromLogging
-    // List<@NotNull MultipartFile> image
-    //
 
     @PostMapping("/assets/callback")
     public ResponseEntity<BaseResponse> handleEventAssetCallback(

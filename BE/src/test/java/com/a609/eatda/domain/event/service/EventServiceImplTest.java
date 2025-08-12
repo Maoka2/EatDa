@@ -121,13 +121,14 @@ class EventServiceImplTest {
 
     // Request 생성 헬퍼 메서드
     private EventAssetCreateRequest createRequest(String title,
-                                                  String prompt) {
+                                                  String prompt, List<MultipartFile> files) {
         return new EventAssetCreateRequest(
                 title,
                 AssetType.IMAGE,
                 "2025-12-20",
                 "2025-12-25",
-                prompt
+                prompt,
+                files
         );
     }
 
@@ -142,7 +143,8 @@ class EventServiceImplTest {
 
         EventAssetCreateRequest request = createRequest(
                 "크리스마스 이벤트",
-                "크리스마스 특별 할인 이벤트"
+                "크리스마스 특별 할인 이벤트",
+                List.of(mockFile)
         );
 
         // given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
@@ -157,7 +159,7 @@ class EventServiceImplTest {
         )).willReturn("uploaded/path/image.jpg");
 
         // when
-        EventAssetRequestResponse response = eventService.requestEventAsset(request, makerEmail, List.of(mockFile));
+        EventAssetRequestResponse response = eventService.requestEventAsset(request, makerEmail);
 
         // then
         assertThat(response).isNotNull();
@@ -194,13 +196,14 @@ class EventServiceImplTest {
         MultipartFile mockFile = mock(MultipartFile.class);
         EventAssetCreateRequest request = createRequest(
                 "크리스마스 이벤트",
-                "크리스마스 특별 할인 이벤트"
+                "크리스마스 특별 할인 이벤트",
+                List.of(mockFile)
         );
 
         given(storeRepository.findById(storeId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> eventService.requestEventAsset(request, makerEmail, List.of(mockFile)))
+        assertThatThrownBy(() -> eventService.requestEventAsset(request, makerEmail))
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.STORE_NOT_FOUND);
 
@@ -218,14 +221,15 @@ class EventServiceImplTest {
 
         EventAssetCreateRequest request = createRequest(
                 "이벤트",
-                "프롬프트"
+                "프롬프트",
+                List.of(largeFile)
         );
 
         //given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
         given(maker.getStores()).willReturn(List.of(store));
 
         // when & then
-        assertThatThrownBy(() -> eventService.requestEventAsset(request, makerEmail, List.of(largeFile)))
+        assertThatThrownBy(() -> eventService.requestEventAsset(request, makerEmail))
                 .isInstanceOf(ApiException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.IMAGE_TOO_LARGE);
 
@@ -247,7 +251,8 @@ class EventServiceImplTest {
 
         EventAssetCreateRequest request = createRequest(
                 "이벤트",
-                "프롬프트"
+                "프롬프트",
+                List.of(file1, file2)
         );
 
         // given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
@@ -269,7 +274,7 @@ class EventServiceImplTest {
         )).willReturn("uploaded/path/image2.jpg");
 
         // when
-        EventAssetRequestResponse response = eventService.requestEventAsset(request, makerEmail, List.of(file1, file2));
+        EventAssetRequestResponse response = eventService.requestEventAsset(request, makerEmail);
 
         // then
         assertThat(response.eventAssetId()).isEqualTo(assetId);

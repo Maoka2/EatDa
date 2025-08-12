@@ -10,12 +10,10 @@ import com.global.dto.request.AssetCallbackRequest;
 import com.global.dto.response.AssetResultResponse;
 import java.util.List;
 import org.springframework.core.io.Resource;
-import org.springframework.web.multipart.MultipartFile;
 
 public interface EventService {
 
-    EventAssetRequestResponse requestEventAsset(EventAssetCreateRequest baseRequest, String makerEmail,
-                                                List<MultipartFile> eventImageRequests);
+    EventAssetRequestResponse requestEventAsset(EventAssetCreateRequest request, String makerEmail);
 
     void handleEventAssetCallback(AssetCallbackRequest<?> request);
 
