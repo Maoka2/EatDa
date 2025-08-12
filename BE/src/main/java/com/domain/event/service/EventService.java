@@ -8,18 +8,26 @@ import com.domain.event.dto.response.EventFinalizeResponse;
 import com.domain.event.dto.response.MyEventResponse;
 import com.global.dto.request.AssetCallbackRequest;
 import com.global.dto.response.AssetResultResponse;
-import org.springframework.core.io.Resource;
-
 import java.util.List;
+import org.springframework.core.io.Resource;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface EventService {
 
-    EventAssetRequestResponse requestEventAsset(final EventAssetCreateRequest request, final String makerEmail);
-    void handleEventAssetCallback(final AssetCallbackRequest<?> request);
-    AssetResultResponse getEventAssetStatus(final Long assetId, final String makerEmail);
-    EventFinalizeResponse finalizeEvent(final EventFinalizeRequest request);
-    Resource downloadEventAsset(final Long assetId, final String makerEmail);
-    List<MyEventResponse> getMyEvents(final Long lastEventId, final String makerEmail);
-    List<ActiveStoreEventResponse> getActiveStoreEvents(final Long storeId, final Long lastEventId);
-    void deleteEvent(final Long eventId, final String makerEmail);
+    EventAssetRequestResponse requestEventAsset(EventAssetCreateRequest baseRequest, String makerEmail,
+                                                List<MultipartFile> eventImageRequests);
+
+    void handleEventAssetCallback(AssetCallbackRequest<?> request);
+
+    AssetResultResponse getEventAssetStatus(Long assetId, String makerEmail);
+
+    EventFinalizeResponse finalizeEvent(EventFinalizeRequest request);
+
+    Resource downloadEventAsset(Long assetId, String makerEmail);
+
+    List<MyEventResponse> getMyEvents(Long lastEventId, String makerEmail);
+
+    List<ActiveStoreEventResponse> getActiveStoreEvents(Long storeId, Long lastEventId);
+
+    void deleteEvent(Long eventId, String makerEmail);
 }

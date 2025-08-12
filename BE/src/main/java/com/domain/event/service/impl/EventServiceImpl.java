@@ -58,7 +58,9 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public EventAssetRequestResponse requestEventAsset(EventAssetCreateRequest request, final String makerEmail) {
+    public EventAssetRequestResponse requestEventAsset(final EventAssetCreateRequest baseRequest,
+                                                       final String makerEmail,
+                                                       final List<MultipartFile> eventImageRequests) {
         // 사용자 ROLE 검사
         User maker = makerRepository.findByEmailAndDeletedFalse(makerEmail)
                 .orElseThrow(() -> new ApiException(ErrorCode.FORBIDDEN));
@@ -66,25 +68,25 @@ public class EventServiceImpl implements EventService {
         // storeId 유효성 검사
         Store store = maker.getStores().getFirst();
 
-        AssetValidator.validateImages(request.image(), ErrorCode.IMAGE_TOO_LARGE);
+        AssetValidator.validateImages(eventImageRequests, ErrorCode.IMAGE_TOO_LARGE);
 
-        LocalDate startDate = LocalDate.parse(request.startDate());
-        LocalDate endDate = LocalDate.parse(request.endDate());
+        LocalDate startDate = LocalDate.parse(baseRequest.startDate());
+        LocalDate endDate = LocalDate.parse(baseRequest.endDate());
 
         EventValidator.validateDateRange(startDate, endDate);
         Event event = createPendingEvent(store, startDate, endDate);
-        EventAsset eventAsset = createPendingEventAsset(event, request);
+        EventAsset eventAsset = createPendingEventAsset(event, baseRequest);
 
-        boolean convertToWebp = shouldConvertToWebp(request.type());
-        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + maker.getEmail(),
+        boolean convertToWebp = shouldConvertToWebp(baseRequest.type());
+        List<String> uploadedImageUrls = uploadImages(eventImageRequests, IMAGE_BASE_PATH + maker.getEmail(),
                 convertToWebp);
         EventAssetGenerateMessage message = EventAssetGenerateMessage.of(
                 eventAsset.getId(),
-                request.type(),
-                request.prompt(),
+                baseRequest.type(),
+                baseRequest.prompt(),
                 store.getId(),
                 maker.getId(),
-                request.title(),
+                baseRequest.title(),
                 startDate,
                 endDate,
                 uploadedImageUrls
