@@ -14,6 +14,7 @@ import com.domain.review.dto.response.ReviewFinalizeResponse;
 import com.domain.review.dto.response.ReviewScrapResult;
 import com.domain.review.service.ReviewScrapService;
 import com.domain.review.service.ReviewService;
+import com.domain.review.service.ReviewThumbnailService;
 import com.domain.review.validator.SeoulLocation;
 import com.global.annotation.ExcludeFromLogging;
 import com.global.config.swagger.annotation.ApiInternalServerError;
@@ -32,6 +33,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +62,7 @@ public class ReviewController {
 
     private final ReviewService reviewService;
     private final ReviewScrapService reviewScrapService;
+    private final ReviewThumbnailService reviewThumbnailService;
 
     @Operation(
             summary = "1단계 - 리뷰 에셋 생성 요청",
@@ -453,5 +456,13 @@ public class ReviewController {
                     reviewId, e);
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/thumbnail")
+    public ResponseEntity<BaseResponse> extractThumbnail(@RequestParam("videoUrl") String videoUrl,
+                                                         @RequestParam("filePath") String filePath,
+                                                         @RequestParam("fileName") String fileName) {
+        Path path = reviewThumbnailService.extractThumbnail(videoUrl, filePath, fileName);
+        return ApiResponseFactory.success(SuccessCode.THUMBNAILIZATION, path);
     }
 }

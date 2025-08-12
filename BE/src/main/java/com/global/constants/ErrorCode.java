@@ -77,7 +77,9 @@ public enum ErrorCode {
     EVENT_NOT_FOUND("EVENT_NOT_FOUND", "요청한 이벤트를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     EVENT_NOT_PENDING("EVENT_NOT_PENDING", "해당 이벤트는 보류 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
     INVALID_EVENT_DATE_RANGE("INVALID_EVENT_DATE_RANGE", "시작일은 종료일보다 이전이어야 합니다.", HttpStatus.BAD_REQUEST.value()),
-    REQUIRED_EVENT_FIELDS_MISSING("REQUIRED_EVENT_FIELDS_MISSING", "assetId, type, prompt, storeId, userId, title, startDate, endDate는 필수입니다.", HttpStatus.BAD_REQUEST.value()),
+    REQUIRED_EVENT_FIELDS_MISSING("REQUIRED_EVENT_FIELDS_MISSING",
+            "assetId, type, prompt, storeId, userId, title, startDate, endDate는 필수입니다.",
+            HttpStatus.BAD_REQUEST.value()),
     EVENT_INVALID_DATE_RANGE("EVENT_INVALID_DATE_RANGE", "시작 날짜가 종료 날짜보다 늦을 수 없습니다.", HttpStatus.BAD_REQUEST.value()),
     EVENT_START_DATE_IN_PAST("EVENT_START_DATE_IN_PAST", "시작 날짜는 과거일 수 없습니다.", HttpStatus.BAD_REQUEST.value()),
 
@@ -100,6 +102,12 @@ public enum ErrorCode {
     FILE_SIZE_EXCEEDED("FILE_SIZE_EXCEEDED", "파일 크기가 제한을 초과했습니다.", HttpStatus.BAD_REQUEST.value()),
     IMAGE_PROCESSING_FAILED("IMAGE_PROCESSING_FAILED", "이미지 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
     VIDEO_PROCESSING_FAILED("VIDEO_PROCESSING_FAILED", "비디오 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+
+    // 영상 후처리 관련
+    PROTOCOL_FORMAT_ERROR("PROTOCOL_FORMAT", "HTTP(S) URL만 지원합니다", HttpStatus.BAD_REQUEST.value()),
+    THUMBNAIL_GENERATE_ERROR("THUMBNAIL_GENERATE_ERROR", "썸네일 생성 도중 에러가 발생했습니다.",
+            HttpStatus.INTERNAL_SERVER_ERROR.value()),
+    THUMBNAIL_PATH_ERROR("THUMBNAIL_PATH_ERROR", "썸네일 생성 경로 생성에 에러가 발생했습니다.", HttpStatus.BAD_REQUEST.value()),
 
     // 외부 서비스 통신 관련
     EXTERNAL_SERVICE_ERROR("EXTERNAL_SERVICE_ERROR", "외부 서비스 연동 중 오류가 발생했습니다.",
