@@ -30,6 +30,7 @@ export default function EventMakingScreen({ navigation }: Props) {
   // API 요청 로딩 상태
   const [isLoading, setIsLoading] = useState(false);
   const [eventAssetId, setEventAssetId] = useState<number | null>(null);
+  const [eventId, setEventId] = useState<number | null>(null);
 
   // AI 생성 관련 state들 (WriteStep으로 전달)
   const [genLoading, setGenLoading] = useState(false);
@@ -68,7 +69,7 @@ export default function EventMakingScreen({ navigation }: Props) {
         Alert.alert("오류", error.message);
         setStep("gen");
       }
-    }, 3000);
+    }, 1000); // 몇초마다
 
     return () => clearInterval(intervalId);
   }, [step, eventAssetId]);
@@ -85,7 +86,7 @@ export default function EventMakingScreen({ navigation }: Props) {
     setIsLoading(true);
     try {
       const eventRequestData = {
-        storeId: 1, // TODO: 내일 백엔드와 논의 후 실제 storeId로 교체
+        // storeId: 1, // TODO: 내일 백엔드와 논의 후 실제 storeId로 교체
         title: eventName,
         type: "IMAGE",
         startDate: startDate,
@@ -100,6 +101,10 @@ export default function EventMakingScreen({ navigation }: Props) {
       };
       const result = await requestEventAsset(eventRequestData);
       setEventAssetId(result.eventAssetId);
+      setEventId(result.eventId);
+      console.log(
+        `[EVENT] received ids → eventId=${result.eventId}, assetId=${result.eventAssetId}`
+      );
       setStep("write");
     } catch (error: any) {
       Alert.alert("오류", error.message || "알 수 없는 오류가 발생했습니다.");
