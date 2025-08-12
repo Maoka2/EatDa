@@ -7,6 +7,9 @@ public record ReviewAssetResultResponse(
         ReviewAssetType type,
 
         @ExcludeFromLogging
-        String assetUrl
-) {
+        String imageUrl,
+
+        @ExcludeFromLogging
+        String shortsUrl
+){
 }

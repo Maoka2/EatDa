@@ -1,6 +1,7 @@
 package com.domain.review.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.global.annotation.ExcludeFromLogging;
 import lombok.Builder;
 
 import java.util.List;
@@ -12,7 +13,10 @@ public record ReviewFeedResponse(
         String storeName,
         String description,
         List<String> menuNames,
-        String assetUrl,
+        @ExcludeFromLogging
+        String imageUrl,
+        @ExcludeFromLogging
+        String shortsUrl,
         Integer distance  // 전체 피드의 경우 null
 ) {
 }
