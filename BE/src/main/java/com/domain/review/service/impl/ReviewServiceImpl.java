@@ -505,6 +505,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .menuNames(List.of()) // TODO: 메뉴 연결 시 수정
                 .imageUrl(review.getReviewAsset().getImageUrl())
                 .shortsUrl(review.getReviewAsset().getShortsUrl())
+                .thumbnailUrl(review.getReviewAsset().getThumbnailPath())
                 .createdAt(review.getCreatedAt())
                 .build();
     }
@@ -541,6 +542,7 @@ public class ReviewServiceImpl implements ReviewService {
                         .type(reviewAsset.getType().name())
                         .imageUrl(reviewAsset.getImageUrl())
                         .shortsUrl(reviewAsset.getShortsUrl())
+                        .thumbnailUrl(reviewAsset.getThumbnailPath())
                         .build())
                 .scrapCount(scrapCount)
                 .isScrapped(isScrapped)
