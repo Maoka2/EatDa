@@ -59,14 +59,21 @@ class LumaService:
             }
         
         # Luma AI로 영상 생성 요청
-        generation = await self.client.generations.create(
-            prompt=enhanced_prompt,
-            model=model_name,
-            loop=True,
-            aspect_ratio="9:16",
-            duration="5s",
-            keyframes=keyframes
-        )
+        # 주의: keyframes를 사용할 때는 loop 파라미터를 보낼 수 없음 (Luma 제약)
+        create_kwargs: Dict[str, Any] = {
+            "prompt": enhanced_prompt,
+            "model": model_name,
+            "aspect_ratio": "9:16",
+            "duration": "5s",
+        }
+
+        if keyframes:  # 참고 이미지가 있어 keyframes 생성 시에는 loop를 제거
+            create_kwargs["keyframes"] = keyframes
+        else:
+            # keyframes가 없을 때만 loop 적용(루프 영상 원하면 True)
+            create_kwargs["loop"] = True
+
+        generation = await self.client.generations.create(**create_kwargs)
         
         return {
             "id": generation.id,
