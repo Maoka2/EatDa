@@ -4,6 +4,9 @@ GMS_API_KEY =
 # shorts 생성 api 키
 LUMAAI_API_KEY = 
 RUNWAY_API_KEY = 
+RUNWAY_API_BASE_URL = https://api.dev.runwayml.com
+RUNWAY_API_FALLBACK_ENABLED = false
+RUNWAY_API_FALLBACK_BASE_URL = https://api.runwayml.com
 GMS_BASE_URL = https://gms.ssafy.io/gmsapi/api.openai.com/v1
 
 # 사업자 등록증 api 키 - 현재는 미운영
