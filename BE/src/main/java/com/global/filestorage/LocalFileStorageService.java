@@ -60,6 +60,30 @@ public class LocalFileStorageService implements FileStorageService {
         }
     }
 
+    @Override
+    public String storeImage(final MultipartFile file,
+                             final String relativePath,
+                             final String originalName) {
+        try {
+            // 1) MIME 타입 검증 및 확장자 도출 (등록되지 않은 타입이면 예외)
+            final String mimeType = extractAndValidateMimeType(file);
+            final String extension = resolveExtensionFromMimeType(mimeType);
+
+            // 2) 상대 경로 정리(디렉토리 트래버설 방지) 후 전체 경로 생성
+            final String safeRelativePath = sanitize(relativePath);
+            final Path fullPath = generateFullPath(properties.getImageRoot(), safeRelativePath, extension);
+
+            // 3) 디렉토리 생성은 generateFullPath에서 보장됨 → 파일 그대로 저장
+            //    (변환/리사이징/압축 등 일절 수행하지 않음)
+            file.transferTo(fullPath.toFile());
+
+            // 4) 저장된 전체 경로 반환
+            return fullPath.toString();
+        } catch (IOException e) {
+            throw new GlobalException(FILE_UPLOAD_ERROR, originalName, e);
+        }
+    }
+
     /**
      * 비디오 파일을 저장소에 저장 - 현재는 인코딩/리사이징 없이 원본 그대로 저장
      *

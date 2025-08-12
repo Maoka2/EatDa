@@ -30,6 +30,8 @@ public enum PublicEndpoint {
     AUTH_SIGNOUT("/api/auth/sign-out"),
     AUTH_TOKEN("/api/auth/token"),
 
+    THUMBNAIL("/api/reviews/thumbnail"),
+
     // REVIEW
     REVIEW_ASSET_CALLBACK("/api/reviews/assets/callback"),
     REVIEW_ASSET_POLLING("/api/reviews/asset/*/result");

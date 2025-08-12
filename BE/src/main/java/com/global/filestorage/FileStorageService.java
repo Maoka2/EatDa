@@ -18,6 +18,9 @@ public interface FileStorageService {
      */
     String storeImage(MultipartFile file, String relativePath, String originalName, boolean convertToWebp);
 
+    // 파일 그냥 저장
+    String storeImage(final MultipartFile file, final String relativePath, final String originalName);
+
     /**
      * 비디오 파일을 저장소에 저장
      *

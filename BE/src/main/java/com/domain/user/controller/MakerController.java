@@ -12,6 +12,7 @@ import com.global.dto.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -25,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/makers")
 @RequiredArgsConstructor
+@Slf4j
 public class MakerController {
 
     private final MakerService makerService;
@@ -40,9 +42,18 @@ public class MakerController {
             @Validated @RequestPart(value = "menus", required = false) List<MakerSignUpMenuRequest> menuRequests,
             @RequestPart(value = "license", required = false) MultipartFile licenseImageRequest,
             @RequestPart(value = "images", required = false) List<MultipartFile> menuImageRequests) {
+
+        log.info("===== [Controller] Maker signup START =====");
+        log.info("BaseRequest: {}", baseRequest);
+        log.info("MenuRequests size: {}", menuRequests != null ? menuRequests.size() : 0);
+        log.info("LicenseImage: {}", licenseImageRequest != null ? licenseImageRequest.getOriginalFilename() : "null");
+        log.info("MenuImages size: {}", menuImageRequests != null ? menuImageRequests.size() : 0);
+
         User maker = makerService.registerMaker(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
-        return ApiResponseFactory.success(SuccessCode.MAKER_SIGNUP, makerMapper.toResponse(maker, maker.getStores()
-                .getFirst()));
+
+        log.info("===== [Controller] Maker signup END, MakerId={} =====", maker.getId());
+        return ApiResponseFactory.success(SuccessCode.MAKER_SIGNUP,
+                makerMapper.toResponse(maker, maker.getStores().getFirst()));
     }
 
     @Operation(

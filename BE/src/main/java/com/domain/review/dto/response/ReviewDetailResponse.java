@@ -1,5 +1,6 @@
 package com.domain.review.dto.response;
 
+import com.global.annotation.ExcludeFromLogging;
 import lombok.Builder;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,7 +35,10 @@ public record ReviewDetailResponse(
 
     @Builder
     public record AssetInfo(
-            String type,  // "IMAGE", "VIDEO" 등
-            String assetUrl
+            String type,  // "IMAGE", "SHORTS_RAY_2", "SHORTS_GEN_4 등
+            @ExcludeFromLogging
+            String imageUrl,
+            @ExcludeFromLogging
+            String shortsUrl
     ) {}
 }
