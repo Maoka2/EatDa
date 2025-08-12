@@ -8,7 +8,9 @@ import {
   ViewStyle,
   TextStyle,
   ImageStyle,
+  Alert,
 } from "react-native";
+import * as ImagePicker from 'expo-image-picker';
 
 interface ImageUploaderProps {
   images: (string | null)[]; // null을 허용하여 빈 슬롯 표현
@@ -16,14 +18,8 @@ interface ImageUploaderProps {
   onAddImage: (index: number, imageUrl: string) => void; // index 추가
   onRemoveImage?: (index: number) => void;
   accentColor?: string;
+  disabled?: boolean; // 비활성화 상태 추가
 }
-
-// 더미 이미지 URL들
-const DUMMY_IMAGES = [
-  "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=400&fit=crop",
-  "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=400&fit=crop",
-];
 
 export default function ImageUploader({
   images,
@@ -31,14 +27,43 @@ export default function ImageUploader({
   onAddImage,
   onRemoveImage,
   accentColor = "#FF69B4",
+  disabled = false,
 }: ImageUploaderProps) {
-  // 더미 이미지 추가 함수 - 특정 인덱스에 추가
-  const handleAddImage = (index: number) => {
-    // 랜덤하게 더미 이미지 선택 (또는 인덱스 기반)
-    const dummyImageIndex = index % DUMMY_IMAGES.length;
-    const dummyImageUrl = DUMMY_IMAGES[dummyImageIndex];
+  
+  // 이미지 권한 요청
+  const requestPermissions = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 필요', '이미지를 선택하려면 갤러리 접근 권한이 필요합니다.');
+      return false;
+    }
+    return true;
+  };
 
-    onAddImage(index, dummyImageUrl);
+  // 실제 이미지 선택 함수
+  const handleAddImage = async (index: number) => {
+    if (disabled) return;
+
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        base64: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const imageUri = result.assets[0].uri;
+        onAddImage(index, imageUri);
+      }
+    } catch (error) {
+      console.error('이미지 선택 오류:', error);
+      Alert.alert('오류', '이미지 선택 중 오류가 발생했습니다.');
+    }
   };
 
   // 각 슬롯을 개별적으로 렌더링
@@ -53,7 +78,7 @@ export default function ImageUploader({
         slots.push(
           <View key={`slot-${i}`} style={styles.imageWrapper}>
             <Image source={{ uri: imageUrl }} style={styles.uploadedImage} />
-            {onRemoveImage && (
+            {onRemoveImage && !disabled && (
               <TouchableOpacity
                 style={[styles.removeButton, { backgroundColor: accentColor }]}
                 onPress={() => onRemoveImage(i)}
@@ -68,12 +93,27 @@ export default function ImageUploader({
         slots.push(
           <TouchableOpacity
             key={`slot-${i}`}
-            style={[styles.addButton, { borderColor: accentColor }]}
+            style={[
+              styles.addButton, 
+              { borderColor: disabled ? "#ccc" : accentColor },
+              disabled && styles.addButtonDisabled
+            ]}
             onPress={() => handleAddImage(i)}
+            disabled={disabled}
+            activeOpacity={disabled ? 1 : 0.7}
           >
-            <View style={[styles.addIcon, { backgroundColor: accentColor }]}>
+            <View style={[
+              styles.addIcon, 
+              { backgroundColor: disabled ? "#ccc" : accentColor }
+            ]}>
               <Text style={styles.addIconText}>+</Text>
             </View>
+            <Text style={[
+              styles.addText,
+              { color: disabled ? "#ccc" : "#666" }
+            ]}>
+              이미지 추가
+            </Text>
           </TouchableOpacity>
         );
       }
@@ -145,12 +185,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   } as ViewStyle,
 
+  addButtonDisabled: {
+    backgroundColor: "#F5F5F5",
+    opacity: 0.5,
+  } as ViewStyle,
+
   addIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 8,
   } as ViewStyle,
 
   addIconText: {
@@ -158,5 +204,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     lineHeight: 22,
+  } as TextStyle,
+
+  addText: {
+    fontSize: 12,
+    textAlign: "center",
+    fontWeight: "500",
   } as TextStyle,
 });
