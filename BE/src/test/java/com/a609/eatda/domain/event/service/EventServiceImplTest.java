@@ -1222,7 +1222,7 @@ class EventServiceImplTest {
                 .willReturn(List.of(asset1));  // event2는 에셋 없음
 
         // when
-        List<ActiveStoreEventResponse> responses = eventService.getActiveStoreEvents(null);
+        List<ActiveStoreEventResponse> responses = eventService.getActiveEvents(null);
 
         // then
         assertThat(responses).hasSize(2);
@@ -1271,7 +1271,7 @@ class EventServiceImplTest {
                 .willReturn(Collections.emptyList());
 
         // when
-        List<ActiveStoreEventResponse> responses = eventService.getActiveStoreEvents(lastEventId);
+        List<ActiveStoreEventResponse> responses = eventService.getActiveEvents(lastEventId);
 
         // then
         assertThat(responses).hasSize(1);
@@ -1309,7 +1309,7 @@ class EventServiceImplTest {
                 .willReturn(Collections.emptyList());
 
         // when
-        List<ActiveStoreEventResponse> responses = eventService.getActiveStoreEvents(null);
+        List<ActiveStoreEventResponse> responses = eventService.getActiveEvents(null);
 
         // then
         assertThat(responses).hasSize(1);
