@@ -51,6 +51,7 @@ public enum SuccessCode {
     REVIEW_DELETED("REVIEW_DELETED", "리뷰가 성공적으로 삭제되었습니다.", HttpStatus.OK.value()),
 
     // 매뉴판
+    MENU_GET("MENU_GET", "해당 가게의 메뉴들을 정상적으로 조회했습니다.", HttpStatus.OK.value()),
     POSTER_REQUESTED("POSTER_REQUESTED", "메뉴 포스터 생성 요청이 접수되었습니다.", HttpStatus.ACCEPTED.value()),
     POSTER_RECEIVED("POSTER_RECEIVED", "메뉴 포스터 에셋이 수신되었습니다.", HttpStatus.OK.value()),
     POSTER_GENERATION_SUCCESS("POSTER_GENERATION_SUCCESS", "포스터가 성공적으로 생성되었습니다.", HttpStatus.OK.value()),

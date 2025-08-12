@@ -1,8 +1,10 @@
 package com.domain.menu.mapper;
 
+import com.domain.menu.dto.response.MenuGetResponse;
 import com.domain.menu.entity.Menu;
 import com.domain.store.entity.Store;
 import com.domain.user.dto.request.MakerSignUpMenuRequest;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants.ComponentModel;
@@ -24,4 +26,6 @@ public interface MenuMapper {
     @Mapping(target = "store", source = "store")
     @Mapping(target = "imageUrl", source = "imageUrl")
     Menu toEntity(MakerSignUpMenuRequest request, Store store, String imageUrl);
+
+    List<MenuGetResponse> toResponse(List<Menu> menuList);
 }
