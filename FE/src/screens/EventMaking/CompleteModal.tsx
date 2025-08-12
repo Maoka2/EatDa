@@ -11,6 +11,7 @@ interface CompleteProps {
   reviewText?: string;
   onConfirm?: () => void;
   onCancel?: () => void;
+  onDownload: () => void;
 }
 
 export default function CompleteModal({
@@ -18,6 +19,7 @@ export default function CompleteModal({
   onClose,
   generatedContent,
   onConfirm,
+  onDownload,
   onCancel,
 }: CompleteProps) {
   const handleConfirm = () => {
@@ -48,6 +50,7 @@ export default function CompleteModal({
       uploadButtonText="업로드하기"
       onCancel={handleCancel}
       onConfirm={handleConfirm}
+      onDownload={onDownload}
     />
   );
 }
