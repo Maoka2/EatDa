@@ -76,7 +76,10 @@ public enum SuccessCode {
 
     // 경로
     PUBLIC_DIRECTIONS_FOUND("PUBLIC_DIRECTIONS_FOUND", "대중교통 경로를 성공적으로 조회했습니다.", HttpStatus.OK.value()),
-    DISTANCE_TOO_SHORT("DISTANCE_TOO_SHORT", "해당 위치는 너무 가까워 대중교통 경로가 제공되지 않습니다.", HttpStatus.OK.value());
+    DISTANCE_TOO_SHORT("DISTANCE_TOO_SHORT", "해당 위치는 너무 가까워 대중교통 경로가 제공되지 않습니다.", HttpStatus.OK.value()),
+
+    // 영상 후처리
+    THUMBNAILIZATION("THUMBNAILIZATION", "생성된 영상의 썸네일을 생성했습니다.", HttpStatus.OK.value());
 
     private final String code;
     private final String message;
