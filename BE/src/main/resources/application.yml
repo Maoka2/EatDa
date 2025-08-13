@@ -31,5 +31,5 @@ filestorage: # 파일 저장소 설정
 
 jwt:
   secret-key: SnnjiquvcPa8IZXG7XyOr36wYRfYLbkAsB6AxbPcnivRyAot428rMAvEXmFKFDH3vAkBmfEmS12YxSrZdTIknQ==
-  access-expiration: 600000
+  access-expiration: 86400000
   refresh-expiration: 86400000
