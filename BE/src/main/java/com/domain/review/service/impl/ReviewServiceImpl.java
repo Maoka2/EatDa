@@ -11,14 +11,8 @@ import com.domain.review.dto.redis.ReviewAssetGenerateMessage;
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
 import com.domain.review.dto.request.ReviewFinalizeRequest;
-import com.domain.review.dto.response.MyReviewResponse;
-import com.domain.review.dto.response.ReviewAssetRequestResponse;
-import com.domain.review.dto.response.ReviewAssetResultResponse;
-import com.domain.review.dto.response.ReviewDetailResponse;
-import com.domain.review.dto.response.ReviewFeedResponse;
-import com.domain.review.dto.response.ReviewFeedResult;
-import com.domain.review.dto.response.ReviewFinalizeResponse;
-import com.domain.review.dto.response.StoreDistanceResult;
+import com.domain.review.dto.request.ReviewLocationRequest;
+import com.domain.review.dto.response.*;
 import com.domain.review.entity.Poi;
 import com.domain.review.entity.Review;
 import com.domain.review.entity.ReviewAsset;
@@ -47,10 +41,7 @@ import com.global.filestorage.FileStorageService;
 import com.global.filestorage.FileUrlResolver;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -203,42 +194,32 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ReviewFeedResult<ReviewFeedResponse> getReviewFeed(final Double latitude, final Double longitude,
-                                                              final Integer distance, final Long lastReviewId,
+    public ReviewFeedResult<ReviewFeedResponse> getReviewFeed(final ReviewLocationRequest request,
+                                                              final Integer distance,
+                                                              final Long lastReviewId,
                                                               final String email) {
+        // 1. 검증
         validatedToken(email);
+        validateLocationParameters(request, distance);
 
-        // 1. 파라미터 검증
-        validateLocationParameters(latitude, longitude, distance);
-
-        try {
-            // 2. 가장 가까운 POI 찾기
-            Poi nearestPoi = findNearestPoiWithFallback(latitude, longitude);
-            if (nearestPoi == null) {
-                // POI를 찾지 못한 경우 전체 피드 제공
-                return getFallbackFeed(lastReviewId);
-            }
-
-            // 3. POI 기준 근처 매장 조회
-            List<StoreDistanceResult> nearbyStores = getNearbyStoresWithFallback(
-                    nearestPoi.getId(), distance
-            );
-            if (nearbyStores.isEmpty()) {
-                // 근처 매장이 없는 경우 전체 피드 제공
-                return getFallbackFeed(lastReviewId);
-            }
-
-            // 4. 근처 매장들의 리뷰 조회
-            return getNearbyReviewsFeed(nearbyStores, lastReviewId);
-
-        } catch (ApiException e) {
-            // 이미 처리된 ApiException은 그대로 전파
-            throw e;
-        } catch (Exception e) {
-            // 예상치 못한 예외
-            log.error("Unexpected error in getReviewFeed", e);
-            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
+        // 2. POI 조회
+        Optional<Poi> poiOpt = findNearestPoi(request.latitude(), request.longitude());
+        if (poiOpt.isEmpty()) {
+            log.info("No POI found for location: lat={}, lon={}",
+                    request.latitude(), request.longitude());
+            return getFallbackFeed(lastReviewId);
         }
+
+        // 3. 근처 매장 조회
+        Poi poi = poiOpt.get();
+        List<StoreDistanceResult> nearbyStores = getNearbyStores(poi.getId(), distance);
+        if (nearbyStores.isEmpty()) {
+            log.debug("No stores found within {}m from POI: {}", distance, poi.getName());
+            return getFallbackFeed(lastReviewId);
+        }
+
+        // 4. 리뷰 조회 및 응답 생성
+        return getNearbyReviewsFeed(nearbyStores, lastReviewId);
     }
 
     /**
@@ -327,16 +308,16 @@ public class ReviewServiceImpl implements ReviewService {
     /**
      * 위치 파라미터 검증
      */
-    private void validateLocationParameters(Double latitude, Double longitude, Integer distance) {
-        if (latitude == null || longitude == null || distance == null) {
+    private void validateLocationParameters(ReviewLocationRequest request, Integer distance) {
+        if (request.latitude() == null || request.longitude() == null || distance == null) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
-        if (latitude < ReviewConstants.MIN_LATITUDE || latitude > ReviewConstants.MAX_LATITUDE) {
+        if (request.latitude() < ReviewConstants.MIN_LATITUDE || request.latitude() > ReviewConstants.MAX_LATITUDE) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
-        if (longitude < ReviewConstants.MIN_LONGITUDE || longitude > ReviewConstants.MAX_LONGITUDE) {
+        if (request.longitude() < ReviewConstants.MIN_LONGITUDE || request.longitude() > ReviewConstants.MAX_LONGITUDE) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
@@ -348,34 +329,30 @@ public class ReviewServiceImpl implements ReviewService {
     /**
      * 가장 가까운 POI 찾기 (실패 시 null 반환)
      */
-    private Poi findNearestPoiWithFallback(double latitude, double longitude) {
+    private Optional<Poi> findNearestPoi(double latitude, double longitude) {
         try {
             Poi nearestPoi = poiStoreDistanceService.findNearestPoi(latitude, longitude);
-            log.info("Found nearest POI: {}", nearestPoi.getName());
-            return nearestPoi;
-        } catch (NoSuchElementException e) {
-            log.warn("No POI found near ({}, {}), will return fallback feed", latitude, longitude);
-            return null;
+            if (nearestPoi == null) {
+                return Optional.empty();
+            }
+            log.debug("Found nearest POI: id={}, name={}", nearestPoi.getId(), nearestPoi.getName());
+            return Optional.of(nearestPoi);
         } catch (Exception e) {
-            log.error("Error finding nearest POI for ({}, {})", latitude, longitude, e);
-            // POI 서비스 오류는 전체 피드로 fallback
-            return null;
+            log.warn("Failed to find nearest POI: {}", e.getMessage());
+            return Optional.empty();
         }
     }
 
     /**
      * POI 기준 근처 매장 조회 (실패 시 빈 리스트 반환)
      */
-    private List<StoreDistanceResult> getNearbyStoresWithFallback(Long poiId, int distance) {
+    private List<StoreDistanceResult> getNearbyStores(Long poiId, int distance) {
         try {
-            return poiStoreDistanceService.getNearbyStores(poiId, distance);
-        } catch (IllegalArgumentException e) {
-            // 잘못된 거리 파라미터
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
+            List<StoreDistanceResult> stores = poiStoreDistanceService.getNearbyStores(poiId, distance);
+            return stores != null ? stores : Collections.emptyList();
         } catch (Exception e) {
-            log.error("Error fetching nearby stores for POI ID {}", poiId, e);
-            // 근처 매장 조회 실패 시 빈 리스트 반환 (fallback으로 이어짐)
-            return List.of();
+            log.warn("Failed to get nearby stores for POI {}: {}", poiId, e.getMessage());
+            return Collections.emptyList();
         }
     }
 
@@ -389,60 +366,41 @@ public class ReviewServiceImpl implements ReviewService {
                 .map(StoreDistanceResult::storeId)
                 .toList();
 
-        Pageable pageable = PageRequest.of(0,
-                ReviewConstants.DEFAULT_PAGE_SIZE + ReviewConstants.PAGINATION_BUFFER);
-        List<Review> reviews = reviewRepository.findByStoreIdInOrderByIdDesc(
-                storeIds, lastReviewId, pageable
-        );
+        List<Review> reviews = fetchReviewsWithAssets(storeIds, lastReviewId);
 
         if (reviews.isEmpty()) {
-            // 근처 매장은 있지만 리뷰가 없는 경우 전체 피드 제공
+            log.info("No reviews found for {} nearby stores, returning fallback feed", storeIds.size());
             return getFallbackFeed(lastReviewId);
         }
 
-        // 거리 맵 생성
-        Map<Long, Integer> storeDistanceMap = nearbyStores.stream()
-                .collect(Collectors.toMap(
-                        StoreDistanceResult::storeId,
-                        StoreDistanceResult::distance
-                ));
-
-        // 페이징 처리
-        boolean hasNext = reviews.size() > ReviewConstants.DEFAULT_PAGE_SIZE;
-        List<Review> content = hasNext ? reviews.subList(0, ReviewConstants.DEFAULT_PAGE_SIZE) : reviews;
+        PaginationResult<Review> paginationResult = applyPagination(reviews);
 
         // 응답 생성
-        List<ReviewFeedResponse> feedResponses = content.stream()
-                .map(review -> buildNearbyReviewResponse(review, storeDistanceMap))
+        List<ReviewFeedResponse> feedResponses = paginationResult.content().stream()
+                .map(this::buildNearbyReviewResponse)
                 .toList();
 
-        return ReviewFeedResult.nearbyReviews(feedResponses, hasNext);
+        return ReviewFeedResult.nearbyReviews(feedResponses, paginationResult.hasNext());
     }
 
     /**
      * 전체 리뷰 피드 제공 (fallback)
      */
     private ReviewFeedResult<ReviewFeedResponse> getFallbackFeed(Long lastReviewId) {
-        try {
-            Pageable pageable = PageRequest.of(0,
-                    ReviewConstants.DEFAULT_PAGE_SIZE + ReviewConstants.PAGINATION_BUFFER);
-            List<Review> allReviews = reviewRepository.findAllOrderByIdDesc(
-                    lastReviewId, pageable
-            );
+        log.info("Providing fallback feed with lastReviewId: {}", lastReviewId);
 
-            boolean hasNext = allReviews.size() > ReviewConstants.DEFAULT_PAGE_SIZE;
-            List<Review> content = hasNext ? allReviews.subList(0, ReviewConstants.DEFAULT_PAGE_SIZE) : allReviews;
+        Pageable pageable = PageRequest.of(0,
+                ReviewConstants.DEFAULT_PAGE_SIZE + ReviewConstants.PAGINATION_BUFFER);
 
-            List<ReviewFeedResponse> feedResponses = content.stream()
-                    .map(this::buildFallbackReviewResponse)
-                    .toList();
+        List<Review> reviews = reviewRepository.findAllOrderByIdDescWithAssets(lastReviewId, pageable);
 
-            return ReviewFeedResult.fallbackReviews(feedResponses, hasNext);
+        PaginationResult<Review> paginationResult = applyPagination(reviews);
 
-        } catch (Exception e) {
-            log.error("Database error while fetching fallback reviews", e);
-            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
+        List<ReviewFeedResponse> feedResponses = paginationResult.content().stream()
+                .map(this::buildFallbackReviewResponse)
+                .toList();
+
+        return ReviewFeedResult.fallbackReviews(feedResponses, paginationResult.hasNext());
     }
 
     /**
@@ -463,16 +421,17 @@ public class ReviewServiceImpl implements ReviewService {
     /**
      * 근처 리뷰 응답 생성
      */
-    private ReviewFeedResponse buildNearbyReviewResponse(Review review,
-                                                         Map<Long, Integer> storeDistanceMap) {
-        validateReviewIntegrity(review);
+    private ReviewFeedResponse buildNearbyReviewResponse(Review review) {
+        ReviewAsset asset = review.getReviewAsset();
 
         return ReviewFeedResponse.builder()
                 .reviewId(review.getId())
                 .storeName(review.getStore().getName())
                 .description(review.getDescription())
-                .distance(storeDistanceMap.get(review.getStore().getId()))
                 .menuNames(extractMenuNames(review))
+                .imageUrl(asset != null ? asset.getImageUrl() : null)
+                .shortsUrl(asset != null ? asset.getShortsUrl() : null)
+                .thumbnailUrl(asset != null ? asset.getThumbnailPath() : null)
                 .build();
     }
 
@@ -481,14 +440,16 @@ public class ReviewServiceImpl implements ReviewService {
      */
     private ReviewFeedResponse buildFallbackReviewResponse(Review review) {
         validateReviewIntegrity(review);
+        ReviewAsset asset = review.getReviewAsset();
 
         return ReviewFeedResponse.builder()
                 .reviewId(review.getId())
                 .storeName(review.getStore().getName())
                 .description(review.getDescription())
-                .imageUrl(review.getReviewAsset().getImageUrl())
-                .shortsUrl(review.getReviewAsset().getShortsUrl())
                 .menuNames(extractMenuNames(review))
+                .imageUrl(asset != null ? asset.getImageUrl() : null)
+                .shortsUrl(asset != null ? asset.getShortsUrl() : null)
+                .thumbnailUrl(asset != null ? asset.getThumbnailPath() : null)
                 .build();
     }
 
@@ -722,4 +683,35 @@ public class ReviewServiceImpl implements ReviewService {
             return fallbackName;
         }
     }
+
+    private List<Review> fetchReviewsWithAssets(List<Long> storeIds, Long lastReviewId) {
+        Pageable pageable = PageRequest.of(0,
+                ReviewConstants.DEFAULT_PAGE_SIZE + ReviewConstants.PAGINATION_BUFFER);
+
+        try {
+            return reviewRepository.findByStoreIdInOrderByIdDescWithAssets(storeIds, lastReviewId, pageable);
+        } catch (Exception e) {
+            log.error("Failed to fetch reviews for stores {}: {}", storeIds, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    private Map<Long, Integer> createStoreDistanceMap(List<StoreDistanceResult> nearbyStores) {
+        return nearbyStores.stream()
+                .collect(Collectors.toMap(
+                        StoreDistanceResult::storeId,
+                        StoreDistanceResult::distance,
+                        (existing, replacement) -> existing // 중복 키 처리
+                ));
+    }
+
+    private PaginationResult<Review> applyPagination(List<Review> reviews) {
+        boolean hasNext = reviews.size() > ReviewConstants.DEFAULT_PAGE_SIZE;
+        List<Review> content = hasNext
+                ? reviews.subList(0, ReviewConstants.DEFAULT_PAGE_SIZE)
+                : reviews;
+
+        return new PaginationResult<>(content, hasNext);
+    }
+
 }
