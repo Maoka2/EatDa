@@ -10,6 +10,7 @@ public record ActiveStoreEventResponse(
         Long eventId,
         String storeName,
         String title,
+        String description,
         LocalDate startAt,
         LocalDate endAt,
         String postUrl
@@ -19,6 +20,7 @@ public record ActiveStoreEventResponse(
                 event.getId(),
                 store.getName(),
                 event.getTitle(),
+                event.getDescription(),
                 event.getStartDate(),
                 event.getEndDate(),
                 asset != null ? asset.getPath() : null
