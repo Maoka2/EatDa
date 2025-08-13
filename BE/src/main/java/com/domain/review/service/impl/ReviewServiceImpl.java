@@ -12,7 +12,15 @@ import com.domain.review.dto.request.ReviewAssetCallbackRequest;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
 import com.domain.review.dto.request.ReviewFinalizeRequest;
 import com.domain.review.dto.request.ReviewLocationRequest;
-import com.domain.review.dto.response.*;
+import com.domain.review.dto.response.MyReviewResponse;
+import com.domain.review.dto.response.PaginationResult;
+import com.domain.review.dto.response.ReviewAssetRequestResponse;
+import com.domain.review.dto.response.ReviewAssetResultResponse;
+import com.domain.review.dto.response.ReviewDetailResponse;
+import com.domain.review.dto.response.ReviewFeedResponse;
+import com.domain.review.dto.response.ReviewFeedResult;
+import com.domain.review.dto.response.ReviewFinalizeResponse;
+import com.domain.review.dto.response.StoreDistanceResult;
 import com.domain.review.entity.Poi;
 import com.domain.review.entity.Review;
 import com.domain.review.entity.ReviewAsset;
@@ -41,7 +49,11 @@ import com.global.filestorage.FileStorageService;
 import com.global.filestorage.FileUrlResolver;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -151,7 +163,7 @@ public class ReviewServiceImpl implements ReviewService {
             }
             case SHORTS_RAY_2, SHORTS_GEN_4 -> {
                 String shortsUrl = asset.getShortsUrl();
-                if (Objects.isNull(shortsUrl)|| shortsUrl.isBlank()) {
+                if (Objects.isNull(shortsUrl) || shortsUrl.isBlank()) {
                     throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
                 }
             }
@@ -180,10 +192,11 @@ public class ReviewServiceImpl implements ReviewService {
         ReviewValidator.checkAssetMatches(asset, request);
 
         // 도메인 업데이트
-        review.updateDescription(request.description());
         asset.registerReview(review);
+        String downloadedVideoPath = fileStorageService.storeVideoFromUrl(asset.getShortsUrl(), DATA_DIR, SHORTS_DIR);
+        asset.updateShortsUrl(downloadedVideoPath);
+        review.updateDescription(request.description());
         createReviewMenus(review, request.menuIds());
-
         review.updateStatus(Status.SUCCESS);
         return reviewMapper.toFinalizeResponse(review);
     }
@@ -316,7 +329,8 @@ public class ReviewServiceImpl implements ReviewService {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
-        if (request.longitude() < ReviewConstants.MIN_LONGITUDE || request.longitude() > ReviewConstants.MAX_LONGITUDE) {
+        if (request.longitude() < ReviewConstants.MIN_LONGITUDE
+                || request.longitude() > ReviewConstants.MAX_LONGITUDE) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
@@ -511,9 +525,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
-     * 리뷰에 연결된 메뉴 이름 리스트 추출
-     * - Review -> ReviewMenu -> Menu.name 경로로 안전하게 매핑
-     * - null 안전 처리 및 중복 제거
+     * 리뷰에 연결된 메뉴 이름 리스트 추출 - Review -> ReviewMenu -> Menu.name 경로로 안전하게 매핑 - null 안전 처리 및 중복 제거
      */
     private List<String> extractMenuNames(Review review) {
         if (review == null || review.getReviewMenus() == null) {
@@ -559,7 +571,6 @@ public class ReviewServiceImpl implements ReviewService {
                 .toList();
     }
 
-    // java
     private void updateAssetUrlIfSuccess(final ReviewAssetCallbackRequest request,
                                          final Status status,
                                          final ReviewAsset asset) {
@@ -673,7 +684,9 @@ public class ReviewServiceImpl implements ReviewService {
     private String deriveBaseName(String url, String fallbackName) {
         try {
             String path = new URI(url).getPath();
-            if (path == null || path.isBlank()) return fallbackName;
+            if (path == null || path.isBlank()) {
+                return fallbackName;
+            }
             String name = path.substring(path.lastIndexOf('/') + 1);
             int dot = name.lastIndexOf('.');
             return (dot > 0 ? name.substring(0, dot) : name);

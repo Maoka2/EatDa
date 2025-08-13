@@ -65,6 +65,7 @@ public enum ErrorCode {
     REVIEW_ASSET_TYPE_MISMATCH("REVIEW_ASSET_TYPE_MISMATCH", "요청한 리뷰 에셋 타입이 일치하지 않습니다.",
             HttpStatus.BAD_REQUEST.value()),
     REVIEW_OWNER_MISMATCH("REVIEW_OWNER_MISMATCH", "리뷰 소유자가 일치하지 않습니다.", HttpStatus.FORBIDDEN.value()),
+    FILE_TOO_LARGE("FILE_TOO_LARGE", "파일이 너무 큽니다.", HttpStatus.BAD_REQUEST.value()),
 
     // 리소스 관련
     NOT_FOUND("NOT_FOUND", "요청한 파일이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
@@ -99,8 +100,10 @@ public enum ErrorCode {
     MENU_POSTER_NOT_FOUND("MENU_POSTER_NOT_FOUND", "요청한 메뉴 포스터를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     MENU_POSTER_NOT_PENDING("MENU_POSTER_NOT_PENDING", "해당 메뉴 포스터는 대기 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
     MENU_POSTER_NOT_SUCCESS("MENU_POSTER_NOT_SUCCESS", "해당 메뉴 포스터는 완료 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
-    MENU_POSTER_ASSET_NOT_FOUND("MENU_POSTER_ASSET_NOT_FOUND", "해당 메뉴 포스터 에셋이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
-    REQUIRED_MENU_FIELDS_MISSING("REQUIRED_MENU_FIELDS_MISSING", "assetId, type, prompt, storeId, userId, menus, imagesUrls는 필수입니다.", HttpStatus.BAD_REQUEST.value()),
+    MENU_POSTER_ASSET_NOT_FOUND("MENU_POSTER_ASSET_NOT_FOUND", "해당 메뉴 포스터 에셋이 존재하지 않습니다.",
+            HttpStatus.NOT_FOUND.value()),
+    REQUIRED_MENU_FIELDS_MISSING("REQUIRED_MENU_FIELDS_MISSING",
+            "assetId, type, prompt, storeId, userId, menus, imagesUrls는 필수입니다.", HttpStatus.BAD_REQUEST.value()),
     MENU_POSTER_ALREADY_SENT("MENU_POSTER_ALREADY_SENT", "이미 전송된 메뉴 포스터입니다.", HttpStatus.BAD_REQUEST.value()),
     MENU_POSTER_NOT_SENT("MENU_POSTER_NOT_SENT", "전송되지 않은 메뉴 포스터는 채택할 수 없습니다.", HttpStatus.BAD_REQUEST.value()),
     MENU_POSTER_EXCEED_LIMIT("MENU_POSTER_EXCEED_LIMIT", "메뉴 포스터는 최대 5개까지만 선택 가능합니다.", HttpStatus.BAD_REQUEST.value()),
