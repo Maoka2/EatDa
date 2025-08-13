@@ -10,7 +10,7 @@ import {
   ImageStyle,
   Alert,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import * as ImagePicker from 'expo-image-picker';
 
 interface ImageUploaderProps {
   images: (string | null)[]; // null을 허용하여 빈 슬롯 표현
@@ -18,6 +18,7 @@ interface ImageUploaderProps {
   onAddImage: (index: number, imageUrl: string) => void; // index 추가
   onRemoveImage?: (index: number) => void;
   accentColor?: string;
+  disabled?: boolean; // 비활성화 상태 추가
 }
 
 export default function ImageUploader({
@@ -25,34 +26,43 @@ export default function ImageUploader({
   maxImages = 3,
   onAddImage,
   onRemoveImage,
-  accentColor = "#fec566", // 프로젝트 테마 색상으로 변경
+  accentColor = "#FF69B4",
+  disabled = false,
 }: ImageUploaderProps) {
   
-  // 실제 갤러리에서 사진 업로드하기
-  const handleAddImage = async (index: number) => {
-    // 권한 요청
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
-      Alert.alert(
-        "권한 필요",
-        "이미지를 업로드하려면 사진첩 접근 권한이 필요합니다."
-      );
-      return;
+  // 이미지 권한 요청
+  const requestPermissions = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('권한 필요', '이미지를 선택하려면 갤러리 접근 권한이 필요합니다.');
+      return false;
     }
+    return true;
+  };
 
-    // 갤러리 열기
-    const pickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, // 간단한 편집 기능 허용
-      aspect: [1, 1],      // 1:1 비율로 자르기
-      quality: 1,          // 최고 화질
-    });
+  // 실제 이미지 선택 함수
+  const handleAddImage = async (index: number) => {
+    if (disabled) return;
 
-    // 이미지 선택
-    if (!pickerResult.canceled) {
-      // 선택된 이미지의 로컬 파일 경로(uri)를 부모 컴포넌트로 전달
-      onAddImage(index, pickerResult.assets[0].uri);
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        base64: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const imageUri = result.assets[0].uri;
+        onAddImage(index, imageUri);
+      }
+    } catch (error) {
+      console.error('이미지 선택 오류:', error);
+      Alert.alert('오류', '이미지 선택 중 오류가 발생했습니다.');
     }
   };
 
@@ -68,7 +78,7 @@ export default function ImageUploader({
         slots.push(
           <View key={`slot-${i}`} style={styles.imageWrapper}>
             <Image source={{ uri: imageUrl }} style={styles.uploadedImage} />
-            {onRemoveImage && (
+            {onRemoveImage && !disabled && (
               <TouchableOpacity
                 style={[styles.removeButton, { backgroundColor: accentColor }]}
                 onPress={() => onRemoveImage(i)}
@@ -83,12 +93,27 @@ export default function ImageUploader({
         slots.push(
           <TouchableOpacity
             key={`slot-${i}`}
-            style={[styles.addButton, { borderColor: accentColor }]}
+            style={[
+              styles.addButton, 
+              { borderColor: disabled ? "#ccc" : accentColor },
+              disabled && styles.addButtonDisabled
+            ]}
             onPress={() => handleAddImage(i)}
+            disabled={disabled}
+            activeOpacity={disabled ? 1 : 0.7}
           >
-            <View style={[styles.addIcon, { backgroundColor: accentColor }]}>
+            <View style={[
+              styles.addIcon, 
+              { backgroundColor: disabled ? "#ccc" : accentColor }
+            ]}>
               <Text style={styles.addIconText}>+</Text>
             </View>
+            <Text style={[
+              styles.addText,
+              { color: disabled ? "#ccc" : "#666" }
+            ]}>
+              이미지 추가
+            </Text>
           </TouchableOpacity>
         );
       }
@@ -153,17 +178,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
   } as ViewStyle,
+
+  addButtonDisabled: {
+    backgroundColor: "#F5F5F5",
+    opacity: 0.5,
+  } as ViewStyle,
+
   addIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 8,
   } as ViewStyle,
   addIconText: {
     color: "white",
     fontSize: 20,
     fontWeight: "bold",
     lineHeight: 22,
+  } as TextStyle,
+
+  addText: {
+    fontSize: 12,
+    textAlign: "center",
+    fontWeight: "500",
   } as TextStyle,
 });

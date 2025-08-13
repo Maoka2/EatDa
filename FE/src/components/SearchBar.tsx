@@ -12,14 +12,23 @@ import {
 import Dropdown from "../../assets/dropdown.svg"; // 드롭다운 화살표
 import SearchBtn from "../../assets/search.svg"; // 서치바 돋보기
 import { COLORS } from "../constants/theme";
+
 const SEARCH_OPTIONS = ["가게명", "메뉴명"];
-const DISTANCE_OPTIONS = ["300m", "500m", "1km+"];
+const DISTANCE_OPTIONS = [
+  { label: "300m", value: 300 },
+  { label: "500m", value: 500 },
+  { label: "700m", value: 700 },
+  { label: "1km", value: 1000 },
+  { label: "2km", value: 2000 },
+];
 
 interface SearchBarProps {
   showTypeDropdown: boolean;
   setShowTypeDropdown: (v: boolean) => void;
   showDistanceDropdown: boolean;
   setShowDistanceDropdown: (v: boolean) => void;
+  onDistanceChange?: (distance: number) => void;
+  selectedDistance?: number;
 }
 
 export default function SearchBar({
@@ -27,11 +36,23 @@ export default function SearchBar({
   setShowTypeDropdown,
   showDistanceDropdown,
   setShowDistanceDropdown,
+  onDistanceChange,
+  selectedDistance = 500,
 }: SearchBarProps) {
   const { width } = useWindowDimensions();
   const [searchText, setSearchText] = useState("");
   const [searchType, setSearchType] = useState("가게명");
-  const [distance, setDistance] = useState("300m");
+
+  // 선택된 거리에 따른 라벨 표시
+  const getDistanceLabel = (distance: number) => {
+    const option = DISTANCE_OPTIONS.find(opt => opt.value === distance);
+    return option ? option.label : "500m";
+  };
+
+  const handleDistanceSelect = (distance: number) => {
+    onDistanceChange?.(distance);
+    setShowDistanceDropdown(false);
+  };
 
   return (
     <View style={[styles.container, { width: width - 20 }]}>
@@ -49,7 +70,7 @@ export default function SearchBar({
           }}
         >
           <Text style={styles.dropdownText}>{searchType}</Text>
-          <Dropdown></Dropdown>
+          <Dropdown />
         </TouchableOpacity>
 
         {showTypeDropdown && (
@@ -73,7 +94,7 @@ export default function SearchBar({
         )}
       </View>
 
-      {/* 두 번째 드롭다운 */}
+      {/* 두 번째 드롭다운 (거리) */}
       <View style={{ position: "relative" }}>
         <TouchableOpacity
           style={[
@@ -86,25 +107,29 @@ export default function SearchBar({
             setShowTypeDropdown(false);
           }}
         >
-          <Text style={styles.dropdownText}>{distance}</Text>
-
-          <Dropdown></Dropdown>
+          <Text style={styles.dropdownText}>{getDistanceLabel(selectedDistance)}</Text>
+          <Dropdown />
         </TouchableOpacity>
 
         {showDistanceDropdown && (
           <View style={styles.dropdownMenu}>
             <FlatList
               data={DISTANCE_OPTIONS}
-              keyExtractor={(item) => item}
+              keyExtractor={(item) => item.value.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setDistance(item);
-                    setShowDistanceDropdown(false);
-                  }}
+                  style={[
+                    styles.dropdownItem,
+                    selectedDistance === item.value && styles.selectedItem
+                  ]}
+                  onPress={() => handleDistanceSelect(item.value)}
                 >
-                  <Text style={styles.dropdownItemText}>{item}</Text>
+                  <Text style={[
+                    styles.dropdownItemText,
+                    selectedDistance === item.value && styles.selectedItemText
+                  ]}>
+                    {item.label}
+                  </Text>
                 </TouchableOpacity>
               )}
             />
@@ -121,7 +146,6 @@ export default function SearchBar({
               setShowTypeDropdown(false);
             }
           }}
-          // placeholder={`${searchType}으로 리뷰를 검색해보세요.`}
           placeholder={`리뷰를 검색해보세요.`}
           placeholderTextColor="#555"
           value={searchText}
@@ -130,9 +154,8 @@ export default function SearchBar({
       </TouchableOpacity>
 
       {/* 돋보기 버튼 */}
-      {/* 나중에 검색 시 그 필터링 된 검색결과 나오게끔 */}
       <TouchableOpacity style={styles.searchBtn}>
-        <SearchBtn></SearchBtn>
+        <SearchBtn />
       </TouchableOpacity>
     </View>
   );
@@ -183,15 +206,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 8,
     elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
     zIndex: 20,
   },
   dropdownItem: {
-    paddingVertical: 5,
+    paddingVertical: 8,
     paddingHorizontal: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#f0f0f0",
   },
   dropdownItemText: {
     fontSize: 13,
     color: COLORS.textColors.secondary,
     textAlign: "center",
+  },
+  selectedItem: {
+    backgroundColor: "#f0f8ff",
+  },
+  selectedItemText: {
+    fontWeight: "600",
+    color: "#0066cc",
   },
 });

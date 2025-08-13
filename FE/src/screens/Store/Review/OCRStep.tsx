@@ -8,30 +8,31 @@ import {
   StyleSheet,
   Alert,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { COLORS } from "../../../constants/theme";
 import ResultModal from "../../../components/ResultModal";
 import { Ionicons } from "@expo/vector-icons";
+import { requestReceiptOCR, getReceiptOCRResult } from "../../Store/Review/services/api"; // API import
 
 interface BusinessLicenseUploadProps {
   onSuccess: (imageUri: string) => void;
   onFailure: () => void;
-  onBack: () => void; // onBack prop 추가
+  onBack: () => void;
 }
 
 export default function OCRStep({
   onSuccess,
   onFailure,
-  onBack, // onBack prop 받기
+  onBack,
 }: BusinessLicenseUploadProps) {
   const { width, height } = useWindowDimensions();
-  const [businessLicenseUri, setBusinessLicenseUri] = useState<string | null>(
-    null
-  );
+  const [businessLicenseUri, setBusinessLicenseUri] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<"success" | "failure">("success");
   const [modalMessage, setModalMessage] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false); // 처리 중 상태
 
   // 모달 확인 버튼 핸들러
   const handleModalClose = () => {
@@ -50,11 +51,64 @@ export default function OCRStep({
     setModalVisible(true);
   };
 
+  // OCR 폴링 함수
+  const pollReceiptOCR = async (assetId: number) => {
+    let attempts = 0;
+    const maxAttempts = 30; // 최대 30번 (30초)
+    
+    while (attempts < maxAttempts) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+        const result = await getReceiptOCRResult(assetId);
+        
+        if (result.status === "SUCCESS") {
+          setIsProcessing(false);
+          showResultModal("success", "영수증 인증이 완료되었습니다");
+          return;
+        } else if (result.status === "FAILED") {
+          setIsProcessing(false);
+          showResultModal("failure", "영수증 인증에 실패했습니다. 다시 시도해주세요");
+          return;
+        }
+        // PENDING인 경우 계속 반복
+        attempts++;
+      } catch (error) {
+        console.error("OCR polling error:", error);
+        attempts++;
+      }
+    }
+    
+    // 타임아웃
+    setIsProcessing(false);
+    showResultModal("failure", "영수증 처리 시간이 초과되었습니다. 다시 시도해주세요");
+  };
+
+  // 영수증 OCR 처리
+  const processReceiptOCR = async (imageUri: string) => {
+    try {
+      setIsProcessing(true);
+      console.log("[OCRStep] Starting receipt OCR for:", imageUri);
+      
+      // 1. OCR 요청
+      const { assetId } = await requestReceiptOCR(imageUri);
+      console.log("[OCRStep] OCR request successful, assetId:", assetId);
+      
+      // 2. 폴링 시작
+      await pollReceiptOCR(assetId);
+      
+    } catch (error) {
+      console.error("[OCRStep] OCR processing error:", error);
+      setIsProcessing(false);
+      showResultModal("failure", "영수증 업로드 중 오류가 발생했습니다");
+    }
+  };
+
   // 영수증 업로드
   const handleBusinessLicenseUpload = async () => {
+    if (isProcessing) return; // 처리 중일 때는 무시
+    
     try {
-      const { status } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
         Alert.alert("권한 필요", "갤러리 접근 권한이 필요합니다");
         return;
@@ -64,8 +118,7 @@ export default function OCRStep({
         {
           text: "카메라로 촬영",
           onPress: async () => {
-            const { status: cameraStatus } =
-              await ImagePicker.requestCameraPermissionsAsync();
+            const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
             if (cameraStatus !== "granted") {
               Alert.alert("권한 필요", "카메라 접근 권한이 필요합니다");
               return;
@@ -80,16 +133,7 @@ export default function OCRStep({
             if (!result.canceled) {
               const uri = result.assets[0].uri;
               setBusinessLicenseUri(uri);
-              // TODO: 실제 OCR 검증 로직 호출 후 성공/실패 분기
-              const ocrSucceeded = true; // 예시
-              if (ocrSucceeded) {
-                showResultModal("success", "영수증 인증이 완료되었습니다");
-              } else {
-                showResultModal(
-                  "failure",
-                  "영수증 인증에 실패했습니다. 다시 시도해주세요"
-                );
-              }
+              await processReceiptOCR(uri); // 실제 OCR 처리
             }
           },
         },
@@ -105,16 +149,7 @@ export default function OCRStep({
             if (!result.canceled) {
               const uri = result.assets[0].uri;
               setBusinessLicenseUri(uri);
-              // TODO: 실제 OCR 검증 로직 호출 후 성공/실패 분기
-              const ocrSucceeded = true; // 예시
-              if (ocrSucceeded) {
-                showResultModal("success", "영수증 인증이 완료되었습니다");
-              } else {
-                showResultModal(
-                  "failure",
-                  "영수증 인증에 실패했습니다. 다시 시도해주세요"
-                );
-              }
+              await processReceiptOCR(uri); // 실제 OCR 처리
             }
           },
         },
@@ -131,11 +166,8 @@ export default function OCRStep({
 
   return (
     <View style={styles.container}>
-      {/* 뒤로가기 버튼 - navigation.goBack() 대신 onBack() 사용 */}
-      <TouchableOpacity
-        onPress={onBack} // onBack prop 사용
-        style={styles.backButton}
-      >
+      {/* 뒤로가기 버튼 */}
+      <TouchableOpacity onPress={onBack} style={styles.backButton}>
         <Ionicons name="chevron-back" size={width * 0.06} color={COLORS.text} />
       </TouchableOpacity>
 
@@ -153,10 +185,25 @@ export default function OCRStep({
         {/* 업로드 영역 */}
         <View style={styles.uploadContainer}>
           <TouchableOpacity
-            style={[styles.uploadArea, { height: height * 0.35 }]}
+            style={[
+              styles.uploadArea, 
+              { height: height * 0.35 },
+              isProcessing && styles.uploadAreaDisabled
+            ]}
             onPress={handleBusinessLicenseUpload}
+            disabled={isProcessing}
           >
-            {businessLicenseUri ? (
+            {isProcessing ? (
+              <View style={styles.processingContainer}>
+                <ActivityIndicator size="large" color={COLORS.primaryMaker} />
+                <Text style={[styles.processingText, { fontSize: width * 0.04 }]}>
+                  영수증을 분석 중입니다...
+                </Text>
+                <Text style={[styles.processingSubtext, { fontSize: width * 0.03 }]}>
+                  잠시만 기다려주세요
+                </Text>
+              </View>
+            ) : businessLicenseUri ? (
               <Image
                 source={{ uri: businessLicenseUri }}
                 style={styles.uploadedImage}
@@ -168,9 +215,7 @@ export default function OCRStep({
                 <Text style={[styles.uploadText, { fontSize: width * 0.04 }]}>
                   영수증을 업로드하세요
                 </Text>
-                <Text
-                  style={[styles.uploadSubtext, { fontSize: width * 0.03 }]}
-                >
+                <Text style={[styles.uploadSubtext, { fontSize: width * 0.03 }]}>
                   JPG, PNG 파일만 업로드 가능합니다
                 </Text>
               </View>
@@ -236,6 +281,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.8)",
   },
+  uploadAreaDisabled: {
+    opacity: 0.7,
+  },
   uploadedImage: {
     width: "100%",
     height: "100%",
@@ -256,6 +304,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   uploadSubtext: {
+    color: COLORS.inactive,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  processingContainer: {
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  processingText: {
+    color: COLORS.text,
+    fontWeight: "600",
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  processingSubtext: {
     color: COLORS.inactive,
     textAlign: "center",
     lineHeight: 20,

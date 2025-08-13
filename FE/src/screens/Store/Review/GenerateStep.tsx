@@ -8,6 +8,7 @@ import {
   TextInput,
   StyleSheet,
   useWindowDimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import ImageUploader from "../../../components/ImageUploader";
@@ -24,6 +25,7 @@ interface GenProps {
   onPrompt: (t: string) => void;
   onNext: () => void;
   onBack: () => void;
+  isLoading?: boolean;
 }
 
 const contentTypeLabels = {
@@ -42,6 +44,7 @@ export default function GenerateStep({
   onPrompt,
   onNext,
   onBack,
+  isLoading = false,
 }: GenProps) {
   const { width } = useWindowDimensions();
   const [localImages, setLocalImages] = useState<(string | null)[]>([
@@ -61,6 +64,8 @@ export default function GenerateStep({
   }, [uploadedImages]);
 
   const handleAddImage = (index: number, imageUrl: string) => {
+    if (isLoading) return;
+    
     const newImages = [...localImages];
     newImages[index] = imageUrl;
     setLocalImages(newImages);
@@ -68,6 +73,8 @@ export default function GenerateStep({
   };
 
   const handleRemoveImage = (index: number) => {
+    if (isLoading) return;
+    
     const newImages = [...localImages];
     newImages[index] = null;
     setLocalImages(newImages);
@@ -75,7 +82,7 @@ export default function GenerateStep({
   };
 
   const hasImages = localImages.some((img) => img !== null);
-  const isDisabled = !contentType || !hasImages || !prompt.trim();
+  const isDisabled = !contentType || !hasImages || !prompt.trim() || isLoading;
 
   const placeholderText = `1. 한글 텍스트가 깨질 수 있어요
 일부 AI 모델은 한글을 완벽하게 인식하지 못해 텍스트가 이미지에 올바르게 출력되지 않을 수 있습니다.
@@ -92,8 +99,16 @@ AI를 통한 리뷰를 생성 시 모두가 쾌적한 리뷰 문화를 경험할
   return (
     <>
       {/* 뒤로가기 버튼 */}
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
-        <Ionicons name="chevron-back" size={width * 0.06} color="#1A1A1A" />
+      <TouchableOpacity 
+        onPress={isLoading ? undefined : onBack} 
+        style={[styles.backButton, isLoading && styles.backButtonDisabled]}
+        disabled={isLoading}
+      >
+        <Ionicons 
+          name="chevron-back" 
+          size={width * 0.06} 
+          color={isLoading ? "#999" : "#1A1A1A"} 
+        />
       </TouchableOpacity>
 
       <ScrollView style={styles.scroll}>
@@ -112,13 +127,18 @@ AI를 통한 리뷰를 생성 시 모두가 쾌적한 리뷰 문화를 경험할
                 <TouchableOpacity
                   key={t}
                   style={styles.cbWrap}
-                  onPress={() => onType(t)}
-                  activeOpacity={0.7}
+                  onPress={() => !isLoading && onType(t)}
+                  activeOpacity={isLoading ? 1 : 0.7}
+                  disabled={isLoading}
                 >
-                  <View style={[styles.cb, contentType === t && styles.cbOn]}>
+                  <View style={[
+                    styles.cb, 
+                    contentType === t && styles.cbOn,
+                    isLoading && styles.cbDisabled
+                  ]}>
                     {contentType === t && <Text style={styles.ck}>✓</Text>}
                   </View>
-                  <Text style={styles.lbl}>
+                  <Text style={[styles.lbl, isLoading && styles.lblDisabled]}>
                     {contentTypeLabels[t as keyof typeof contentTypeLabels]}
                   </Text>
                 </TouchableOpacity>
@@ -135,6 +155,7 @@ AI를 통한 리뷰를 생성 시 모두가 쾌적한 리뷰 문화를 경험할
             onRemoveImage={handleRemoveImage}
             maxImages={3}
             accentColor="#FF69B4"
+            disabled={isLoading}
           />
         </View>
 
@@ -143,15 +164,16 @@ AI를 통한 리뷰를 생성 시 모두가 쾌적한 리뷰 문화를 경험할
             생성할 리뷰의 내용을 구체적으로 작성해주세요
           </Text>
           <TextInput
-            style={styles.promptInput}
+            style={[styles.promptInput, isLoading && styles.promptInputDisabled]}
             multiline
             placeholder={placeholderText}
             placeholderTextColor="#999999"
             textAlignVertical="top"
             value={prompt}
-            onChangeText={onPrompt}
+            onChangeText={isLoading ? undefined : onPrompt}
             scrollEnabled={true}
             numberOfLines={10}
+            editable={!isLoading}
           />
         </View>
       </ScrollView>
@@ -164,7 +186,14 @@ AI를 통한 리뷰를 생성 시 모두가 쾌적한 리뷰 문화를 경험할
           disabled={isDisabled}
           activeOpacity={isDisabled ? 1 : 0.7}
         >
-          <Text style={styles.buttonText}>확인</Text>
+          {isLoading ? (
+            <View style={styles.loadingButtonContent}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={[styles.buttonText, { marginLeft: 8 }]}>요청 중...</Text>
+            </View>
+          ) : (
+            <Text style={styles.buttonText}>확인</Text>
+          )}
         </TouchableOpacity>
       </View>
     </>
@@ -177,6 +206,9 @@ const styles = StyleSheet.create({
     top: 40,
     left: 16,
     zIndex: 10,
+  },
+  backButtonDisabled: {
+    opacity: 0.5,
   },
   scroll: {
     flex: 1,
@@ -235,6 +267,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF69B4",
     borderColor: "#FF69B4",
   },
+  cbDisabled: {
+    opacity: 0.5,
+  },
   ck: {
     color: "#FFFFFF",
     fontWeight: "700",
@@ -244,6 +279,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
     fontWeight: "400",
+  },
+  lblDisabled: {
+    color: "#999",
   },
   upSec: {
     paddingHorizontal: 20,
@@ -268,6 +306,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 22,
     textAlignVertical: "top",
+  },
+  promptInputDisabled: {
+    backgroundColor: "#F5F5F5",
+    color: "#999",
   },
   bottom: {
     position: "absolute",
@@ -300,5 +342,9 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
+  },
+  loadingButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });
