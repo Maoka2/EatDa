@@ -32,9 +32,16 @@ export default function StoreScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<StoreRouteProp>();
   const storeId = route?.params?.storeId;
+  const initialName = route?.params?.storeName;
+  const initialAddress = route?.params?.address;
 
   const { isLoggedIn, userRole } = useAuth();
   const isEater = isLoggedIn && userRole === "EATER";
+
+  const [storeName, setStoreName] = useState<string>(initialName ?? "");
+  const [storeAddress, setStoreAddress] = useState<string>(
+    initialAddress ?? ""
+  );
 
   const [activeTab, setActiveTab] = useState("menu");
   const [bottomActiveScreen, setBottomActiveScreen] = useState<string | null>(
@@ -46,6 +53,11 @@ export default function StoreScreen() {
       console.warn("[StoreScreen] invalid storeId:", storeId);
     }
   }, [storeId]);
+
+  useEffect(() => {
+    if (initialName) setStoreName(initialName);
+    if (initialAddress) setStoreAddress(initialAddress);
+  }, [initialName, initialAddress]);
 
   useEffect(() => {
     if (!bottomActiveScreen) return;
@@ -85,9 +97,9 @@ export default function StoreScreen() {
       </View>
 
       <View style={styles.storeInfo}>
-        <Text style={styles.storeName}>햄찌네 피자</Text>
+        <Text style={styles.storeName}>{storeName || "가게 이름"}</Text>
         <Text style={styles.storeAddress}>
-          📍서울특별시 강남구 테헤란로 212
+          {storeAddress ? `📍${storeAddress}` : "📍주소 정보 없음"}
         </Text>
       </View>
 

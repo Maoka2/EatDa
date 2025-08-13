@@ -45,7 +45,13 @@ export type AuthStackParamList = {
   MapScreen: undefined;
 
   // ✅ StoreScreen은 storeId를 반드시 받는다
-  StoreScreen: { storeId: number };
+  StoreScreen: {
+    storeId: number;
+    storeName?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  };
   StoreEventScreen: undefined;
   StoreMenuScreen: undefined;
   StoreReviewScreen: undefined;

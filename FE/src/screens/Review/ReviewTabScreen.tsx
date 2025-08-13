@@ -483,22 +483,40 @@ export default function Reviews(props?: ReviewProps) {
 
   // ✅ 가게로 이동 (네비게이션 파라미터 방식, 상세 미도착 대비 보강)
   const handleGoToStore = async () => {
-    let sid = selectedItem?.store?.storeId;
+    // 1) selectedItem에 store 정보가 있으면 그대로 사용
+    let s = selectedItem?.store;
 
-    if (!sid && selectedItem?.id) {
+    // 2) 없으면 상세를 한번 더 조회해서 확보
+    if (!s && selectedItem?.id) {
       try {
         const detail = await fetchReviewDetail(parseInt(selectedItem.id, 10));
-        sid = detail.data.store.storeId;
-        setSelectedItem(convertDetailToReviewItem(detail.data));
+        const d = detail.data.store;
+        s = {
+          storeId: d.storeId,
+          storeName: d.storeName,
+          address: d.address,
+          latitude: d.latitude,
+          longitude: d.longitude,
+        };
+
+        setSelectedItem(convertDetailToReviewItem(detail.data)); // 로컬 상태 동기화
       } catch (e) {
         Alert.alert("오류", "가게 정보를 불러오지 못했습니다.");
         return;
       }
     }
 
-    if (typeof sid === "number" && sid > 0) {
-      setIsGoToStoreClicked(true);
-      navigation.navigate("StoreScreen", { storeId: sid });
+    // 3) 파라미터 검증 후 이동
+    if (s?.storeId && s.storeId > 0) {
+      const params = {
+        storeId: s.storeId,
+        storeName: s.storeName,
+        address: s.address,
+        latitude: s.latitude,
+        longitude: s.longitude,
+      };
+      console.log("[NAV] go StoreScreen with params:", params); // ✅ 디버그 로그
+      navigation.navigate("StoreScreen", params);
     } else {
       Alert.alert(
         "알림",
