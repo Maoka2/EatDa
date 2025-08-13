@@ -11,6 +11,8 @@ import com.domain.review.dto.response.ReviewDetailResponse;
 import com.domain.review.dto.response.ReviewFeedResponse;
 import com.domain.review.dto.response.ReviewFeedResult;
 import com.domain.review.dto.response.ReviewFinalizeResponse;
+import com.domain.review.entity.Review;
+import java.util.List;
 
 public interface ReviewService {
 
@@ -42,4 +44,6 @@ public interface ReviewService {
     ReviewFeedResult<MyReviewResponse> getMyReviews(Long lastReviewId, int pageSize, String eaterEmail);
 
     void removeReview(Long reviewId, String eaterEmail);
+
+    List<Review> getMyReceivedReviews(String email);
 }

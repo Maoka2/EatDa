@@ -475,6 +475,12 @@ public class ReviewController {
     @GetMapping("/scraps")
     public ResponseEntity<BaseResponse> getMyScrapReviews(@AuthenticationPrincipal String email) {
         List<Review> scraps = reviewScrapService.getScrapReviews(email);
-        return ApiResponseFactory.success(SuccessCode.REVIEW_SCRAP_LIST, reviewMapper.toResponse(scraps));
+        return ApiResponseFactory.success(SuccessCode.REVIEW_SCRAP_LIST, reviewMapper.toScrapResponse(scraps));
+    }
+
+    @GetMapping("/received")
+    public ResponseEntity<BaseResponse> getMyReceivedReviews(@AuthenticationPrincipal String email) {
+        List<Review> reviews = reviewService.getMyReceivedReviews(email);
+        return ApiResponseFactory.success(SuccessCode.REVIEW_RECEIVED_LIST, reviewMapper.toReceivedResponse(reviews));
     }
 }

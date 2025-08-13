@@ -161,7 +161,7 @@ public class ReviewServiceImpl implements ReviewService {
             }
             case SHORTS_RAY_2, SHORTS_GEN_4 -> {
                 String shortsUrl = asset.getShortsUrl();
-                if (Objects.isNull(shortsUrl)|| shortsUrl.isBlank()) {
+                if (Objects.isNull(shortsUrl) || shortsUrl.isBlank()) {
                     throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
                 }
             }
@@ -320,6 +320,14 @@ public class ReviewServiceImpl implements ReviewService {
         } catch (Exception e) {
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @Override
+    public List<Review> getMyReceivedReviews(final String email) {
+        User maker = makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        long storeId = maker.getStores().getFirst().getId();
+        return reviewRepository.findByStoreIdAndStatusOrderByCreatedAtDesc(storeId, Status.SUCCESS);
     }
 
     // ===== Private Helper Methods =====
@@ -551,9 +559,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     /**
-     * 리뷰에 연결된 메뉴 이름 리스트 추출
-     * - Review -> ReviewMenu -> Menu.name 경로로 안전하게 매핑
-     * - null 안전 처리 및 중복 제거
+     * 리뷰에 연결된 메뉴 이름 리스트 추출 - Review -> ReviewMenu -> Menu.name 경로로 안전하게 매핑 - null 안전 처리 및 중복 제거
      */
     private List<String> extractMenuNames(Review review) {
         if (review == null || review.getReviewMenus() == null) {
@@ -714,7 +720,9 @@ public class ReviewServiceImpl implements ReviewService {
     private String deriveBaseName(String url, String fallbackName) {
         try {
             String path = new URI(url).getPath();
-            if (path == null || path.isBlank()) return fallbackName;
+            if (path == null || path.isBlank()) {
+                return fallbackName;
+            }
             String name = path.substring(path.lastIndexOf('/') + 1);
             int dot = name.lastIndexOf('.');
             return (dot > 0 ? name.substring(0, dot) : name);

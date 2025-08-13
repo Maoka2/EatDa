@@ -2,6 +2,7 @@ package com.domain.review.mapper;
 
 import com.domain.review.constants.ReviewAssetType;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
+import com.domain.review.dto.response.MyReceivedResponse;
 import com.domain.review.dto.response.MyScrapResponse;
 import com.domain.review.dto.response.ReviewAssetRequestResponse;
 import com.domain.review.dto.response.ReviewAssetResultResponse;
@@ -77,5 +78,12 @@ public interface ReviewMapper {
     @Mapping(target = "thumbnailUrl", source = "reviewAsset.thumbnailPath")
     MyScrapResponse toResponse(Review review);
 
-    List<MyScrapResponse> toResponse(List<Review> reviewList);
+    List<MyScrapResponse> toScrapResponse(List<Review> reviewList);
+
+    @Mapping(target = "imageUrl", source = "reviewAsset.imageUrl")
+    @Mapping(target = "shortsUrl", source = "reviewAsset.shortsUrl")
+    @Mapping(target = "thumbnailUrl", source = "reviewAsset.thumbnailPath")
+    MyReceivedResponse toReceivedResponse(Review review);
+
+    List<MyReceivedResponse> toReceivedResponse(List<Review> reviewList);
 }

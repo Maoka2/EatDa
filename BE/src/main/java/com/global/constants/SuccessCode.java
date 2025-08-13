@@ -48,6 +48,7 @@ public enum SuccessCode {
     MY_REVIEWS_FETCHED("MY_REVIEWS_FETCHED", "사용자가 작성한 리뷰 목록을 성공적으로 조회했습니다.", HttpStatus.OK.value()),
     REVIEW_SCRAP_SUCCESS("REVIEW_SCRAP_SUCCESS", "리뷰를 스크랩했습니다.", HttpStatus.CREATED.value()),
     REVIEW_SCRAP_LIST("REVIEW_SCRAP_LIST", "사용자가 스크랩한 리뷰를 성공적으로 조회했습니다.", HttpStatus.OK.value()),
+    REVIEW_RECEIVED_LIST("REVIEW_RECEIVED_LIST", "해당 가게에 작성된 리뷰를 성공적으로 조회했습니다.", HttpStatus.OK.value()),
     REVIEW_UN_SCRAP_SUCCESS("REVIEW_UN_SCRAP_SUCCESS", "리뷰 스크랩이 해제되었습니다.", HttpStatus.OK.value()),
     REVIEW_DELETED("REVIEW_DELETED", "리뷰가 성공적으로 삭제되었습니다.", HttpStatus.OK.value()),
 

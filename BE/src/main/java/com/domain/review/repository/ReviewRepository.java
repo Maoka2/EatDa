@@ -1,6 +1,7 @@
 package com.domain.review.repository;
 
 import com.domain.review.entity.Review;
+import com.global.constants.Status;
 import io.lettuce.core.dynamic.annotation.Param;
 import java.util.List;
 import java.util.Optional;
@@ -75,4 +76,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                 where rs.user.id = :userId
             """)
     List<Review> findAllScrappedByUserId(@Param("userId") Long userId);
+
+    List<Review> findByStoreIdAndStatusOrderByCreatedAtDesc(Long storeId, Status status);
 }
