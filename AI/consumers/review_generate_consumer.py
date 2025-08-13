@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import base64
+import uuid
 import os
 import socket
 from typing import Any, Dict, Tuple
@@ -30,11 +32,11 @@ except Exception as e:  # pragma: no cover
 
 from models.review_generate_models import GenerateRequest
 from services import (
-    image_service,
     luma_service,
     runway_service,
     gpt_service,
 )
+from services.google_image_service import google_image_service
 from services.review_generate_callback import review_generate_callback
 
 
@@ -102,10 +104,49 @@ class ReviewGenerateConsumer:
         return await review_generate_callback.send_callback_to_spring(callback_data)
 
     async def process_image(self, req: GenerateRequest) -> Tuple[str, str | None]:
-        if not image_service.is_available():
+        if not google_image_service.is_available():
             return "FAIL", None
-        url = await image_service.generate_image_url(req.prompt)
+        # Google GenAI SDK는 동기 API이므로 스레드로 오프로드
+        loop = asyncio.get_running_loop()
+        url = await loop.run_in_executor(None, google_image_service.generate_image_url, req.prompt, None)
+        # data URL이면 디스크에 저장하고 저장 경로로 치환
+        url = self._save_data_url_to_disk(url, req.userId)
         return ("SUCCESS" if url else "FAIL"), url
+
+    def _save_data_url_to_disk(self, asset_url: str | None, user_id: int) -> str | None:
+        try:
+            if not asset_url or not isinstance(asset_url, str) or not asset_url.startswith("data:"):
+                return asset_url
+            # 리뷰 에셋 저장 디렉터리 (요청 사항대로 하드코딩)
+            asset_dir = f'/home/ubuntu/eatda/test/data/images/reviews/{user_id}'
+            if not asset_dir:
+                return asset_url
+            asset_dir = os.path.expanduser(asset_dir)
+            header, b64data = asset_url.split(",", 1)
+            mime_part = header.split(";", 1)[0]
+            mime = mime_part.split(":", 1)[1] if ":" in mime_part else "image/png"
+            ext = (
+                "png" if "png" in mime else
+                "jpg" if ("jpeg" in mime or "jpg" in mime) else
+                "webp" if "webp" in mime else
+                "png"
+            )
+            os.makedirs(asset_dir, exist_ok=True)
+            file_name = f"{uuid.uuid4().hex}.{ext}"
+            file_path = os.path.join(asset_dir, file_name)
+            with open(file_path, "wb") as f:
+                f.write(base64.b64decode(b64data))
+            try:
+                self.logger.info(f"[리뷰컨슈머] data URL saved to file={file_path}")
+            except Exception:
+                pass
+            return file_path
+        except Exception as e:
+            try:
+                self.logger.warning(f"[리뷰컨슈머] data URL 저장/치환 실패: {e}")
+            except Exception:
+                pass
+            return asset_url
 
     async def process_luma(self, req: GenerateRequest) -> Tuple[str, str | None]:
         if not luma_service.is_available():
@@ -153,11 +194,41 @@ class ReviewGenerateConsumer:
                 self.logger.info(f"[리뷰컨슈머] SHORTS_RAY2 요청 처리: reviewAssetId={req.reviewAssetId}")
                 result, url = await self.process_luma(req)
 
+            # 콜백 직전 payload 축약 로그 (data URL 전체 노출 방지)
+            try:
+                preview = {
+                    "reviewAssetId": req.reviewAssetId,
+                    "result": result,
+                    "assetUrl": url,
+                    "type": req.type,
+                }
+                au = preview.get("assetUrl")
+                if isinstance(au, str) and au.startswith("data:"):
+                    try:
+                        header, b64 = au.split(",", 1)
+                        preview["assetUrl"] = f"{header},<base64 {len(b64)} bytes>"
+                    except Exception:
+                        preview["assetUrl"] = "data:<inline image>"
+                self.logger.info(f"[리뷰컨슈머] callback payload preview: {preview}")
+            except Exception:
+                pass
+
             await self._send_callback(req.reviewAssetId, result, url, req.type)
             # 메시지 처리 완료 기록
-            self.logger.info(
-                f"[리뷰컨슈머] 메시지 처리 완료: id={message_id}, 결과={result}, assetUrl={url}"
-            )
+            try:
+                # 완료 로그에서도 data URL 축약
+                au2 = url
+                if isinstance(au2, str) and au2.startswith("data:"):
+                    try:
+                        header, b64 = au2.split(",", 1)
+                        au2 = f"{header},<base64 {len(b4)} bytes>"  # type: ignore[name-defined]
+                    except Exception:
+                        au2 = "data:<inline image>"
+                self.logger.info(
+                    f"[리뷰컨슈머] 메시지 처리 완료: id={message_id}, 결과={result}, assetUrl={au2}"
+                )
+            except Exception:
+                pass
         except Exception as e:
             # 메시지 처리 중 예외 기록 및 데드 스트림으로 이동
             self.logger.exception(f"[리뷰컨슈머] 메시지 처리 중 오류: id={message_id}, err={e}")
