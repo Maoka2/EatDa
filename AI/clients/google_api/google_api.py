@@ -96,3 +96,83 @@ except Exception as e:
 
 
 
+from typing import List, Optional, Literal, Any, Dict
+from pydantic import BaseModel
+
+
+class ModalityTokenCount(BaseModel):
+    modality: Literal["TEXT", "IMAGE"]
+    token_count: int
+
+
+class UsageMetadata(BaseModel):
+    cache_tokens_details: Optional[Any] = None
+    cached_content_token_count: Optional[int] = None
+    candidates_token_count: Optional[int] = None
+    candidates_tokens_details: Optional[List[ModalityTokenCount]] = None
+    prompt_token_count: Optional[int] = None
+    prompt_tokens_details: Optional[List[ModalityTokenCount]] = None
+    thoughts_token_count: Optional[int] = None
+    tool_use_prompt_token_count: Optional[int] = None
+    tool_use_prompt_tokens_details: Optional[Any] = None
+    total_token_count: Optional[int] = None
+    traffic_type: Optional[Any] = None
+
+
+class Blob(BaseModel):
+    data: bytes
+    mime_type: Optional[str] = None
+
+
+class Part(BaseModel):
+    # 텍스트 파트
+    text: Optional[str] = None
+    # 이미지 등 바이너리 파트
+    inline_data: Optional[Blob] = None
+
+    # 출력에서 보였던 기타 가능 필드들(전부 옵션)
+    video_metadata: Optional[Any] = None
+    thought: Optional[Any] = None
+    file_data: Optional[Any] = None
+    thought_signature: Optional[Any] = None
+    code_execution_result: Optional[Any] = None
+    executable_code: Optional[Any] = None
+    function_call: Optional[Any] = None
+    function_response: Optional[Any] = None
+
+
+class Content(BaseModel):
+    parts: List[Part]
+    role: Optional[Literal["model", "user", "tool"]] = None
+
+
+class Candidate(BaseModel):
+    content: Content
+    finish_reason: Optional[Literal["STOP", "MAX_TOKENS", "SAFETY", "OTHER"]] = None
+    index: Optional[int] = None
+
+    # 출력에서 None으로 보였던 필드들(옵션)
+    citation_metadata: Optional[Any] = None
+    finish_message: Optional[Any] = None
+    token_count: Optional[int] = None
+    url_context_metadata: Optional[Any] = None
+    avg_logprobs: Optional[Any] = None
+    grounding_metadata: Optional[Any] = None
+    logprobs_result: Optional[Any] = None
+    safety_ratings: Optional[Any] = None
+
+
+class HttpResponse(BaseModel):
+    headers: Optional[Dict[str, Any]] = None
+
+
+class GenerateContentResponseModel(BaseModel):
+    sdk_http_response: Optional[HttpResponse] = None
+    candidates: List[Candidate]
+    create_time: Optional[str] = None
+    model_version: Optional[str] = None
+    prompt_feedback: Optional[Any] = None
+    response_id: Optional[str] = None
+    usage_metadata: Optional[UsageMetadata] = None
+    automatic_function_calling_history: Optional[List[Any]] = None
+    parsed: Optional[Any] = None
