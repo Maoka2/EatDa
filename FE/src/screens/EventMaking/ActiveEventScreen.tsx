@@ -12,7 +12,13 @@ import {
   TextStyle,
   FlatList,
   Animated,
+  ActivityIndicator ,
 } from "react-native";
+
+// 이벤트 조회용
+import { getActiveEvents } from "./services/api";
+import { ActiveEvent } from "./services/api";
+
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
