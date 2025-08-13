@@ -155,7 +155,7 @@ class EventServiceImplTest {
                 mockFile,
                 expectedPath,
                 "test.jpg",
-                true
+                false
         )).willReturn("uploaded/path/image.jpg");
 
         // when
@@ -173,7 +173,7 @@ class EventServiceImplTest {
                 mockFile,
                 expectedPath,
                 "test.jpg",
-                true // WebP 변환 적용 검증
+                false // WebP 변환 적용 검증 X
         );
 
         // Redis 메시지 발행 검증
@@ -263,14 +263,14 @@ class EventServiceImplTest {
                 file1,
                 expectedPath,
                 "image1.jpg",
-                true // WebP 변환 적용
+                false // WebP 변환 적용 X
         )).willReturn("uploaded/path/image1.jpg");
 
         given(fileStorageService.storeImage(
                 file2,
                 expectedPath,
                 "image2.jpg",
-                true // WebP 변환 적용
+                false  // WebP 변환 적용 X
         )).willReturn("uploaded/path/image2.jpg");
 
         // when
@@ -282,8 +282,8 @@ class EventServiceImplTest {
         ArgumentCaptor<EventAssetGenerateMessage> messageCaptor =
                 ArgumentCaptor.forClass(EventAssetGenerateMessage.class);
         verify(eventAssetRedisPublisher).publish(eq(RedisStreamKey.EVENT_ASSET), messageCaptor.capture());
-        verify(fileStorageService).storeImage(file1, expectedPath, "image1.jpg", true);
-        verify(fileStorageService).storeImage(file2, expectedPath, "image2.jpg", true);
+        verify(fileStorageService).storeImage(file1, expectedPath, "image1.jpg", false);
+        verify(fileStorageService).storeImage(file2, expectedPath, "image2.jpg", false);
         assertThat(messageCaptor.getValue().getReferenceImages())
                 .hasSize(2)
                 .containsExactly("uploaded/path/image1.jpg", "uploaded/path/image2.jpg");
