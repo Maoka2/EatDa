@@ -10,6 +10,8 @@ import asyncio
 import json
 import os
 import socket
+import base64
+import uuid
 from typing import Any, Dict, Tuple
 import logging
 import time
@@ -140,7 +142,40 @@ class MenuboardGenerateConsumer:
             enhanced,
             reference_image_paths=req.referenceImages,
         )
+        # data URL로 온 경우, 환경변수 설정 시 EC2 디스크에 저장하여 public URL로 변환
+        url = self._to_public_url_if_possible(url)
         return ("SUCCESS" if url else "FAIL"), url
+
+    def _to_public_url_if_possible(self, asset_url: str | None) -> str | None:
+        try:
+            if not asset_url or not isinstance(asset_url, str) or not asset_url.startswith("data:"):
+                return asset_url
+            asset_dir='/home/ubuntu/eatda/test/data/images/menuPosters/gonaging@example.com'
+            base_url='https://i13a609.p.ssafy.io/test'
+            if not asset_dir or not base_url:
+                return asset_url
+            # ~ 확장 및 디렉터리 보장
+            asset_dir = os.path.expanduser(asset_dir)
+            header, b64data = asset_url.split(",", 1)
+            mime_part = header.split(";")[0]
+            mime = mime_part.split(":", 1)[1] if ":" in mime_part else "image/png"
+            ext = (
+                "png" if "png" in mime else
+                "jpg" if ("jpeg" in mime or "jpg" in mime) else
+                "webp" if "webp" in mime else
+                "png"
+            )
+            os.makedirs(asset_dir, exist_ok=True)
+            file_name = f"{uuid.uuid4().hex}.{ext}"
+            file_path = os.path.join(asset_dir, file_name)
+            with open(file_path, "wb") as f:
+                f.write(base64.b64decode(b64data))
+            public_url = f"{base_url.rstrip('/')}/assets/{file_name}"
+            self.logger.info(f"[메뉴판컨슈머] data URL saved to {file_path} -> {public_url}")
+            return public_url
+        except Exception as e:
+            self.logger.warning(f"[메뉴판컨슈머] data URL 저장/치환 실패: {e}")
+            return asset_url
 
     async def handle_message(self, message_id: str, fields: Dict[str, str]) -> None:
         try:

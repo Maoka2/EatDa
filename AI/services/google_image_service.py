@@ -17,6 +17,8 @@ from PIL import Image
 import base64
 import mimetypes
 import logging
+import uuid
+from io import BytesIO
 
 try:
     # pip install google-genai
@@ -31,6 +33,10 @@ class GoogleImageService:
     def __init__(self) -> None:
         self.api_key = "AIzaSyDXwG0T-pqiiQvhLcghPM8tNBnCcWbjg_8"
         self.logger = logging.getLogger(__name__)
+        # 퍼블릭 URL로 반환하고 싶으면 두 값을 설정하세요
+        # AI_ASSET_DIR: 이미지 저장 디렉터리, AI_PUBLIC_BASE_URL: 외부에서 접근 가능한 베이스 URL
+        self.asset_dir = '/home/ubuntu/eatda/test/data/images/menuPosters/gonaging@example.com'
+        self.public_base_url ='https://i13a609.p.ssafy.io/test'
 
         if not self.api_key or genai is None:
             self.client = None
@@ -97,12 +103,26 @@ class GoogleImageService:
                 for part in parts:
                     inline_data = getattr(part, "inline_data", None)
                     if inline_data and getattr(inline_data, "data", None):
-                        b64 = base64.b64encode(inline_data.data).decode("ascii")
                         mime = getattr(inline_data, "mime_type", "image/png") or "image/png"
                         try:
                             self.logger.info("GoogleImageService: image generated successfully")
                         except Exception:
                             pass
+                        # 퍼블릭 저장 모드: 두 환경변수가 모두 설정된 경우 파일 저장 후 URL 반환
+                        if self.asset_dir and self.public_base_url:
+                            try:
+                                os.makedirs(self.asset_dir, exist_ok=True)
+                                file_name = f"{uuid.uuid4().hex}.png"
+                                file_path = os.path.join(self.asset_dir, file_name)
+                                Image.open(BytesIO(inline_data.data)).save(file_path)
+                                return f"{self.public_base_url.rstrip('/')}/assets/{file_name}"
+                            except Exception as se:
+                                try:
+                                    self.logger.warning(f"GoogleImageService: public save failed, fallback to data URL: {se}")
+                                except Exception:
+                                    pass
+                        # 기본: data URL로 반환
+                        b64 = base64.b64encode(inline_data.data).decode("ascii")
                         return f"data:{mime};base64,{b64}"
             try:
                 self.logger.warning("GoogleImageService: no image in response (candidates/parts missing)")
