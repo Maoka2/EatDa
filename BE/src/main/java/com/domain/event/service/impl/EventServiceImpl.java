@@ -128,6 +128,7 @@ public class EventServiceImpl implements EventService {
         );
         log.info("Step10: OK");
 
+        log.info("[EventServiceImpl]: {}", uploadedImageUrls.toString());
         // Step11: 메시지 발행
         log.info("Step11: Publish message to Redis stream={}", RedisStreamKey.EVENT_ASSET);
         eventAssetRedisPublisher.publish(RedisStreamKey.EVENT_ASSET, message);

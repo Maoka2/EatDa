@@ -87,6 +87,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
                 menuItems,  // MenuItem DTO 리스트 전달
                 uploadedImageUrls
         );
+        log.info("[MenuPosterServiceImpl]: message={}",uploadedImageUrls.toString());
         menuPosterAssetRedisPublisher.publish(RedisStreamKey.MENU_POSTER, message);
 
         return MenuPosterAssetRequestResponse.from(menuPosterAsset);
