@@ -9,6 +9,7 @@ public record MyEventResponse(
         Long eventId,
         String storeName,
         String title,
+        String description,
         LocalDateTime startAt,
         LocalDateTime endAt,
         String postUrl
@@ -18,6 +19,7 @@ public record MyEventResponse(
                 event.getId(),
                 event.getStore().getName(),
                 event.getTitle(),
+                event.getDescription(),
                 event.getStartDate().atStartOfDay(),
                 event.getEndDate().atTime(23, 59, 59),
                 asset != null ? asset.getPath() : null
