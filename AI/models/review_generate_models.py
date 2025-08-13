@@ -12,7 +12,7 @@ from typing import List, Optional
 class Menu(BaseModel):
     id: int = Field(..., description="메뉴 ID")
     name: str = Field(..., description="메뉴 이름")
-    description: str = Field(..., description="메뉴 설명")
+    description: Optional[str] = Field("", description="메뉴 설명")  # None도 허용 + 기본값은 빈 문자열
     imageUrl: str = Field(..., description="메뉴 이미지 URL")
 
 
