@@ -68,6 +68,7 @@ class GoogleImageService:
         if reference_image_paths:
             exist_count = 0
             for p in reference_image_paths:
+                
                 try:
                     if not p:
                         try:
