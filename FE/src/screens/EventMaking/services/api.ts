@@ -30,6 +30,7 @@ export interface ActiveEvent {
   startAt: string;
   endAt: string;
   postUrl: string;
+  storeName: string;
 }
 
 // API의 공통 응답 구조 타입

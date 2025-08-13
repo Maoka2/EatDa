@@ -12,7 +12,6 @@ export interface ReviewItem {
   description: string;
   likes: number;
   views: number;
-  // storeId:string;
   
 }
 
@@ -24,6 +23,7 @@ export interface eventItem {
   uri: ImageSourcePropType;
   start_date:Date;
   end_date:Date;
+  storeName:string;
 }
 
 interface GridProps {

@@ -12,14 +12,12 @@ import {
   TextStyle,
   FlatList,
   Animated,
-  ActivityIndicator,            // ✅ 추가
+  ActivityIndicator,
 } from "react-native";
 
-import { getActiveEvents } from "./services/api";
-import { ActiveEvent } from "./services/api";
+import { getActiveEvents, ActiveEvent } from "./services/api";
 
-import { useFocusEffect } from "@react-navigation/native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { useAuth } from "../../contexts/AuthContext";
@@ -28,7 +26,7 @@ import HamburgerButton from "../../components/Hamburger";
 import HeaderLogo from "../../components/HeaderLogo";
 import GridComponent from "../../components/GridComponent";
 import CloseButton from "../../../assets/closeBtn.svg";
-import NoDataScreen from "../../components/NoDataScreen";  // ✅ 추가
+import NoDataScreen from "../../components/NoDataScreen";
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
@@ -40,26 +38,31 @@ export default function ActiveEventScreen() {
   const navigation = useNavigation<NavigationProp>();
 
   const handleMypage = () => {};
-  const handleCreateEventPoster = () => navigation.navigate("EventMakingScreen");
+  const handleCreateEventPoster = () =>
+    navigation.navigate("EventMakingScreen");
 
   const { isLoggedIn, userRole } = useAuth();
   const isMaker = isLoggedIn && userRole === "MAKER";
 
   const [selectedEvent, setSelectedEvent] = useState<eventItem | null>(null);
   const [items, setItems] = useState<eventItem[]>([]);
-  const [loading, setLoading] = useState(false);        // 초기 로딩
-  const [refreshing, setRefreshing] = useState(false);  // 풀투리프레시 상태
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // ★ 리뷰탭과 동일: 바깥 래퍼에서 width 측정 + 정수 타일
+  const [containerWidth, setContainerWidth] = useState(0);
+  const tile = Math.floor(containerWidth / 3);
 
   const adapt = (a: ActiveEvent): eventItem => ({
     id: String(a.eventId),
     eventName: a.title,
     eventDescription: a.title,
-    uri: { uri: a.postUrl },  // 서버가 항상 제공하므로 placeholder 제거
+    uri: { uri: a.postUrl },
     start_date: new Date(a.startAt),
     end_date: new Date(a.endAt),
+    storeName: a.storeName,
   });
 
-  // 공통 fetch 함수
   const fetchActive = React.useCallback(async () => {
     setLoading(true);
     try {
@@ -73,7 +76,6 @@ export default function ActiveEventScreen() {
     }
   }, []);
 
-  // 화면 포커스마다 새로고침
   useFocusEffect(
     React.useCallback(() => {
       let cancelled = false;
@@ -89,11 +91,12 @@ export default function ActiveEventScreen() {
           if (!cancelled) setLoading(false);
         }
       })();
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }, [fetchActive])
   );
 
-  // Pull-to-Refresh
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
@@ -106,18 +109,17 @@ export default function ActiveEventScreen() {
     }
   }, []);
 
-  // 상세 보기 상태면 상세 화면 렌더
+  // 상세 보기 애니메이션
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   useEffect(() => {
     if (selectedEvent) scaleAnim.setValue(0.8);
     Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
   }, [selectedEvent]);
 
-  const [containerWidth, setContainerWidth] = useState(0);
-
+  // 상세 보기
   if (selectedEvent) {
     return (
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
         <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
           <CloseButton
             onPress={() => setSelectedEvent(null)}
@@ -133,19 +135,33 @@ export default function ActiveEventScreen() {
             ]}
           >
             <Text style={[styles.storeName, { paddingBottom: height * 0.05 }]}>
-              햄찌네 피자
+              {selectedEvent.storeName}
             </Text>
             <Image
-              style={{ width: width * 0.8, height: height * 0.65, borderRadius: 10 }}
+              style={{
+                width: width * 0.8,
+                height: height * 0.65,
+                borderRadius: 10,
+              }}
               source={selectedEvent.uri}
-              resizeMode="cover"
+              resizeMode="stretch"
             />
           </View>
           <View style={[styles.textOverLay, { marginHorizontal: width * 0.1 }]}>
-            <Text style={[styles.eventName, { paddingBottom: height * 0.017, paddingTop: height * 0.02 }]}>
+            <Text
+              style={[
+                styles.eventName,
+                { paddingBottom: height * 0.017, paddingTop: height * 0.02 },
+              ]}
+            >
               {selectedEvent.eventName}
             </Text>
-            <Text style={[styles.eventDescription, { paddingBottom: height * 0.02 }]}>
+            <Text
+              style={[
+                styles.eventDescription,
+                { paddingBottom: height * 0.02 },
+              ]}
+            >
               {selectedEvent.eventDescription}
             </Text>
           </View>
@@ -154,47 +170,54 @@ export default function ActiveEventScreen() {
     );
   }
 
-  // 전체 보기
+  // 전체 보기 (★ 리뷰탭과 동일한 측정/여백 방식)
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={styles.headerContainer}>
-        <HamburgerButton userRole={isMaker ? "maker" : "eater"} onMypage={handleMypage} />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <View style={[styles.headerContainer, { paddingBottom: height * 0.02 }]}>
+        <HamburgerButton
+          userRole={isMaker ? "maker" : "eater"}
+          onMypage={handleMypage}
+        />
         <HeaderLogo />
       </View>
 
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item.id}
+      {/* width 측정은 FlatList 바깥 래퍼에서 */}
+      <View
+        style={{ flex: 1, backgroundColor: "#fff" }}
         onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-        numColumns={3}
-        renderItem={({ item, index }) => (
-          <GridComponent
-            item={item}
-            size={containerWidth / 3}
-            index={index}
-            totalLength={items.length}
-            onPress={() => setSelectedEvent(item)}
-          />
-        )}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        // ✅ 데이터 없을 때 처리
-        ListEmptyComponent={
-          loading ? (
-            <View style={{ paddingTop: 80, alignItems: "center" }}>
-              <ActivityIndicator size="large" color="#fec566" />
-            </View>
-          ) : (
-            <NoDataScreen />
-          )
-        }
-        // 빈 화면에서 가운데 정렬
-        contentContainerStyle={
-          items.length === 0
-            ? { flexGrow: 1, justifyContent: "center", paddingHorizontal: 24 }
-            : undefined
-        }
-      />
+      >
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id}
+          numColumns={3}
+          // 여백/패딩 0 → 리뷰탭과 동일
+          style={{ margin: 0, padding: 0, backgroundColor: "#fff" }}
+          contentContainerStyle={{ paddingHorizontal: 0, paddingVertical: 0 }}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          renderItem={({ item, index }) => (
+            <GridComponent
+              item={item}
+              size={tile} // 정수 타일
+              index={index}
+              totalLength={items.length}
+              onPress={() => setSelectedEvent(item)}
+            />
+          )}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          ListEmptyComponent={
+            loading ? (
+              <View style={{ paddingTop: 80, alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#fec566" />
+              </View>
+            ) : (
+              <NoDataScreen />
+            )
+          }
+          contentInsetAdjustmentBehavior="never"
+        />
+      </View>
 
       {!selectedEvent && isMaker && (
         <View style={styles.buttonContainer}>
@@ -204,7 +227,9 @@ export default function ActiveEventScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.buttonContent}>
-              <Text style={styles.createEventButtonText}>이벤트 포스터 생성하기</Text>
+              <Text style={styles.createEventButtonText}>
+                이벤트 포스터 생성하기
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -244,10 +269,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
   } as TextStyle,
-  goBackButton: { position: "absolute" },
-  storeName: { color: "#333333", fontWeight: "bold", fontSize: 20 } as TextStyle,
+  storeName: {
+    color: "#333333",
+    fontWeight: "bold",
+    fontSize: 20,
+  } as TextStyle,
   storeNameContainer: { alignItems: "center", justifyContent: "center" },
-  textOverLay: { backgroundColor: "#EEEEEE", borderRadius: 10, alignItems: "center" } as ViewStyle,
-  eventName: { color: "#000000", fontSize: 14, fontWeight: "bold" } as TextStyle,
+  textOverLay: {
+    backgroundColor: "#EEEEEE",
+    borderRadius: 10,
+    alignItems: "center",
+  } as ViewStyle,
+  eventName: {
+    color: "#000000",
+    fontSize: 14,
+    fontWeight: "bold",
+  } as TextStyle,
   eventDescription: { color: "#333333", fontSize: 12 } as TextStyle,
 });
