@@ -12,18 +12,19 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getStoreMenu } from "./services/api"; 
+import { getStoreMenus } from "./services/api"; 
 
 interface MenuData {
   id: number;
   name: string;
   description?: string;
   imageUrl?: string;
+  price?: number,
 }
 
 interface MenuSelectStepProps {
-  selected: string[];
-  onToggle: (id: string) => void;
+  selected: number[];
+  onToggle: (id: number) => void;
   onBack: () => void;
   onNext: () => void;
   storeId: number;
@@ -43,32 +44,23 @@ export default function MenuSelectStep({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMenu = async () => {
-  try {
-    setLoading(true);
-    const data = await getStoreMenu(storeId); // StoreMenuItem[]
-    
-    // StoreMenuItem[] → MenuData[] 변환
-    const mapped: MenuData[] = data.map((item, idx) => ({
-      id: idx + 1, // API에 id 없으면 index로 임시 부여
-      name: item.name,
-      description: item.description,
-      imageUrl: item.imageUrl,
-    }));
+    const fetchMenu = async () =>{
+      try{
+        setLoading(true);
+        const data = await getStoreMenus(storeId);
+        setMenuData(data);
+      }catch(err:any){
+        console.error("[MenuSelectStep] 메뉴 불러오기 실패 ", err);
+        Alert.alert("오류", err.message || "메뉴를 불러오는데 실패하였습니다");
+      }finally{
+        setLoading(false);
+      }
+    };
 
-    setMenuData(mapped);
-  } catch (err: any) {
-    console.error("[MenuSelectStep] 메뉴 불러오기 실패:", err);
-    Alert.alert("오류", err.message || "메뉴를 불러오는데 실패했습니다.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-    if (storeId && accessToken) {
+    if(storeId && accessToken){
       fetchMenu();
     }
-  }, [storeId, accessToken]);
+  }, [storeId,accessToken]);
 
   if (loading) {
     return (
@@ -99,11 +91,11 @@ export default function MenuSelectStep({
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
-          const isSel = selected.includes(String(item.id));
+          const isSel = selected.includes((item.id));
           return (
             <TouchableOpacity
               style={[styles.card, isSel && styles.cardSelected]}
-              onPress={() => onToggle(String(item.id))}
+              onPress={() => onToggle((item.id))}
               activeOpacity={0.7}
             >
               <Image

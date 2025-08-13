@@ -69,7 +69,7 @@ export default function StoreMenuScreen({ storeId }: Props) {
       ) : (
         <FlatList
           data={items}
-          keyExtractor={(m, idx) => `${storeId}-${m.name}-${idx}`} // ✅ 명세에 id 없음 → 안전 조합키
+          keyExtractor={(m, idx) => `${storeId}-${m.name}-${idx}`} // 
           refreshing={refreshing}
           onRefresh={onRefresh}
           contentContainerStyle={{ paddingVertical: 8 }}

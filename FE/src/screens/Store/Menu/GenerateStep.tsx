@@ -8,9 +8,11 @@ import {
   TextInput,
   StyleSheet,
   useWindowDimensions,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import ImageUploader from "../../../components/ImageUploader";
+import { requestMenuPosterAsset } from "./services/api";
 
 interface GenProps {
   uploadedImages: string[];
@@ -20,6 +22,8 @@ interface GenProps {
   onPrompt: (t: string) => void;
   onNext: () => void;
   onBack: () => void;
+  storeId: number;
+  selectedMenuIds: number[];
 }
 
 export default function GenerateStep({
@@ -30,6 +34,8 @@ export default function GenerateStep({
   onPrompt,
   onNext,
   onBack,
+  storeId,
+  selectedMenuIds,
 }: GenProps) {
   const { width } = useWindowDimensions();
   const [localImages, setLocalImages] = useState<(string | null)[]>([
@@ -37,6 +43,7 @@ export default function GenerateStep({
     null,
     null,
   ]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const newImages: (string | null)[] = [null, null, null];
@@ -52,18 +59,56 @@ export default function GenerateStep({
     const newImages = [...localImages];
     newImages[index] = imageUrl;
     setLocalImages(newImages);
-    if (onAdd) onAdd(imageUrl);
+    onAdd(imageUrl);
   };
 
   const handleRemoveImage = (index: number) => {
     const newImages = [...localImages];
     newImages[index] = null;
     setLocalImages(newImages);
-    if (onRemove) onRemove(index);
+    onRemove(index);
   };
 
   const hasImages = localImages.some((img) => img !== null);
   const isDisabled = !hasImages || !prompt.trim();
+
+  const handleConfirm = async () => {
+    if (isDisabled) return;
+
+    try {
+      setLoading(true);
+
+      // FormData 구성
+      const formData = new FormData();
+      formData.append("storeId", String(storeId));
+      selectedMenuIds.forEach((id) => formData.append("menuIds", String(id)));
+      formData.append("prompt", prompt);
+
+      localImages.forEach((uri, idx) => {
+        if (uri) {
+          formData.append("images", {
+            uri,
+            name: `image_${idx}.jpg`,
+            type: "image/jpeg",
+          } as any);
+        }
+      });
+
+      const res = await requestMenuPosterAsset(formData);
+      console.log("[GenerateStep] Asset Request Response:", res);
+
+      Alert.alert("성공", "메뉴판 생성 요청이 완료되었습니다.");
+      onNext();
+    } catch (err: any) {
+      console.error("[GenerateStep] Asset Request Error:", err);
+      Alert.alert(
+        "오류",
+        err.message || "메뉴판 생성 요청 중 문제가 발생했습니다."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const placeholderText = `1. 한글 텍스트가 깨질 수 있어요
 일부 AI 모델은 한글을 완벽하게 인식하지 못해 텍스트가 이미지에 올바르게 출력되지 않을 수 있습니다.
@@ -125,11 +170,13 @@ Best 5 메뉴판에 선정되면 특별한 혜택이 주어집니다-!
       <View style={styles.bottom}>
         <TouchableOpacity
           style={[styles.button, isDisabled && styles.buttonDisabled]}
-          onPress={isDisabled ? () => {} : onNext}
-          disabled={isDisabled}
+          onPress={handleConfirm}
+          disabled={isDisabled || loading}
           activeOpacity={isDisabled ? 1 : 0.7}
         >
-          <Text style={styles.buttonText}>확인</Text>
+          <Text style={styles.buttonText}>
+            {loading ? "요청 중..." : "확인"}
+          </Text>
         </TouchableOpacity>
       </View>
     </>
@@ -165,51 +212,6 @@ const styles = StyleSheet.create({
     color: "#666666",
     textAlign: "center",
   },
-  typeSec: {
-    backgroundColor: "#F7F8F9",
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#333",
-    marginBottom: 16,
-  },
-  typeGrid: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  cbWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  cb: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: "#D1D5DB",
-    marginRight: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  cbOn: {
-    backgroundColor: "#FF69B4",
-    borderColor: "#FF69B4",
-  },
-  ck: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  lbl: {
-    fontSize: 14,
-    color: "#333",
-    fontWeight: "400",
-  },
   upSec: {
     paddingHorizontal: 20,
     paddingVertical: 20,
@@ -221,6 +223,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     marginBottom: 120,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#333",
+    marginBottom: 16,
   },
   promptInput: {
     borderWidth: 1,
