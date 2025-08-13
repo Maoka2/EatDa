@@ -1,121 +1,89 @@
-import React, { useState } from "react";
-import { SafeAreaView, StyleSheet } from "react-native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { AuthStackParamList } from "../../../navigation/AuthNavigator";
+// src/screens/Store/Menu/MenuCustomScreen.tsx
+import React, { useEffect, useState } from "react";
+import { Alert } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { AuthStackParamList } from "../../../navigation/AuthNavigator";
+import { getTokens } from "../../Login/services/tokenStorage";
+
 import MenuSelectStep from "./MenuSelectStep";
-import GenerateStep from "./GenerateStep";
-import WriteStep from "./WriteStep";
 
-// GenerateStep과 동일한 타입으로 맞춤
-type Step = "menu" | "gen" | "write";
+type NavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  "MenuCustomScreen"
+>;
+type RouteProps = RouteProp<AuthStackParamList, "MenuCustomScreen">;
 
-// Navigation Props 타입 정의
-type Props = NativeStackScreenProps<AuthStackParamList, "ReviewWriteScreen">;
+export default function MenuCustomScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProps>();
 
-export default function MenuCustomScreen({ navigation }: Props) {
-  const [step, setStep] = useState<Step>("menu");
+  // StoreScreen에서 넘겨준 파라미터
+  const storeId = route?.params?.storeId;
+  // (storeName, address는 필요시 MenuSelectStep UI에서 쓰도록 전달 가능하지만,
+  // 지금 목표는 메뉴 불러오기 로직이므로 사용하지 않음)
+
+  // MenuSelectStep 인터페이스에 맞춘 상태
   const [selected, setSelected] = useState<string[]>([]);
-  const [imgs, setImgs] = useState<string[]>([]);
-  const [prompt, setPrompt] = useState("");
-  const [genLoading, setGenLoading] = useState(false);
-  const [aiOk, setAiOk] = useState(false);
-  const [text, setText] = useState("");
+  const [accessToken, setAccessToken] = useState<string>("");
 
-  // 화면 닫기 핸들러
-  const handleClose = () => {
-    navigation.goBack();
-  };
-
-  const nextGen = () => {
-    setGenLoading(true); // AI 생성 시작
-    setAiOk(false); // 초기화
-    setStep("write"); // WriteStep으로 이동
-
-    // 5초 후 AI 생성 완료 시뮬레이션
-    setTimeout(() => {
-      setAiOk(true); // AI 생성 완료
-      setGenLoading(false); // 로딩 종료
-    }, 5000);
-  };
-
-  // WriteStep에서 완료 후 리뷰 페이지로 이동하는 핸들러
-  const handleWriteComplete = () => {
-    console.log("리뷰 작성 완료 - 리뷰 페이지로 이동");
-
-    try {
-      // ReviewTabScreen으로 이동 (AuthStackParamList에 있는 화면으로)
-      navigation.navigate("ReviewTabScreen");
-    } catch (error) {
-      console.error("네비게이션 오류:", error);
-      // 실패시 이전 화면으로 돌아가기
-      navigation.goBack();
+  // storeId 유효성 체크
+  useEffect(() => {
+    if (!storeId || storeId <= 0) {
+      Alert.alert("오류", "유효한 가게 ID가 없습니다.", [
+        { text: "확인", onPress: () => navigation.goBack() },
+      ]);
     }
+  }, [storeId, navigation]);
+
+  // 토큰 로드
+  useEffect(() => {
+    (async () => {
+      try {
+        const { accessToken } = await getTokens();
+        if (!accessToken) {
+          Alert.alert("인증 오류", "로그인이 필요합니다.", [
+            { text: "확인", onPress: () => navigation.navigate("Login") },
+          ]);
+          return;
+        }
+        setAccessToken(accessToken);
+      } catch {
+        Alert.alert("오류", "인증 정보를 불러오지 못했습니다.");
+      }
+    })();
+  }, [navigation]);
+
+  // MenuSelectStep 콜백
+  const onToggle = (id: string) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
 
-  const nextMenu = () => {
-    if (selected.length) setStep("gen");
-  };
+  const onBack = () => navigation.goBack();
 
-  // 뒤로가기 핸들러
-  const handleMenuBack = () => {
-    setStep("menu");
-  };
-
-  // 이미지 추가 함수
-  const handleAddImage = (imageUrl: string) => {
-    setImgs((prev) => [...prev, imageUrl]);
+  const onNext = () => {
+    // 다음 단계(프롬프트/이미지 업로드 → requestMenuPosterAsset 호출)는 이후에 붙임
+    // 지금은 선택 완료만 확인
+    if (!selected.length) {
+      Alert.alert("알림", "메뉴를 한 개 이상 선택해주세요.");
+      return;
+    }
+    // 이후 단계로 넘어갈 때 selected를 넘기면 됨
+    // navigation.navigate("다음화면", { storeId, selectedMenuIds: selected.map(Number) });
+    Alert.alert("선택 완료", `선택된 메뉴: ${selected.length}개`);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {step === "menu" && (
-        <MenuSelectStep
-          selected={selected}
-          onToggle={(id) =>
-            setSelected((p) =>
-              p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
-            )
-          }
-          onBack={handleMenuBack}
-          onNext={nextMenu}
-        />
-      )}
-
-      {step === "gen" && (
-        <GenerateStep
-          uploadedImages={imgs}
-          prompt={prompt}
-          onAdd={handleAddImage}
-          onRemove={(i) => setImgs((p) => p.filter((_, idx) => idx !== i))}
-          onPrompt={setPrompt}
-          onNext={nextGen}
-          onBack={() => setStep("menu")}
-        />
-      )}
-
-      {step === "write" && (
-        <WriteStep
-          isGenerating={genLoading} // AI 생성 중 상태
-          aiDone={aiOk} // AI 생성 완료 상태
-          text={text}
-          onChange={setText}
-          onNext={handleWriteComplete} // 수정된 부분: 리뷰 페이지로 직접 이동
-          onBack={() => {
-            // WriteStep에서 뒤로가기 시 AI 상태 초기화
-            setGenLoading(false);
-            setAiOk(false);
-            setStep("gen");
-          }}
-          onClose={handleClose}
-        />
-      )}
-    </SafeAreaView>
+    <MenuSelectStep
+      selected={selected}
+      onToggle={onToggle}
+      onBack={onBack}
+      onNext={onNext}
+      storeId={storeId}
+      accessToken={accessToken}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-});

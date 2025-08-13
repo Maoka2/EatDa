@@ -57,7 +57,11 @@ export type AuthStackParamList = {
   StoreReviewScreen: undefined;
   DetailEventScreen: undefined;
 
-  MenuCustomScreen: undefined;
+  MenuCustomScreen: {
+    storeId: number;
+    storeName?: string;
+    address?: string;
+  };
 
   MypageScreen: undefined;
 

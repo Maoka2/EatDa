@@ -1,12 +1,6 @@
+// src/screens/Store/StoreScreen.tsx
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ViewStyle,
-  TextStyle,
-} from "react-native";
+import { View, Text, StyleSheet, SafeAreaView } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -32,21 +26,15 @@ export default function StoreScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<StoreRouteProp>();
   const storeId = route?.params?.storeId;
-  const initialName = route?.params?.storeName;
-  const initialAddress = route?.params?.address;
+  const storeName = route?.params?.storeName;
+  const address = route?.params?.address;
+  const latitude = route?.params?.latitude;
+  const longitude = route?.params?.longitude;
 
   const { isLoggedIn, userRole } = useAuth();
   const isEater = isLoggedIn && userRole === "EATER";
 
-  const [storeName, setStoreName] = useState<string>(initialName ?? "");
-  const [storeAddress, setStoreAddress] = useState<string>(
-    initialAddress ?? ""
-  );
-
   const [activeTab, setActiveTab] = useState("menu");
-  const [bottomActiveScreen, setBottomActiveScreen] = useState<string | null>(
-    null
-  );
 
   useEffect(() => {
     if (!storeId || storeId <= 0) {
@@ -54,28 +42,14 @@ export default function StoreScreen() {
     }
   }, [storeId]);
 
-  useEffect(() => {
-    if (initialName) setStoreName(initialName);
-    if (initialAddress) setStoreAddress(initialAddress);
-  }, [initialName, initialAddress]);
-
-  useEffect(() => {
-    if (!bottomActiveScreen) return;
-    if (bottomActiveScreen === "review")
-      navigation.navigate("ReviewWriteScreen");
-    if (bottomActiveScreen === "map") navigation.navigate("MapScreen");
-    if (bottomActiveScreen === "menu") navigation.navigate("MenuCustomScreen");
-    setBottomActiveScreen(null);
-  }, [bottomActiveScreen, navigation]);
-
   if (!storeId || storeId <= 0) {
     return (
       <SafeAreaView
         style={{
-          backgroundColor: "#F7F8F9",
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
+          backgroundColor: "#F7F8F9",
         }}
       >
         <Text style={{ color: "#666" }}>유효한 가게 ID가 없습니다.</Text>
@@ -89,6 +63,28 @@ export default function StoreScreen() {
     { key: "review", label: "리뷰" },
   ];
 
+  // ✅ 하단 버튼 핸들링: BottomButton에서 넘어온 키를 스위치로 처리
+  const handleBottomPress = (screen: string) => {
+    switch (screen) {
+      case "review":
+        navigation.navigate("ReviewWriteScreen");
+        break;
+      case "map":
+        navigation.navigate("MapScreen"); // 필요시 store 좌표 넘기면 더 좋음
+        // navigation.navigate("MapScreen", { storeId, storeName, latitude, longitude });
+        break;
+      case "menu":
+        navigation.navigate("MenuCustomScreen", {
+          storeId,
+          storeName,
+          address,
+        });
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <SafeAreaView style={{ backgroundColor: "#F7F8F9", flex: 1 }}>
       <View style={styles.headerContainer}>
@@ -99,15 +95,11 @@ export default function StoreScreen() {
       <View style={styles.storeInfo}>
         <Text style={styles.storeName}>{storeName || "가게 이름"}</Text>
         <Text style={styles.storeAddress}>
-          {storeAddress ? `📍${storeAddress}` : "📍주소 정보 없음"}
+          {address ? `📍${address}` : "📍주소 정보 없음"}
         </Text>
       </View>
 
-      <TabSwitcher
-        tabs={tabs}
-        activeKey={activeTab}
-        onChange={(key) => setActiveTab(key)}
-      />
+      <TabSwitcher tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
 
       <View style={{ flex: 1 }}>
         {activeTab === "menu" && <StoreMenuScreen storeId={storeId} />}
@@ -115,29 +107,18 @@ export default function StoreScreen() {
         {activeTab === "review" && <StoreReviewScreen />}
       </View>
 
-      {isEater && <BottomButton onPress={setBottomActiveScreen} />}
+      {isEater && <BottomButton onPress={handleBottomPress} />}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    flexDirection: "row",
-    paddingTop: 40,
-  },
+  headerContainer: { flexDirection: "row", paddingTop: 40 },
   storeInfo: {
     flexDirection: "row",
     paddingHorizontal: 20,
     marginVertical: 10,
-  } as ViewStyle,
-  storeName: {
-    fontSize: 20,
-    fontWeight: "500",
-    marginRight: 12,
-  } as TextStyle,
-  storeAddress: {
-    marginTop: 9,
-    fontSize: 12,
-    letterSpacing: -0.3,
-  } as TextStyle,
+  },
+  storeName: { fontSize: 20, fontWeight: "500", marginRight: 12 },
+  storeAddress: { marginTop: 9, fontSize: 12, letterSpacing: -0.3 },
 });
