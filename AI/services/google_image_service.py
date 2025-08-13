@@ -16,6 +16,7 @@ from typing import Optional, List
 from PIL import Image
 import base64
 import mimetypes
+import logging
 
 try:
     # pip install google-genai
@@ -29,11 +30,21 @@ except Exception:  # pragma: no cover
 class GoogleImageService:
     def __init__(self) -> None:
         self.api_key = os.getenv("GOOGLE_API_KEY")
+        self.logger = logging.getLogger(__name__)
 
         if not self.api_key or genai is None:
             self.client = None
+            reason = "google-genai 미설치" if genai is None else "GOOGLE_API_KEY 미설정"
+            try:
+                self.logger.warning(f"GoogleImageService 비활성화: {reason}")
+            except Exception:
+                pass
         else:
             self.client = genai.Client(api_key=self.api_key)
+            try:
+                self.logger.info("Successfully initialized Google GenAI client")
+            except Exception:
+                pass
 
     def is_available(self) -> bool:
         return self.client is not None
@@ -50,6 +61,7 @@ class GoogleImageService:
 
         # 로컬 파일 경로를 제공받은 경우, 존재하는 파일을 base64 inline_data로 추가
         if reference_image_paths:
+            exist_count = 0
             for p in reference_image_paths:
                 try:
                     if not p or not os.path.exists(p):
@@ -61,9 +73,14 @@ class GoogleImageService:
                     contents.append({
                         "inline_data": {"mime_type": mime, "data": b64}
                     })
+                    exist_count += 1
                 except Exception:
                     # 문제가 있는 파일은 건너뜀
                     continue
+            try:
+                self.logger.info(f"GoogleImageService: reference images attached: {exist_count}/{len(reference_image_paths)}")
+            except Exception:
+                pass
 
         try:
             response = self.client.models.generate_content(  # type: ignore[union-attr]
@@ -81,9 +98,21 @@ class GoogleImageService:
                     if inline_data and getattr(inline_data, "data", None):
                         b64 = base64.b64encode(inline_data.data).decode("ascii")
                         mime = getattr(inline_data, "mime_type", "image/png") or "image/png"
+                        try:
+                            self.logger.info("GoogleImageService: image generated successfully")
+                        except Exception:
+                            pass
                         return f"data:{mime};base64,{b64}"
+            try:
+                self.logger.warning("GoogleImageService: no image in response (candidates/parts missing)")
+            except Exception:
+                pass
             return None
-        except Exception:
+        except Exception as e:
+            try:
+                self.logger.exception(f"GoogleImageService: generation error: {e}")
+            except Exception:
+                pass
             return None
 
 

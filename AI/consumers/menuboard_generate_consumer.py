@@ -130,6 +130,7 @@ class MenuboardGenerateConsumer:
 
     async def process_image(self, req: MenuPosterGenerateMessage) -> Tuple[str, str | None]:
         if not google_image_service.is_available():
+            self.logger.warning("[메뉴판컨슈머] GoogleImageService unavailable. GOOGLE_API_KEY 또는 라이브러리 확인 필요")
             return "FAIL", None
         # 메뉴보드 전용 GPT 보강 후 이미지 생성 (참고 이미지가 있다면 함께 전달)
         enhanced = await gpt_service.enhance_prompt_for_menuboard(req.prompt)
@@ -193,13 +194,13 @@ class MenuboardGenerateConsumer:
         while True:
             try:
                 await self.ensure_consumer_group()
-                print("[메뉴판컨슈머] consumer group ready")
+                self.logger.info("[메뉴판컨슈머] consumer group ready")
                 break
             except Exception as e:
-                print(f"[메뉴판컨슈머] failed to prepare consumer group, retry in 3s: {e}")
+                self.logger.warning(f"[메뉴판컨슈머] failed to prepare consumer group, retry in 3s: {e}")
                 await asyncio.sleep(3)
 
-        print(
+        self.logger.info(
             f"[메뉴판컨슈머] start: url={self.redis_url}, group={self.group}, consumer={self.consumer_id}, stream={self.stream_key}"
         )
         while True:
@@ -224,10 +225,10 @@ class MenuboardGenerateConsumer:
                             await self.handle_message(message_id, fields)
                             await self.client.xack(self.stream_key, self.group, message_id)
                         except Exception as handle_err:
-                            print(f"[메뉴판컨슈머] handle_message error: {handle_err}")
+                            self.logger.error(f"[메뉴판컨슈머] handle_message error: {handle_err}")
                             await self.client.xack(self.stream_key, self.group, message_id)
             except Exception as loop_err:
-                print(f"[메뉴판컨슈머] loop error: {loop_err}")
+                self.logger.error(f"[메뉴판컨슈머] loop error: {loop_err}")
                 await asyncio.sleep(2)
 
 
