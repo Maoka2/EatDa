@@ -1,4 +1,5 @@
 // WriteStep.tsx
+// WriteStep.tsx - 간소화 버전
 import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
@@ -9,31 +10,29 @@ import {
   TextInput,
   StyleSheet,
   useWindowDimensions,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
-import ResultModal from "../../../components/ResultModal"; // ⭐ ResultModal만 import
-import { finalizeReview } from "./services/api"; // ⭐ API 함수 import
+import AICompleteModal from "../../../components/AICompleteModal";
 
 interface WriteProps {
   isGenerating: boolean;
   aiDone: boolean;
   text: string;
   onChange: (t: string) => void;
-  onNext: () => void;
+  onNext: () => void; // ⭐ 상위 컴포넌트에서 API 호출 및 ResultModal 처리
   onBack: () => void;
   onClose: () => void;
   generatedAssetUrl?: string | null;
   generatedAssetType?: string | null;
   
-  // ⭐ 리뷰 등록에 필요한 추가 props
-  reviewId?: number | null; // ⭐ null 허용
-  reviewAssetId?: number | null; // ⭐ null 허용
+  // 기타 props (검증 목적)
+  reviewId?: number | null;
+  reviewAssetId?: number | null;
   accessToken?: string;
-  selectedMenuIds?: number[]; // ⭐ 선택된 메뉴 ID들 추가
-  storeId?: number; // ⭐ 스토어 ID 추가
-  onReviewComplete?: (reviewId: number) => void; // 리뷰 등록 완료 콜백
+  selectedMenuIds?: number[];
+  storeId?: number;
+  onReviewComplete?: (reviewId: number) => void; // 사용하지 않지만 호환성 유지
 }
 
 export default function WriteStep({
@@ -41,27 +40,20 @@ export default function WriteStep({
   aiDone,
   text,
   onChange,
-  onNext,
+  onNext, // ⭐ 상위 컴포넌트의 API 호출 함수
   onBack,
   onClose,
   generatedAssetUrl,
   generatedAssetType,
-  
-  // ⭐ 새로 추가된 props
-  reviewId,
-  reviewAssetId,
-  accessToken,
-  selectedMenuIds,
-  storeId,
-  onReviewComplete,
 }: WriteProps) {
   const { width } = useWindowDimensions();
-  const [isSubmitting, setIsSubmitting] = useState(false); // ⭐ 제출 중 상태
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // ⭐ ResultModal 상태
-  const [showResultModal, setShowResultModal] = useState(false);
-  const [resultModalType, setResultModalType] = useState<"success" | "failure">("success");
-  const [resultModalMessage, setResultModalMessage] = useState("");
+  // ⭐ 미리보기 모달 상태
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  
+  // ⭐ 게시 확인 모달 상태
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // AI 생성 완료 & 텍스트 리뷰 30자 이상 체크
   const canComplete = aiDone && text.trim().length >= 30 && !isSubmitting;
@@ -72,134 +64,49 @@ export default function WriteStep({
     }
     
     if (canComplete) {
-      // ⭐ CompleteModal 대신 바로 finalizeReview 호출
-      handleFinalize();
+      setShowConfirmModal(true);
     }
   };
 
   const handleModalCancel = () => {
-    // CompleteModal 관련 코드 제거됨
+    setShowPreviewModal(false);
   };
 
-  // ⭐ 리뷰 최종 등록 함수
-  const handleFinalize = async () => {
-    // 필수 데이터 검증
-    if (!reviewId || !reviewAssetId || !accessToken || !storeId) {
-      console.error("[WriteStep] 필수 데이터 누락:", {
-        reviewId,
-        reviewAssetId,
-        hasAccessToken: !!accessToken,
-        storeId
-      });
-      Alert.alert("오류", "리뷰 등록에 필요한 정보가 부족합니다.");
-      return;
-    }
-
-    if (text.trim().length < 30) {
-      Alert.alert("알림", "리뷰는 30자 이상 작성해주세요.");
-      return;
-    }
-
-    if (!generatedAssetType) {
-      console.error("[WriteStep] generatedAssetType 누락");
-      Alert.alert("오류", "생성된 에셋 타입 정보가 없습니다.");
-      return;
-    }
-
-    if (!selectedMenuIds || selectedMenuIds.length === 0) {
-      console.error("[WriteStep] selectedMenuIds 누락");
-      Alert.alert("오류", "선택된 메뉴 정보가 없습니다.");
-      return;
-    }
-
+  // ⭐ 게시 확인 모달 핸들러
+  const handleConfirmModalConfirm = async () => {
+    setShowConfirmModal(false);
     setIsSubmitting(true);
     
     try {
-      console.log("[WriteStep] 리뷰 등록 시작:", {
-        reviewId,
-        reviewAssetId,
-        storeId,
-        selectedMenuIds,
-        description: text.substring(0, 50) + "...",
-        type: generatedAssetType
-      });
-
-      const result = await finalizeReview({
-        reviewId,
-        reviewAssetId,
-        description: text.trim(),
-        type: generatedAssetType,
-        menuIds: selectedMenuIds // ⭐ menuIds 추가
-      }, accessToken);
-
-      console.log("[WriteStep] 리뷰 등록 완료:", result);
-
-      // ⭐ 성공 모달 바로 표시
-      setResultModalType("success");
-      setResultModalMessage("리뷰가 성공적으로 등록되었습니다!");
-      setShowResultModal(true);
-
+      // ⭐ 상위 컴포넌트의 onNext 함수 호출 (API 호출 및 ResultModal 처리)
+      await onNext();
     } catch (error: any) {
       console.error("[WriteStep] 리뷰 등록 실패:", error);
-      
-      // ⭐ Alert 대신 실패 모달 표시
-      setResultModalType("failure");
-      setResultModalMessage(error.message || "리뷰 등록 중 오류가 발생했습니다. 다시 시도해주세요.");
-      setShowResultModal(true);
+      // 에러는 상위 컴포넌트에서 ResultModal로 처리
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ⭐ ResultModal 닫기 핸들러
-  const handleResultModalClose = () => {
-    setShowResultModal(false);
-    
-    // 성공한 경우에만 완료 처리
-    if (resultModalType === "success") {
-      // 상위 컴포넌트에 완료 알림
-      if (onReviewComplete) {
-        onReviewComplete(reviewId || 0);
-      }
-      // 리뷰 작성 화면 닫기
-      onClose();
-    }
+  const handleConfirmModalCancel = () => {
+    setShowConfirmModal(false);
   };
 
   // API 타입을 모달용 타입으로 변환
   const getContentTypeForModal = (): "IMAGE" | "SHORTS_RAY_2" | "SHORTS_GEN_4" | null => {
     if (!generatedAssetType) {
-      console.log("[WriteStep] generatedAssetType이 없음");
       return null;
     }
     
-    // API에서 받은 타입을 그대로 사용
     if (["IMAGE", "SHORTS_RAY_2", "SHORTS_GEN_4"].includes(generatedAssetType)) {
-      console.log("[WriteStep] 유효한 contentType:", generatedAssetType);
       return generatedAssetType as "IMAGE" | "SHORTS_RAY_2" | "SHORTS_GEN_4";
     }
     
-    console.log("[WriteStep] 알 수 없는 generatedAssetType:", generatedAssetType);
     return null;
   };
 
   const contentType = getContentTypeForModal();
   const isVideo = contentType === "SHORTS_RAY_2" || contentType === "SHORTS_GEN_4";
-
-  // 디버깅용 로그
-  useEffect(() => {
-    console.log("[WriteStep] State update:", {
-      isGenerating,
-      aiDone,
-      generatedAssetUrl: generatedAssetUrl ? "있음" : "없음",
-      generatedAssetType,
-      contentType,
-      isVideo,
-      selectedMenuIds,
-      storeId,
-      hasAccessToken: !!accessToken
-    });
-  }, [isGenerating, aiDone, generatedAssetUrl, generatedAssetType, contentType, isVideo, reviewId, reviewAssetId, accessToken]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -253,17 +160,10 @@ export default function WriteStep({
               {generatedAssetUrl && (
                 <TouchableOpacity 
                   style={styles.previewButton}
-                  onPress={() => {
-                    console.log("[WriteStep] 미리보기 버튼 클릭:", {
-                      generatedAssetUrl,
-                      contentType
-                    });
-                    // ⭐ 미리보기는 별도 모달이나 화면으로 처리할 수 있음
-                    Alert.alert("미리보기", "생성된 콘텐츠를 확인하세요.");
-                  }}
+                  onPress={() => setShowPreviewModal(true)}
                 >
                   <Text style={styles.previewButtonText}>
-                    {isVideo ? "🎬 쇼츠 미리보기" : "🖼️ 이미지 미리보기"}
+                    {isVideo ? "쇼츠 미리보기" : "이미지 미리보기"}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -293,7 +193,7 @@ export default function WriteStep({
             value={text}
             onChangeText={onChange}
             maxLength={500}
-            editable={!isSubmitting} // ⭐ 제출 중일 때 편집 비활성화
+            editable={!isSubmitting}
           />
 
           <View style={styles.textCounter}>
@@ -330,18 +230,36 @@ export default function WriteStep({
         </TouchableOpacity>
       </View>
 
-      {/* ⭐ 결과 모달만 유지 */}
-      <ResultModal
-        visible={showResultModal}
-        type={resultModalType}
-        title={resultModalType === "success" ? "리뷰 등록 완료!" : "리뷰 등록 실패"}
-        message={resultModalMessage}
-        onClose={handleResultModalClose}
+      {/* 미리보기 모달 */}
+      <AICompleteModal
+        visible={showPreviewModal}
+        onClose={handleModalCancel}
+        generatedContent={generatedAssetUrl}
+        contentType={contentType}
+        title={contentType === "SHORTS_RAY_2" ? "예쁜 쇼츠 미리보기" : contentType === "SHORTS_GEN_4" ? "빠른 쇼츠 미리보기" : "AI 이미지 미리보기"}
+        subtitle="생성된 결과를 확인해보세요."
+        confirmButtonText="확인"
+        cancelButtonText=""
+        onConfirm={handleModalCancel}
+        onCancel={handleModalCancel}
+      />
+
+      {/* 게시 확인 모달 */}
+      <AICompleteModal
+        visible={showConfirmModal}
+        onClose={handleConfirmModalCancel}
+        generatedContent={generatedAssetUrl}
+        contentType={contentType}
+        title={contentType === "SHORTS_RAY_2" ? "예쁜 쇼츠 생성 완료!" : contentType === "SHORTS_GEN_4" ? "빠른 쇼츠 생성 완료!" : "AI 이미지 생성 완료!"}
+        subtitle="생성된 리뷰를 게시하시겠습니까?"
+        confirmButtonText="게시하기"
+        cancelButtonText="취소"
+        onConfirm={handleConfirmModalConfirm}
+        onCancel={handleConfirmModalCancel}
       />
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {

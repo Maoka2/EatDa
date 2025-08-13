@@ -14,7 +14,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode } from "expo-av";
 
 interface AICompleteModalProps {
   visible: boolean;
@@ -54,7 +54,8 @@ export default function AICompleteModal({
     "https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=400&h=300&fit=crop";
 
   // 콘텐츠 타입 판별
-  const isVideo = contentType === "SHORTS_RAY_2" || contentType === "SHORTS_GEN_4";
+  const isVideo =
+    contentType === "SHORTS_RAY_2" || contentType === "SHORTS_GEN_4";
   const isImage = contentType === "IMAGE" || !contentType;
 
   // 모달이 열릴 때마다 상태 초기화
@@ -63,11 +64,11 @@ export default function AICompleteModal({
       setIsVideoLoading(isVideo); // 비디오면 로딩 시작
       setVideoError(false);
       setIsPlaying(false);
-      
+
       console.log("[AICompleteModal] 모달 열림:", {
         contentType,
         isVideo,
-        generatedContent: generatedContent ? "있음" : "없음"
+        generatedContent: generatedContent ? "있음" : "없음",
       });
     }
   }, [visible, isVideo, generatedContent]);
@@ -85,14 +86,17 @@ export default function AICompleteModal({
     console.error("[AICompleteModal] 비디오 로드 실패:", error);
     setIsVideoLoading(false);
     setVideoError(true);
-    Alert.alert("알림", "영상을 재생할 수 없습니다. 이미지로 대체하여 표시합니다.");
+    Alert.alert(
+      "알림",
+      "영상을 재생할 수 없습니다. 이미지로 대체하여 표시합니다."
+    );
   };
 
   // 비디오 상태 변경 핸들러
   const handlePlaybackStatusUpdate = (status: any) => {
     if (status.isLoaded) {
       setIsPlaying(status.isPlaying);
-      
+
       // 비디오가 끝까지 재생되면 다시 처음부터 재생 (루프)
       if (status.didJustFinish) {
         console.log("[AICompleteModal] 비디오 재생 완료, 다시 시작");
@@ -141,7 +145,7 @@ export default function AICompleteModal({
             onError={handleVideoError}
             onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
           />
-          
+
           {/* 로딩 인디케이터 */}
           {isVideoLoading && (
             <View style={styles.videoLoadingOverlay}>
@@ -151,7 +155,7 @@ export default function AICompleteModal({
           )}
 
           {/* 재생 컨트롤 오버레이 */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.playControlOverlay}
             onPress={toggleVideoPlayback}
             activeOpacity={0.7}
@@ -185,7 +189,7 @@ export default function AICompleteModal({
             console.warn("[AICompleteModal] 이미지 로드 실패:", error);
           }}
         />
-        
+
         {/* 이미지 타입 표시 */}
         {contentType === "IMAGE" && (
           <View style={styles.contentTypeLabel}>
@@ -206,9 +210,7 @@ export default function AICompleteModal({
       <View style={styles.backdrop}>
         <View style={[styles.container, { width: modalWidth }]}>
           {/* AI 생성 콘텐츠 */}
-          <View style={styles.contentSection}>
-            {renderContent()}
-          </View>
+          <View style={styles.contentSection}>{renderContent()}</View>
 
           {/* 텍스트 콘텐츠 */}
           <View style={styles.textContent}>
@@ -216,24 +218,36 @@ export default function AICompleteModal({
             <Text style={styles.subtitle}>{subtitle}</Text>
           </View>
 
-          {/* 버튼들 */}
-          <View style={styles.buttonSection}>
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={onConfirm}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.confirmButtonText}>{confirmButtonText}</Text>
-            </TouchableOpacity>
+          {/* 버튼들 - ⭐ 버튼이 둘 다 없으면 버튼 섹션 자체를 숨김 */}
+          {(confirmButtonText ||
+            (cancelButtonText && cancelButtonText.trim() !== "")) && (
+            <View style={styles.buttonSection}>
+              {confirmButtonText && (
+                <TouchableOpacity
+                  style={styles.confirmButton}
+                  onPress={onConfirm}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.confirmButtonText}>
+                    {confirmButtonText}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onCancel}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.cancelButtonText}>{cancelButtonText}</Text>
-            </TouchableOpacity>
-          </View>
+              {/* ⭐ cancelButtonText가 있을 때만 취소 버튼 표시 */}
+              {cancelButtonText && cancelButtonText.trim() !== "" && (
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={onCancel}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.cancelButtonText}>
+                    {cancelButtonText}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       </View>
     </Modal>

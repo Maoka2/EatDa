@@ -189,8 +189,6 @@ export default function MenuSelectStep({
                     {item.price.toLocaleString()}원
                   </Text>
                 )}
-                {/* ⭐ 디버깅용 ID 표시 (개발 시에만) */}
-                <Text style={styles.debugId}>ID: {item.id}</Text>
               </View>
               <View
                 style={[styles.checkWrap, isSel && styles.checkWrapSelected]}

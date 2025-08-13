@@ -435,8 +435,14 @@ export const finalizeReview = async (
   accessToken: string
 ): Promise<{ reviewId: number }> => {
   const url = `${BASE_API_URL}/reviews/finalize`;
+  
+  // ⭐ 더 자세한 요청 로깅
   console.log("[finalizeReview] POST", url);
-  console.log("[finalizeReview] Request data:", request);
+  console.log("[finalizeReview] Request Headers:", {
+    Authorization: `Bearer ${accessToken.substring(0, 20)}...`,
+    "Content-Type": "application/json",
+  });
+  console.log("[finalizeReview] Request Body:", JSON.stringify(request, null, 2));
 
   // 요청 전 검증
   if (!request.reviewId || request.reviewId <= 0) {
@@ -464,6 +470,7 @@ export const finalizeReview = async (
   }
 
   if (!request.menuIds.every(id => typeof id === 'number' && id > 0)) {
+    console.error("[finalizeReview] 잘못된 menuIds:", request.menuIds);
     throw new Error("유효하지 않은 메뉴 ID가 포함되어 있습니다.");
   }
 
@@ -474,14 +481,41 @@ export const finalizeReview = async (
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(request), // ⭐ menuIds가 포함된 request 전송
+      body: JSON.stringify(request),
     });
 
     const text = await res.text().catch(() => "");
 
-    if (!res.ok) {
-      console.log("[finalizeReview] status:", res.status, "payload:", text);
+    // ⭐ 응답 상세 로깅
+    console.log("[finalizeReview] Response Status:", res.status);
+    console.log("[finalizeReview] Response Headers:", Object.fromEntries(res.headers.entries()));
+    console.log("[finalizeReview] Response Body:", text);
 
+    if (!res.ok) {
+      console.error("[finalizeReview] ❌ HTTP 오류 발생:", {
+        status: res.status,
+        statusText: res.statusText,
+        url,
+        requestBody: request,
+        responseBody: text
+      });
+
+      // ⭐ 500 에러 특별 처리
+      if (res.status === 500) {
+        console.error("[finalizeReview] 🚨 서버 내부 오류 - 요청 데이터 검토 필요");
+        
+        // 서버 에러 응답 파싱 시도
+        try {
+          const errorJson = JSON.parse(text);
+          console.error("[finalizeReview] 서버 에러 상세:", errorJson);
+          const errorMessage = errorJson.message || errorJson.error || "서버 내부 오류가 발생했습니다.";
+          throw new Error(`서버 오류: ${errorMessage}`);
+        } catch (parseError) {
+          throw new Error(`서버 내부 오류가 발생했습니다. (Status: ${res.status})`);
+        }
+      }
+
+      // 기타 에러 처리
       try {
         const errorJson = JSON.parse(text);
         const errorMessage =
@@ -499,6 +533,8 @@ export const finalizeReview = async (
       throw new Error("서버 응답 형식이 올바르지 않습니다.");
     }
 
+    console.log("[finalizeReview] ✅ 성공 응답:", json);
+
     const data = json.data;
     if (!data || typeof data.reviewId !== "number") {
       console.log("[finalizeReview] 예상치 못한 응답:", json);
@@ -509,7 +545,11 @@ export const finalizeReview = async (
       reviewId: data.reviewId,
     };
   } catch (error: any) {
-    console.error("[finalizeReview] 요청 중 오류:", error);
+    console.error("[finalizeReview] 🔥 최종 에러:", {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 3).join('\n') // 스택 트레이스 일부만
+    });
 
     if (error.name === "TypeError" && error.message.includes("Network")) {
       throw new Error("네트워크 연결을 확인해주세요.");

@@ -7,6 +7,7 @@ import OCRStep from "./OCRStep";
 import MenuSelectStep from "./MenuSelectStep";
 import GenerateStep from "./GenerateStep";
 import WriteStep from "./WriteStep";
+import ResultModal from "../../../components/ResultModal"; // ⭐ ResultModal import 추가
 import { requestReviewAsset, pollReviewAsset, finalizeReview } from "./services/api";
 
 // API 타입에 맞춰 수정
@@ -51,9 +52,13 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
   const [accessToken, setAccessToken] = useState<string>("");
   const [isTokenLoading, setIsTokenLoading] = useState(true);
   
+  // ⭐ ResultModal 상태 추가
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [resultModalType, setResultModalType] = useState<"success" | "failure">("success");
+  const [resultModalMessage, setResultModalMessage] = useState("");
+  
   // route params에서 storeId 가져오기
-  // const storeId = route.params?.storeId; // 기본값 5
-  const storeId = 5; 
+  const storeId = 8; 
 
   // 컴포넌트 마운트 시 AsyncStorage에서 토큰 가져오기
   useEffect(() => {
@@ -209,7 +214,6 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
         
       } catch (pollError: any) {
         console.error("[ReviewWriteScreen] 폴링 실패:", pollError);
-        // Alert.alert 제거 - 로그만 출력
       } finally {
         setGenLoading(false);
       }
@@ -218,7 +222,6 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
       console.error("[ReviewWriteScreen] AI 리뷰 생성 요청 실패:", error);
       setGenLoading(false);
       
-      // Alert.alert 제거 - 로그만 출력
       let errorMessage = "AI 리뷰 생성 요청에 실패했습니다.";
       
       if (error.message) {
@@ -235,32 +238,39 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
     }
   };
 
-  // WriteStep에서 완료 후 리뷰 최종 등록하는 핸들러 - 수정됨
+  // ⭐ WriteStep에서 완료 후 리뷰 최종 등록하는 핸들러 - ResultModal 사용으로 수정
   const handleWriteComplete = async () => {
     try {
       // 필수 데이터 검증
       if (!reviewId || !reviewAssetId || !text.trim()) {
-        Alert.alert("오류", "리뷰 내용을 입력해주세요.");
+        setResultModalType("failure");
+        setResultModalMessage("리뷰 내용을 입력해주세요.");
+        setShowResultModal(true);
         return;
       }
 
       if (text.trim().length < 30) {
-        Alert.alert("오류", "리뷰는 30자 이상 작성해주세요.");
+        setResultModalType("failure");
+        setResultModalMessage("리뷰는 30자 이상 작성해주세요.");
+        setShowResultModal(true);
         return;
       }
 
       if (!assetType || !accessToken) {
-        Alert.alert("오류", "리뷰 등록에 필요한 정보가 부족합니다.");
+        setResultModalType("failure");
+        setResultModalMessage("리뷰 등록에 필요한 정보가 부족합니다.");
+        setShowResultModal(true);
         return;
       }
 
-      // ⭐ selected가 비어있는지 검증
       if (selected.length === 0) {
-        Alert.alert("오류", "선택된 메뉴가 없습니다.");
+        setResultModalType("failure");
+        setResultModalMessage("선택된 메뉴가 없습니다.");
+        setShowResultModal(true);
         return;
       }
 
-      // ⭐ menuIds 변환
+      // menuIds 변환
       const menuIds = selected.map(id => {
         const numId = parseInt(id, 10);
         if (isNaN(numId)) {
@@ -272,36 +282,26 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
       console.log("[ReviewWriteScreen] 리뷰 최종 등록 시작:", {
         reviewId,
         reviewAssetId,
-        menuIds, // ⭐ menuIds 로깅 추가
+        menuIds,
         description: text.substring(0, 50) + "...",
         type: assetType
       });
 
-      // 3단계: 리뷰 최종 등록 - ⭐ menuIds 추가
+      // 3단계: 리뷰 최종 등록
       const result = await finalizeReview({
         reviewId,
         reviewAssetId,
         description: text.trim(),
         type: assetType,
-        menuIds, // ⭐ menuIds 추가
+        menuIds,
       }, accessToken);
 
       console.log("[ReviewWriteScreen] 리뷰 등록 완료:", result);
       
-      Alert.alert("성공", "리뷰가 성공적으로 등록되었습니다!", [
-        {
-          text: "확인",
-          onPress: () => {
-            try {
-              // 리뷰 탭으로 이동하거나 이전 화면으로 돌아가기
-              navigation.navigate("ReviewTabScreen");
-            } catch (navError) {
-              console.error("[ReviewWriteScreen] 네비게이션 오류:", navError);
-              navigation.goBack();
-            }
-          }
-        }
-      ]);
+      // ⭐ 성공 시 ResultModal 표시
+      setResultModalType("success");
+      setResultModalMessage("리뷰가 성공적으로 등록되었습니다!");
+      setShowResultModal(true);
 
     } catch (error: any) {
       console.error("[ReviewWriteScreen] 리뷰 등록 실패:", error);
@@ -318,8 +318,27 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
         }
       }
       
-      Alert.alert("오류", errorMessage);
+      // ⭐ 실패 시 ResultModal 표시
+      setResultModalType("failure");
+      setResultModalMessage(errorMessage);
+      setShowResultModal(true);
     }
+  };
+
+  // ⭐ ResultModal 닫기 핸들러
+  const handleResultModalClose = () => {
+    setShowResultModal(false);
+    
+    // 성공한 경우에만 ReviewTabScreen으로 이동
+    if (resultModalType === "success") {
+      try {
+        navigation.navigate("ReviewTabScreen");
+      } catch (navError) {
+        console.error("[ReviewWriteScreen] 네비게이션 오류:", navError);
+        navigation.goBack();
+      }
+    }
+    // 실패 시에는 모달만 닫고 현재 화면 유지
   };
 
   const nextMenu = () => {
@@ -424,27 +443,36 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
       )}
 
       {step === "write" && (
-  <WriteStep
-    isGenerating={genLoading}
-    aiDone={aiOk}
-    text={text}
-    onChange={setText}
-    onNext={handleWriteComplete}
-    onBack={handleWriteBack}
-    onClose={handleClose}
-    generatedAssetUrl={generatedAssetUrl}
-    generatedAssetType={assetType}
-    reviewId={reviewId}
-    reviewAssetId={reviewAssetId}
-    accessToken={accessToken}
-    selectedMenuIds={selected.map(id => parseInt(id, 10))} // string[] → number[] 변환
-    storeId={storeId}
-    onReviewComplete={(completedReviewId) => {
-      console.log("리뷰 등록 완료:", completedReviewId);
-      navigation.navigate("ReviewTabScreen");
-    }}
-  />
-)}
+        <WriteStep
+          isGenerating={genLoading}
+          aiDone={aiOk}
+          text={text}
+          onChange={setText}
+          onNext={handleWriteComplete} // ⭐ 이제 이 함수가 ResultModal을 처리
+          onBack={handleWriteBack}
+          onClose={handleClose}
+          generatedAssetUrl={generatedAssetUrl}
+          generatedAssetType={assetType}
+          reviewId={reviewId}
+          reviewAssetId={reviewAssetId}
+          accessToken={accessToken}
+          selectedMenuIds={selected.map(id => parseInt(id, 10))}
+          storeId={storeId}
+          onReviewComplete={(completedReviewId) => {
+            console.log("리뷰 등록 완료:", completedReviewId);
+            // ⭐ 이 콜백은 이제 사용되지 않음 (handleWriteComplete에서 직접 처리)
+          }}
+        />
+      )}
+
+      {/* ⭐ ResultModal 추가 */}
+      <ResultModal
+        visible={showResultModal}
+        type={resultModalType}
+        title={resultModalType === "success" ? "리뷰 등록 완료!" : "리뷰 등록 실패"}
+        message={resultModalMessage}
+        onClose={handleResultModalClose}
+      />
     </SafeAreaView>
   );
 }
