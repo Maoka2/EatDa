@@ -59,7 +59,7 @@ export default function ActiveEventScreen() {
       id: String(a.eventId),
       eventName: a.title,
       description: a.description,
-      uri: { uri: a.postUrl },
+      uri: a.postUrl,
       start_date: new Date(a.startAt),
       end_date: new Date(a.endAt),
       storeName: a.storeName,
@@ -148,7 +148,7 @@ export default function ActiveEventScreen() {
                 height: height * 0.65,
                 borderRadius: 10,
               }}
-              source={selectedEvent.uri}
+              source={{uri:selectedEvent.uri}}
               resizeMode="stretch"
             />
           </View>

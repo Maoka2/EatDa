@@ -20,9 +20,9 @@ export interface ReviewItem {
 export interface eventItem {
   id: string;
   eventName: string;
-  eventDescription: string;
-  uri: number;
-  // storeId:string; 
+  storeName:string;
+  description: string;
+  uri: string;
   start_date: Date;
   end_date: Date;
 }
@@ -58,7 +58,7 @@ export default function GridComponent({
       displayUri: item.thumbnail || item.uri
     });
   } else {
-    imgSource = item.uri;
+    imgSource = {uri : item.uri}
   }
 
   return (
