@@ -16,28 +16,32 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     /**
      * 특정 Store들의 리뷰를 최신순으로 조회 (무한스크롤)
      */
-    @Query("SELECT r FROM Review r " +
+    @Query("SELECT DISTINCT r FROM Review r " +
+            "LEFT JOIN FETCH r.reviewAsset ra " +
+            "LEFT JOIN FETCH r.store s " +
+            "LEFT JOIN FETCH r.reviewMenus rm " +
             "WHERE r.store.id IN :storeIds " +
             "AND (:lastReviewId IS NULL OR r.id < :lastReviewId) " +
             "ORDER BY r.id DESC")
-    List<Review> findByStoreIdInOrderByIdDesc(
+    List<Review> findByStoreIdInOrderByIdDescWithAssets(
             @Param("storeIds") List<Long> storeIds,
             @Param("lastReviewId") Long lastReviewId,
-            Pageable pageable
-    );
+            Pageable pageable);
 
     /**
      * 사용자 ID로 리뷰 목록 조회
      * 전체 리뷰를 최신순으로 조회 (무한스크롤)
      */
     List<Review> findByUserId(Long userId);
-    @Query("SELECT r FROM Review r " +
+    @Query("SELECT DISTINCT r FROM Review r " +
+            "LEFT JOIN FETCH r.reviewAsset ra " +
+            "LEFT JOIN FETCH r.store s " +
+            "LEFT JOIN FETCH r.reviewMenus rm " +
             "WHERE :lastReviewId IS NULL OR r.id < :lastReviewId " +
             "ORDER BY r.id DESC")
-    List<Review> findAllOrderByIdDesc(
+    List<Review> findAllOrderByIdDescWithAssets(
             @Param("lastReviewId") Long lastReviewId,
-            Pageable pageable
-    );
+            Pageable pageable);
 
     /**
      * 가게 ID로 리뷰 목록 조회
