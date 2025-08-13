@@ -36,7 +36,7 @@ class ImageService:
         GMS 프록시가 url 또는 b64_json을 줄 수 있어 url 우선으로 시도.
         """
         if not self.is_available():
-            raise Exception("GMS_API_KEY가 사용이 불가능합니다. 환경변수 GMS_API_KEY를 재재설정(.env) 후 서버를 재시작하세요.")
+            raise Exception("GMS_API_KEY가 사용이 불가능합니다. 환경변수 GMS_API_KEY를 재설정(.env) 후 서버를 재시작하세요.")
 
         try:
             # url 응답 형식을 우선 요청
@@ -63,5 +63,3 @@ class ImageService:
 
 # 전역 인스턴스
 image_service = ImageService()
-
-
