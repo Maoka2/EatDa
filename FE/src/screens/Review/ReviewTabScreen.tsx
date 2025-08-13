@@ -1,10 +1,5 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-  ReactElement,
-} from "react";
+// src/screens/Review/ReviewTabScreen.tsx
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -27,24 +22,21 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { Video, ResizeMode } from "expo-av";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import SearchBar from "../../components/SearchBar";
 import GridComponent, { ReviewItem } from "../../components/GridComponent";
-import Sidebar from "../../components/Sidebar";
-import MypageScreen from "../Mypage/MypageScreen";
 import CloseBtn from "../../../assets/closeBtn.svg";
 import HamburgerButton from "../../components/Hamburger";
 import HeaderLogo from "../../components/HeaderLogo";
-import StoreScreen from "../Store/StoreScreen";
 
-// 북마크, 가게 가는 아이콘 import
+// 아이콘
 import BookMark from "../../../assets/bookMark.svg";
 import ColoredBookMark from "../../../assets/coloredBookMark.svg";
 import GoToStore from "../../../assets/goToStore.svg";
 import ColoredGoToStore from "../../../assets/coloredGoToStore.svg";
 
-// 분기처리용 import
+// Auth
 import { useAuth } from "../../contexts/AuthContext";
 
 type NavigationProp = NativeStackNavigationProp<
@@ -58,7 +50,7 @@ interface ReviewProps {
   onMypage?: () => void;
 }
 
-// API 응답 타입 정의
+// ===== API 타입 =====
 interface ApiFeedReviewItem {
   reviewId: number;
   storeName: string;
@@ -108,19 +100,15 @@ interface ApiDetailResponse {
   };
 }
 
-// 스크랩 토글 API 응답 타입
 interface ScrapToggleResponse {
   code: string;
   message: string;
   status: number;
-  data: {
-    isScrapped: boolean;
-    scrapCount: number;
-  };
+  data: { isScrapped: boolean; scrapCount: number };
   timestamp: string;
 }
 
-// 확장된 ReviewItem 타입 (상세 정보 포함)
+// ===== 확장 아이템 =====
 interface ExtendedReviewItem extends ReviewItem {
   menuNames?: string[];
   store?: {
@@ -130,266 +118,156 @@ interface ExtendedReviewItem extends ReviewItem {
     latitude: number;
     longitude: number;
   };
-  user?: {
-    userId: number;
-    nickname: string;
-  };
+  user?: { userId: number; nickname: string };
   scrapCount?: number;
   isScrapped?: boolean;
   createdAt?: string;
 }
 
-// 신논현역 좌표
-const SHINNONHYEON_COORDS = {
-  latitude: 37.5044,
-  longitude: 127.0244,
-};
+// ===== 상수/유틸 =====
+const SHINNONHYEON_COORDS = { latitude: 37.5044, longitude: 127.0244 };
+const API_BASE_URL = "https://i13a609.p.ssafy.io/test";
 
-// API 설정
-const API_BASE_URL = 'https://i13a609.p.ssafy.io/test';
-
-// 토큰 가져오는 함수
 const getAccessToken = async (): Promise<string | null> => {
   try {
-    const token = await AsyncStorage.getItem('accessToken');
-    console.log('AsyncStorage에서 가져온 토큰:', token ? '토큰 존재' : '토큰 없음');
+    const token = await AsyncStorage.getItem("accessToken");
     return token;
-  } catch (error) {
-    console.error('AsyncStorage에서 토큰 가져오기 실패:', error);
+  } catch {
     return null;
   }
 };
 
-// API 함수들
+// ===== API =====
 const fetchReviews = async (
   distance: number = 500,
   lastReviewId?: number
 ): Promise<ApiFeedResponse> => {
-  try {
-    const params = new URLSearchParams({
-      latitude: SHINNONHYEON_COORDS.latitude.toString(),
-      longitude: SHINNONHYEON_COORDS.longitude.toString(),
-      distance: distance.toString(),
-    });
+  const params = new URLSearchParams({
+    latitude: SHINNONHYEON_COORDS.latitude.toString(),
+    longitude: SHINNONHYEON_COORDS.longitude.toString(),
+    distance: distance.toString(),
+  });
+  if (lastReviewId) params.append("lastReviewId", String(lastReviewId));
 
-    if (lastReviewId) {
-      params.append('lastReviewId', lastReviewId.toString());
-    }
+  const token = await getAccessToken();
+  if (!token) throw new Error("로그인이 필요합니다. 토큰을 확인해주세요.");
 
-    console.log('API 호출 URL:', `${API_BASE_URL}/api/reviews/feed?${params.toString()}`);
-
-    const token = await getAccessToken();
-    
-    if (!token) {
-      console.error('인증 토큰이 없습니다. 로그인이 필요합니다.');
-      throw new Error('로그인이 필요합니다. 토큰을 확인해주세요.');
-    }
-
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    };
-
-    console.log('요청 헤더:', headers);
-
-    const response = await fetch(`${API_BASE_URL}/api/reviews/feed?${params.toString()}`, {
-      method: 'GET',
-      headers,
-    });
-
-    console.log('응답 상태:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API 에러 응답:', errorText);
-      
-      if (response.status === 401) {
-        throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
-      }
-      
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('API 응답 데이터:', data);
-    return data;
-  } catch (error) {
-    console.error('API 호출 실패:', error);
-    
-    if (error instanceof TypeError && error.message === 'Network request failed') {
-      throw new Error('네트워크 연결 실패. 서버 상태를 확인해주세요.');
-    }
-    
-    throw error;
+  const res = await fetch(
+    `${API_BASE_URL}/api/reviews/feed?${params.toString()}`,
+    { method: "GET", headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) {
+    if (res.status === 401)
+      throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+    throw new Error(await res.text());
   }
+  return res.json();
 };
 
-// 스크랩 토글 API 함수
-const toggleReviewScrap = async (reviewId: number): Promise<ScrapToggleResponse> => {
-  try {
-    console.log('스크랩 토글 API 호출:', `${API_BASE_URL}/api/reviews/${reviewId}/scrap/toggle`);
-
-    const token = await getAccessToken();
-    
-    if (!token) {
-      throw new Error('로그인이 필요합니다. 토큰을 확인해주세요.');
+const toggleReviewScrap = async (
+  reviewId: number
+): Promise<ScrapToggleResponse> => {
+  const token = await getAccessToken();
+  if (!token) throw new Error("로그인이 필요합니다. 토큰을 확인해주세요.");
+  const res = await fetch(
+    `${API_BASE_URL}/api/reviews/${reviewId}/scrap/toggle`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
     }
-
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    };
-
-    const response = await fetch(`${API_BASE_URL}/api/reviews/${reviewId}/scrap/toggle`, {
-      method: 'POST',
-      headers,
-    });
-
-    console.log('스크랩 토글 응답 상태:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('스크랩 토글 API 에러:', errorText);
-      
-      if (response.status === 401) {
-        throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
-      }
-      
-      if (response.status === 404) {
-        throw new Error('해당 리뷰를 찾을 수 없습니다.');
-      }
-      
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('스크랩 토글 응답 데이터:', data);
-    return data;
-  } catch (error) {
-    console.error('스크랩 토글 실패:', error);
-    
-    if (error instanceof TypeError && error.message === 'Network request failed') {
-      throw new Error('네트워크 연결 실패. 서버 상태를 확인해주세요.');
-    }
-    
-    throw error;
+  );
+  if (!res.ok) {
+    if (res.status === 401)
+      throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+    if (res.status === 404) throw new Error("해당 리뷰를 찾을 수 없습니다.");
+    throw new Error(await res.text());
   }
+  return res.json();
 };
 
-const fetchReviewDetail = async (reviewId: number): Promise<ApiDetailResponse> => {
-  try {
-    console.log('상세 조회 API 호출:', `${API_BASE_URL}/api/reviews/${reviewId}`);
-
-    const token = await getAccessToken();
-    
-    if (!token) {
-      throw new Error('로그인이 필요합니다. 토큰을 확인해주세요.');
-    }
-
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    };
-
-    const response = await fetch(`${API_BASE_URL}/api/reviews/${reviewId}`, {
-      method: 'GET',
-      headers,
-    });
-
-    console.log('상세 조회 응답 상태:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('상세 조회 API 에러:', errorText);
-      
-      if (response.status === 401) {
-        throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
-      }
-      
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('상세 조회 응답 데이터:', data);
-    return data;
-  } catch (error) {
-    console.error('리뷰 상세 조회 실패:', error);
-    
-    if (error instanceof TypeError && error.message === 'Network request failed') {
-      throw new Error('네트워크 연결 실패. 서버 상태를 확인해주세요.');
-    }
-    
-    throw error;
+const fetchReviewDetail = async (
+  reviewId: number
+): Promise<ApiDetailResponse> => {
+  const token = await getAccessToken();
+  if (!token) throw new Error("로그인이 필요합니다. 토큰을 확인해주세요.");
+  const res = await fetch(`${API_BASE_URL}/api/reviews/${reviewId}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    if (res.status === 401)
+      throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+    throw new Error(await res.text());
   }
+  return res.json();
 };
 
-// API 데이터를 ReviewItem으로 변환
-const convertFeedItemToReviewItem = (apiItem: ApiFeedReviewItem): ExtendedReviewItem => {
+// ===== 변환 =====
+const convertFeedItemToReviewItem = (
+  apiItem: ApiFeedReviewItem
+): ExtendedReviewItem => {
   const isImage = apiItem.imageUrl !== null;
-  
   return {
-    id: apiItem.reviewId.toString(),
+    id: String(apiItem.reviewId),
     title: apiItem.storeName,
     description: apiItem.description,
-    type: isImage ? 'image' : 'video',
-    uri: isImage ? apiItem.imageUrl! : apiItem.shortsUrl!, // 상세뷰용: 이미지면 imageUrl, 비디오면 shortsUrl
-    thumbnail: isImage ? apiItem.imageUrl! : apiItem.thumbnailUrl!, // 그리드뷰용: 이미지면 imageUrl, 비디오면 thumbnailUrl
-    likes: 0, // 피드에서는 제공되지 않음
-    views: 0, // 피드에서는 제공되지 않음
+    type: isImage ? "image" : "video",
+    uri: isImage ? apiItem.imageUrl! : apiItem.shortsUrl!,
+    thumbnail: isImage ? apiItem.imageUrl! : apiItem.thumbnailUrl!,
+    likes: 0,
+    views: 0,
     menuNames: apiItem.menuNames,
   };
 };
 
-const convertDetailToReviewItem = (apiDetail: ApiDetailResponse['data']): ExtendedReviewItem => {
-  const isImage = apiDetail.imageUrl !== null;
-  
+const convertDetailToReviewItem = (
+  d: ApiDetailResponse["data"]
+): ExtendedReviewItem => {
+  const isImage = d.imageUrl !== null;
   return {
-    id: apiDetail.reviewId.toString(),
-    title: apiDetail.store.storeName,
-    description: apiDetail.description,
-    type: isImage ? 'image' : 'video',
-    uri: isImage ? apiDetail.imageUrl! : apiDetail.shortsUrl!, // 상세뷰용: 이미지면 imageUrl, 비디오면 shortsUrl
-    thumbnail: isImage ? apiDetail.imageUrl! : apiDetail.thumbnailUrl!, // 그리드뷰용: 이미지면 imageUrl, 비디오면 thumbnailUrl
-    likes: 0, // API에서 제공되지 않음
-    views: 0, // API에서 제공되지 않음
-    menuNames: apiDetail.menuNames,
-    store: apiDetail.store,
-    user: apiDetail.user,
-    scrapCount: apiDetail.scrapCount,
-    isScrapped: apiDetail.isScrapped,
-    createdAt: apiDetail.createdAt,
+    id: String(d.reviewId),
+    title: d.store.storeName,
+    description: d.description,
+    type: isImage ? "image" : "video",
+    uri: isImage ? d.imageUrl! : d.shortsUrl!,
+    thumbnail: isImage ? d.imageUrl! : d.thumbnailUrl!,
+    likes: 0,
+    views: 0,
+    menuNames: d.menuNames,
+    store: d.store,
+    user: d.user,
+    scrapCount: d.scrapCount,
+    isScrapped: d.isScrapped,
+    createdAt: d.createdAt,
   };
 };
 
+// ===== 컴포넌트 =====
 export default function Reviews(props?: ReviewProps) {
   const navigation = useNavigation<NavigationProp>();
   const { height } = useWindowDimensions();
   const screenHeight = Dimensions.get("window").height;
 
-  // 분기처리용
+  // Auth
   const { isLoggedIn, userRole } = useAuth();
   const isMaker = isLoggedIn && userRole === "MAKER";
   const isEater = isLoggedIn && userRole === "EATER";
 
-  // 내장 네비게이션 함수들
-  const handleLogout = () => {
-    navigation.navigate("Login");
-  };
-
+  // 내부 핸들러 (필요 시 props 덮어쓰기)
+  const handleLogout = () => navigation.navigate("Login");
   const handleMypage = () => {
     setCurrentPage("mypage");
-    setIsSidebarOpen(false);
   };
-
-  // props가 있으면 props 함수 사용, 없으면 내장 함수 사용
   const onLogout = props?.onLogout || handleLogout;
   const onMypage = props?.onMypage || handleMypage;
 
+  // UI 상태
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ExtendedReviewItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ExtendedReviewItem | null>(
+    null
+  );
 
   // API 관련 상태
   const [reviewData, setReviewData] = useState<ExtendedReviewItem[]>([]);
@@ -406,133 +284,63 @@ export default function Reviews(props?: ReviewProps) {
     "reviewPage"
   );
 
-  //상세보기 스크롤 및 비디오 관리
+  // 상세보기 스크롤/비디오
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<ExtendedReviewItem>>(null);
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
-  const [showStoreScreen, setShowStoreScreen] = useState(false);
 
-  // 북마크 누르기용 (API 상세에서 가져온 값 사용)
+  // 북마크
   const [isBookMarked, setIsBookMarked] = useState(false);
 
-  // 북마크 토글 함수
-  const handleBookmarkToggle = async () => {
-    if (!selectedItem) return;
-
-    try {
-      const response = await toggleReviewScrap(parseInt(selectedItem.id));
-      
-      // UI 즉시 업데이트
-      setIsBookMarked(response.data.isScrapped);
-      
-      // 선택된 아이템의 스크랩 정보 업데이트
-      const updatedItem = {
-        ...selectedItem,
-        isScrapped: response.data.isScrapped,
-        scrapCount: response.data.scrapCount,
-      };
-      setSelectedItem(updatedItem);
-      
-      // 리뷰 데이터 배열에서도 업데이트
-      setReviewData(prev => 
-        prev.map(item => 
-          item.id === selectedItem.id 
-            ? { ...item, isScrapped: response.data.isScrapped, scrapCount: response.data.scrapCount }
-            : item
-        )
-      );
-
-      // 사용자에게 피드백 제공 (선택사항 - 너무 많은 알림이 싫다면 제거)
-      // Alert.alert(
-      //   "알림",
-      //   response.data.isScrapped 
-      //     ? "리뷰를 스크랩했습니다!" 
-      //     : "스크랩을 해제했습니다."
-      // );
-      
-    } catch (error: any) {
-      if (error.message.includes('로그인이 필요') || error.message.includes('인증이 만료')) {
-        Alert.alert("인증 오류", error.message, [
-          { text: "로그인", onPress: () => navigation.navigate("Login") },
-          { text: "취소" }
-        ]);
-      } else {
-        Alert.alert("오류", "스크랩 처리에 실패했습니다.");
-      }
-      console.error('북마크 토글 실패:', error);
-    }
-  };
-
-  // 가게 가기 버튼
+  // 가게 버튼 클릭 UI
   const [isGoToStoreClicked, setIsGoToStoreClicked] = useState(false);
 
-  // 초기 데이터 로드
+  // ===== 초기 데이터 로드 =====
   useEffect(() => {
     loadInitialReviews();
   }, [selectedDistance]);
 
-  // 비디오 재생 관리
-  useEffect(() => {
-    Object.keys(vdoRefs.current).forEach((key) => {
-      const idx = parseInt(key, 10);
-      const video = vdoRefs.current[idx];
-      if (!video) return;
-      if (idx === currentIndex) {
-        video.playAsync();
-      } else {
-        video.pauseAsync();
-      }
-    });
-  }, [currentIndex]);
-
-  // 선택된 아이템의 북마크 상태 동기화
-  useEffect(() => {
-    if (selectedItem && selectedItem.isScrapped !== undefined) {
-      setIsBookMarked(selectedItem.isScrapped);
-    }
-  }, [selectedItem]);
-
   const loadInitialReviews = async () => {
     setIsLoading(true);
     try {
-      // 먼저 토큰이 있는지 확인
       const token = await getAccessToken();
       if (!token) {
         Alert.alert("인증 오류", "로그인이 필요합니다.", [
-          { text: "확인", onPress: () => navigation.navigate("Login") }
+          { text: "확인", onPress: () => navigation.navigate("Login") },
         ]);
         return;
       }
-
       const response = await fetchReviews(selectedDistance);
-      const convertedReviews = response.data.reviews.map(convertFeedItemToReviewItem);
-      
-      setReviewData(convertedReviews);
+      const converted = response.data.reviews.map(convertFeedItemToReviewItem);
+
+      setReviewData(converted);
       setHasNextPage(response.data.hasNext);
       setNearbyReviewsFound(response.data.nearbyReviewsFound);
-      
-      // 마지막 리뷰 ID 설정
-      if (convertedReviews.length > 0) {
-        setLastReviewId(response.data.reviews[response.data.reviews.length - 1].reviewId);
+
+      if (converted.length > 0) {
+        setLastReviewId(
+          response.data.reviews[response.data.reviews.length - 1].reviewId
+        );
       }
 
-      // 주변 리뷰가 없어서 전체 피드를 제공하는 경우 알림
       if (!response.data.nearbyReviewsFound) {
         Alert.alert(
           "알림",
           `반경 ${selectedDistance}m 내에 리뷰가 없어 전체 리뷰를 보여드립니다.`
         );
       }
-    } catch (error: any) {
-      if (error.message.includes('로그인이 필요') || error.message.includes('인증이 만료')) {
-        Alert.alert("인증 오류", error.message, [
+    } catch (e: any) {
+      if (
+        e.message?.includes("로그인이 필요") ||
+        e.message?.includes("인증이 만료")
+      ) {
+        Alert.alert("인증 오류", e.message, [
           { text: "로그인", onPress: () => navigation.navigate("Login") },
-          { text: "취소" }
+          { text: "취소" },
         ]);
       } else {
         Alert.alert("오류", "리뷰를 불러오는데 실패했습니다.");
       }
-      console.error('리뷰 로드 실패:', error);
     } finally {
       setIsLoading(false);
     }
@@ -540,29 +348,29 @@ export default function Reviews(props?: ReviewProps) {
 
   const loadMoreReviews = async () => {
     if (!hasNextPage || isLoadingMore || !lastReviewId) return;
-
     setIsLoadingMore(true);
     try {
       const response = await fetchReviews(selectedDistance, lastReviewId);
-      const convertedReviews = response.data.reviews.map(convertFeedItemToReviewItem);
-      
-      setReviewData(prev => [...prev, ...convertedReviews]);
+      const converted = response.data.reviews.map(convertFeedItemToReviewItem);
+      setReviewData((prev) => [...prev, ...converted]);
       setHasNextPage(response.data.hasNext);
-      
-      // 마지막 리뷰 ID 업데이트
-      if (convertedReviews.length > 0) {
-        setLastReviewId(response.data.reviews[response.data.reviews.length - 1].reviewId);
+      if (converted.length > 0) {
+        setLastReviewId(
+          response.data.reviews[response.data.reviews.length - 1].reviewId
+        );
       }
-    } catch (error: any) {
-      if (error.message.includes('로그인이 필요') || error.message.includes('인증이 만료')) {
-        Alert.alert("인증 오류", error.message, [
+    } catch (e: any) {
+      if (
+        e.message?.includes("로그인이 필요") ||
+        e.message?.includes("인증이 만료")
+      ) {
+        Alert.alert("인증 오류", e.message, [
           { text: "로그인", onPress: () => navigation.navigate("Login") },
-          { text: "취소" }
+          { text: "취소" },
         ]);
       } else {
         Alert.alert("오류", "추가 리뷰를 불러오는데 실패했습니다.");
       }
-      console.error('추가 리뷰 로드 실패:', error);
     } finally {
       setIsLoadingMore(false);
     }
@@ -571,28 +379,24 @@ export default function Reviews(props?: ReviewProps) {
   const loadReviewDetail = async (reviewId: string) => {
     setIsLoadingDetail(true);
     try {
-      const response = await fetchReviewDetail(parseInt(reviewId));
+      const response = await fetchReviewDetail(parseInt(reviewId, 10));
       const detailedItem = convertDetailToReviewItem(response.data);
-      
-      // 선택된 아이템을 상세 정보로 업데이트
       setSelectedItem(detailedItem);
-      
-      // 리뷰 데이터에서도 해당 아이템 업데이트
-      setReviewData(prev => 
-        prev.map(item => 
-          item.id === reviewId ? { ...item, ...detailedItem } : item
-        )
+      setReviewData((prev) =>
+        prev.map((it) => (it.id === reviewId ? { ...it, ...detailedItem } : it))
       );
-    } catch (error: any) {
-      if (error.message.includes('로그인이 필요') || error.message.includes('인증이 만료')) {
-        Alert.alert("인증 오류", error.message, [
+    } catch (e: any) {
+      if (
+        e.message?.includes("로그인이 필요") ||
+        e.message?.includes("인증이 만료")
+      ) {
+        Alert.alert("인증 오류", e.message, [
           { text: "로그인", onPress: () => navigation.navigate("Login") },
-          { text: "취소" }
+          { text: "취소" },
         ]);
       } else {
         Alert.alert("오류", "리뷰 상세 정보를 불러오는데 실패했습니다.");
       }
-      console.error('리뷰 상세 로드 실패:', error);
     } finally {
       setIsLoadingDetail(false);
     }
@@ -619,39 +423,90 @@ export default function Reviews(props?: ReviewProps) {
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length > 0) {
-      const newIdx = viewableItems[0].index;
-      setCurrentIndex(newIdx);
+      setCurrentIndex(viewableItems[0].index);
     }
   }).current;
 
-  const viewConfig = useRef({
-    viewAreaCoveragePercentThreshold: 80,
-  }).current;
+  const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 80 }).current;
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const handleOpenDetail = async (item: ExtendedReviewItem) => {
     setSelectedItem(item);
     scaleAnim.setValue(0.8);
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-
-    // 상세 정보를 가져와서 업데이트
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
     await loadReviewDetail(item.id);
   };
 
-  const renderFooter = () => {
-    if (!isLoadingMore) return null;
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#0066cc" />
-        <Text style={styles.loadingText}>더 많은 리뷰를 불러오는 중...</Text>
-      </View>
-    );
+  // 북마크 상태 동기화
+  useEffect(() => {
+    if (selectedItem?.isScrapped !== undefined) {
+      setIsBookMarked(selectedItem.isScrapped);
+    }
+  }, [selectedItem]);
+
+  const handleBookmarkToggle = async () => {
+    if (!selectedItem) return;
+    try {
+      const res = await toggleReviewScrap(parseInt(selectedItem.id, 10));
+      setIsBookMarked(res.data.isScrapped);
+      const updated = {
+        ...selectedItem,
+        isScrapped: res.data.isScrapped,
+        scrapCount: res.data.scrapCount,
+      };
+      setSelectedItem(updated);
+      setReviewData((prev) =>
+        prev.map((it) =>
+          it.id === selectedItem.id
+            ? {
+                ...it,
+                isScrapped: res.data.isScrapped,
+                scrapCount: res.data.scrapCount,
+              }
+            : it
+        )
+      );
+    } catch (e: any) {
+      if (
+        e.message?.includes("로그인이 필요") ||
+        e.message?.includes("인증이 만료")
+      ) {
+        Alert.alert("인증 오류", e.message, [
+          { text: "로그인", onPress: () => navigation.navigate("Login") },
+          { text: "취소" },
+        ]);
+      } else {
+        Alert.alert("오류", "스크랩 처리에 실패했습니다.");
+      }
+    }
   };
 
-  // 마이페이지 렌더링
+  // ✅ 가게로 이동 (네비게이션 파라미터 방식, 상세 미도착 대비 보강)
+  const handleGoToStore = async () => {
+    let sid = selectedItem?.store?.storeId;
+
+    if (!sid && selectedItem?.id) {
+      try {
+        const detail = await fetchReviewDetail(parseInt(selectedItem.id, 10));
+        sid = detail.data.store.storeId;
+        setSelectedItem(convertDetailToReviewItem(detail.data));
+      } catch (e) {
+        Alert.alert("오류", "가게 정보를 불러오지 못했습니다.");
+        return;
+      }
+    }
+
+    if (typeof sid === "number" && sid > 0) {
+      setIsGoToStoreClicked(true);
+      navigation.navigate("StoreScreen", { storeId: sid });
+    } else {
+      Alert.alert(
+        "알림",
+        "유효한 가게 ID가 없습니다. 잠시 후 다시 시도해주세요."
+      );
+    }
+  };
+
   if (currentPage === "mypage") {
     navigation.navigate("MypageScreen");
     return null;
@@ -678,228 +533,214 @@ export default function Reviews(props?: ReviewProps) {
       disabled={!(showTypeDropdown || showDistanceDropdown)}
     >
       <SafeAreaView style={styles.container}>
-        {showStoreScreen ? (
-          <StoreScreen
-            onGoBack={() => {
-              setShowStoreScreen(false);
-              setIsGoToStoreClicked(false);
+        {/* 헤더 */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity
+            onPress={() => {
+              if (showTypeDropdown || showDistanceDropdown) {
+                setShowTypeDropdown(false);
+                setShowDistanceDropdown(false);
+              }
+              // 사이드바 열림 로직이 있었다면 여기서 처리
             }}
-          />
-        ) : (
-          <>
-            {/* 헤더 */}
-            <View style={styles.headerContainer}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (showTypeDropdown || showDistanceDropdown) {
-                    setShowTypeDropdown(false);
-                    setShowDistanceDropdown(false);
-                  }
-                  setIsSidebarOpen(true);
-                }}
-              >
-                <HamburgerButton
-                  userRole={isMaker ? "maker" : "eater"}
-                  onMypage={onMypage}
-                />
-              </TouchableOpacity>
-              <HeaderLogo />
-            </View>
-
-            {/* 서치바 */}
-            <SearchBar
-              showTypeDropdown={showTypeDropdown}
-              setShowTypeDropdown={setShowTypeDropdown}
-              showDistanceDropdown={showDistanceDropdown}
-              setShowDistanceDropdown={setShowDistanceDropdown}
-              onDistanceChange={handleDistanceChange}
-              selectedDistance={selectedDistance}
+          >
+            <HamburgerButton
+              userRole={isMaker ? "maker" : "eater"}
+              onMypage={onMypage}
             />
+          </TouchableOpacity>
+          <HeaderLogo />
+        </View>
 
-            {/* 피드 상태 표시 */}
-            {!nearbyReviewsFound && (
-              <View style={styles.statusBanner}>
-                <Text style={styles.statusText}>
-                  반경 {selectedDistance}m 내 리뷰가 없어 전체 리뷰를 표시합니다
-                </Text>
-              </View>
-            )}
+        {/* 서치바 */}
+        <SearchBar
+          showTypeDropdown={showTypeDropdown}
+          setShowTypeDropdown={setShowTypeDropdown}
+          showDistanceDropdown={showDistanceDropdown}
+          setShowDistanceDropdown={setShowDistanceDropdown}
+          onDistanceChange={handleDistanceChange}
+          selectedDistance={selectedDistance}
+        />
 
-            {/* 상세보기 모드 */}
-            {selectedItem ? (
-              <Animated.View
-                style={{ flex: 1, transform: [{ scale: scaleAnim }] }}
-              >
-                <FlatList
-                  key="detail"
-                  ref={flatListRef}
-                  data={reviewData}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item, index }) => (
-                    <View style={{ height: screenHeight }}>
-                      {item.type === "image" ? (
-                        <Image
-                          source={{ uri: item.uri }}
-                          style={StyleSheet.absoluteFillObject}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <Video
-                          ref={(ref: Video | null) => {
-                            vdoRefs.current[index] = ref;
-                          }}
-                          source={{ uri: item.uri }}
-                          style={StyleSheet.absoluteFillObject}
-                          resizeMode={ResizeMode.COVER}
-                          shouldPlay={index === currentIndex}
-                          isLooping
-                          isMuted
-                        />
-                      )}
+        {/* 피드 상태 표시 */}
+        {!nearbyReviewsFound && (
+          <View style={styles.statusBanner}>
+            <Text style={styles.statusText}>
+              반경 {selectedDistance}m 내 리뷰가 없어 전체 리뷰를 표시합니다
+            </Text>
+          </View>
+        )}
 
-                      {/* 닫기 버튼 */}
-                      <TouchableOpacity
-                        style={styles.closeBtn}
-                        onPress={() => {
-                          if (showTypeDropdown || showDistanceDropdown) {
-                            setShowTypeDropdown(false);
-                            setShowDistanceDropdown(false);
-                          }
-                          setSelectedItem(null);
-                        }}
-                      >
-                        <CloseBtn />
-                      </TouchableOpacity>
-
-                      {/* 텍스트 오버레이 */}
-                      <View
-                        style={[styles.textOverlay, { bottom: height * 0.25 }]}
-                      >
-                        <Text style={styles.titleText}>#{item.title}</Text>
-                        <Text style={styles.descText}>{item.description}</Text>
-                        {item.menuNames && item.menuNames.length > 0 && (
-                          <Text style={styles.menuText}>
-                            메뉴: {item.menuNames.join(', ')}
-                          </Text>
-                        )}
-                        {item.user && (
-                          <Text style={styles.userText}>
-                            by {item.user.nickname}
-                          </Text>
-                        )}
-                        {item.scrapCount !== undefined && (
-                          <Text style={styles.scrapText}>
-                            스크랩 {item.scrapCount}회
-                          </Text>
-                        )}
-                      </View>
-
-                      {/* 로딩 오버레이 */}
-                      {isLoadingDetail && (
-                        <View style={styles.loadingOverlay}>
-                          <ActivityIndicator size="large" color="#fff" />
-                          <Text style={styles.loadingOverlayText}>
-                            상세 정보 로딩 중...
-                          </Text>
-                        </View>
-                      )}
-
-                      <View style={styles.goToStoreAndBookMarkContainer}>
-                        {/* 가게페이지로 이동 */}
-                        <TouchableOpacity
-                          onPress={() => {
-                            setIsGoToStoreClicked(true);
-                            setShowStoreScreen(true);
-                          }}
-                        >
-                          {isGoToStoreClicked ? (
-                            <ColoredGoToStore />
-                          ) : (
-                            <GoToStore />
-                          )}
-                        </TouchableOpacity>
-
-                        {/* 북마크 */}
-                        {isEater && (
-                          <TouchableOpacity
-                            onPress={handleBookmarkToggle}
-                          >
-                            {isBookMarked ? (
-                              <ColoredBookMark style={styles.bookMark} />
-                            ) : (
-                              <BookMark style={styles.bookMark} />
-                            )}
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    </View>
+        {/* 상세보기 모드 */}
+        {selectedItem ? (
+          <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
+            <FlatList
+              key="detail"
+              ref={flatListRef}
+              data={reviewData}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item, index }) => (
+                <View style={{ height: screenHeight }}>
+                  {item.type === "image" ? (
+                    <Image
+                      source={{ uri: item.uri }}
+                      style={StyleSheet.absoluteFillObject}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Video
+                      ref={(ref: Video | null) => {
+                        vdoRefs.current[index] = ref;
+                      }}
+                      source={{ uri: item.uri }}
+                      style={StyleSheet.absoluteFillObject}
+                      resizeMode={ResizeMode.COVER}
+                      shouldPlay={index === currentIndex}
+                      isLooping
+                      isMuted
+                    />
                   )}
-                  pagingEnabled
-                  decelerationRate="fast"
-                  snapToInterval={screenHeight}
-                  snapToAlignment="start"
-                  initialScrollIndex={reviewData.findIndex(
-                    (i) => i.id === selectedItem.id
-                  )}
-                  getItemLayout={(data, index) => ({
-                    length: screenHeight,
-                    offset: screenHeight * index,
-                    index,
-                  })}
-                  onMomentumScrollEnd={handleMomentumEnd}
-                  onViewableItemsChanged={onViewableItemsChanged}
-                  viewabilityConfig={viewConfig}
-                  windowSize={2}
-                  initialNumToRender={1}
-                  maxToRenderPerBatch={1}
-                  removeClippedSubviews
-                />
-              </Animated.View>
-            ) : (
-              // 전체 보기
-              <FlatList
-                key="grid"
-                data={reviewData}
-                onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-                renderItem={({ item, index }) => (
-                  <GridComponent
-                    item={item}
-                    size={containerWidth / 3}
-                    index={index}
-                    totalLength={reviewData.length}
+
+                  {/* 닫기 버튼 */}
+                  <TouchableOpacity
+                    style={styles.closeBtn}
                     onPress={() => {
                       if (showTypeDropdown || showDistanceDropdown) {
                         setShowTypeDropdown(false);
                         setShowDistanceDropdown(false);
                       }
-                      handleOpenDetail(item);
+                      setSelectedItem(null);
                     }}
-                  />
-                )}
-                keyExtractor={(item) => item.id}
-                numColumns={3}
-                removeClippedSubviews
-                onEndReached={loadMoreReviews}
-                onEndReachedThreshold={0.5}
-                ListFooterComponent={renderFooter}
+                  >
+                    <CloseBtn />
+                  </TouchableOpacity>
+
+                  {/* 텍스트 오버레이 */}
+                  <View style={[styles.textOverlay, { bottom: height * 0.25 }]}>
+                    <Text style={styles.titleText}>#{item.title}</Text>
+                    <Text style={styles.descText}>{item.description}</Text>
+                    {item.menuNames && item.menuNames.length > 0 ? (
+                      <Text style={styles.menuText}>
+                        메뉴: {item.menuNames.join(", ")}
+                      </Text>
+                    ) : null}
+                    {item.user ? (
+                      <Text style={styles.userText}>
+                        by {item.user.nickname}
+                      </Text>
+                    ) : null}
+                    {item.scrapCount !== undefined ? (
+                      <Text style={styles.scrapText}>
+                        스크랩 {item.scrapCount}회
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  {/* 로딩 오버레이 */}
+                  {isLoadingDetail && (
+                    <View style={styles.loadingOverlay}>
+                      <ActivityIndicator size="large" color="#fff" />
+                      <Text style={styles.loadingOverlayText}>
+                        상세 정보 로딩 중...
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* 우측 버튼들 */}
+                  <View style={styles.goToStoreAndBookMarkContainer}>
+                    {/* 가게페이지로 이동 */}
+                    <TouchableOpacity onPress={handleGoToStore}>
+                      {isGoToStoreClicked ? (
+                        <ColoredGoToStore />
+                      ) : (
+                        <GoToStore />
+                      )}
+                    </TouchableOpacity>
+
+                    {/* 북마크 */}
+                    {isEater && (
+                      <TouchableOpacity onPress={handleBookmarkToggle}>
+                        {isBookMarked ? (
+                          <ColoredBookMark style={styles.bookMark} />
+                        ) : (
+                          <BookMark style={styles.bookMark} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              )}
+              pagingEnabled
+              decelerationRate="fast"
+              snapToInterval={screenHeight}
+              snapToAlignment="start"
+              initialScrollIndex={reviewData.findIndex(
+                (i) => i.id === selectedItem.id
+              )}
+              getItemLayout={(data, index) => ({
+                length: screenHeight,
+                offset: screenHeight * index,
+                index,
+              })}
+              onMomentumScrollEnd={handleMomentumEnd}
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={viewConfig}
+              windowSize={2}
+              initialNumToRender={1}
+              maxToRenderPerBatch={1}
+              removeClippedSubviews
+            />
+          </Animated.View>
+        ) : (
+          // 전체 보기
+          <FlatList
+            key="grid"
+            data={reviewData}
+            onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+            renderItem={({ item, index }) => (
+              <GridComponent
+                item={item}
+                size={containerWidth / 3}
+                index={index}
+                totalLength={reviewData.length}
+                onPress={() => {
+                  if (showTypeDropdown || showDistanceDropdown) {
+                    setShowTypeDropdown(false);
+                    setShowDistanceDropdown(false);
+                  }
+                  handleOpenDetail(item);
+                }}
               />
             )}
+            keyExtractor={(item) => item.id}
+            numColumns={3}
+            removeClippedSubviews
+            onEndReached={loadMoreReviews}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              isLoadingMore ? (
+                <View style={styles.footerLoader}>
+                  <ActivityIndicator size="small" color="#0066cc" />
+                  <Text style={styles.loadingText}>
+                    더 많은 리뷰를 불러오는 중...
+                  </Text>
+                </View>
+              ) : null
+            }
+          />
+        )}
 
-            {/* 리뷰가 없는 경우 */}
-            {reviewData.length === 0 && !isLoading && (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>
-                  표시할 리뷰가 없습니다.
-                </Text>
-                <TouchableOpacity 
-                  style={styles.refreshButton}
-                  onPress={loadInitialReviews}
-                >
-                  <Text style={styles.refreshButtonText}>새로고침</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </>
+        {/* 리뷰가 없는 경우 */}
+        {reviewData.length === 0 && !isLoading && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>표시할 리뷰가 없습니다.</Text>
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={loadInitialReviews}
+            >
+              <Text style={styles.refreshButtonText}>새로고침</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -907,25 +748,10 @@ export default function Reviews(props?: ReviewProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerContainer: {
-    flexDirection: "row",
-    paddingTop: 40,
-  },
-  closeBtn: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    padding: 15,
-    zIndex: 5,
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
+  centered: { justifyContent: "center", alignItems: "center" },
+  headerContainer: { flexDirection: "row", paddingTop: 40 },
+  closeBtn: { position: "absolute", top: 0, right: 0, padding: 15, zIndex: 5 },
   textOverlay: {
     position: "absolute",
     left: 20,
@@ -941,95 +767,56 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 4,
   },
-  descText: {
-    color: "#fff",
-    fontSize: 13,
-    marginBottom: 4,
-  },
+  descText: { color: "#fff", fontSize: 13, marginBottom: 4 },
   menuText: {
     color: "#fff",
     fontSize: 11,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     marginBottom: 2,
   },
-  userText: {
-    color: "#fff",
-    fontSize: 11,
-    opacity: 0.8,
-    marginBottom: 2,
-  },
-  scrapText: {
-    color: "#fff",
-    fontSize: 11,
-    opacity: 0.8,
-  },
+  userText: { color: "#fff", fontSize: 11, opacity: 0.8, marginBottom: 2 },
+  scrapText: { color: "#fff", fontSize: 11, opacity: 0.8 },
   goToStoreAndBookMarkContainer: {
     flexDirection: "row",
     position: "absolute",
     bottom: 200,
     right: 10,
   },
-  bookMark: {
-    width: 10,
-    height: 10,
-  },
+  bookMark: { width: 10, height: 10 },
   statusBanner: {
-    backgroundColor: '#fff3cd',
+    backgroundColor: "#fff3cd",
     padding: 8,
-    alignItems: 'center',
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
-  statusText: {
-    color: '#856404',
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  footerLoader: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 8,
-    color: '#666',
-    fontSize: 14,
-  },
+  statusText: { color: "#856404", fontSize: 12, textAlign: "center" },
+  footerLoader: { padding: 20, alignItems: "center" },
+  loadingText: { marginTop: 8, color: "#666", fontSize: 14 },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 16,
-  },
+  emptyText: { fontSize: 16, color: "#666", marginBottom: 16 },
   refreshButton: {
-    backgroundColor: '#0066cc',
+    backgroundColor: "#0066cc",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
-  refreshButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  refreshButtonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
   loadingOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 10,
   },
-  loadingOverlayText: {
-    color: '#fff',
-    marginTop: 8,
-    fontSize: 14,
-  },
+  loadingOverlayText: { color: "#fff", marginTop: 8, fontSize: 14 },
 });
