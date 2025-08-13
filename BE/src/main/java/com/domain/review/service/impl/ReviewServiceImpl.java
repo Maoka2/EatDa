@@ -103,7 +103,7 @@ public class ReviewServiceImpl implements ReviewService {
         // 변환 여부를 넘겨서 업로드
         List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(),
                 true);
-        log.info(uploadedImageUrls.toString());
+        System.out.println("HERE" + uploadedImageUrls.toString());
         publishReviewAssetMessage(reviewAsset, eater.getId(), request, store, uploadedImageUrls); // Redis 메시지 발행
 
         return reviewMapper.toRequestResponse(review, reviewAsset);
@@ -628,6 +628,7 @@ public class ReviewServiceImpl implements ReviewService {
                                            final ReviewAssetCreateRequest request,
                                            final Store store, final List<String> uploadedImageUrls) {
 
+        System.out.println("Here2" + uploadedImageUrls.toString());
         // 메뉴 상세 객체 배열로 변환 (스펙: id/name/description/imageUrl)
         List<ReviewAssetGenerateMessage.MenuItem> menuItems =
                 menuRepository.findAllById(request.menuIds()).stream()
@@ -648,6 +649,7 @@ public class ReviewServiceImpl implements ReviewService {
                 menuItems,
                 uploadedImageUrls
         );
+        System.out.println("Here3" + message.referenceImages().toString());
 
         reviewAssetRedisPublisher.publish(message);
     }
