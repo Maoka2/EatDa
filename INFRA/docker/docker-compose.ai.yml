@@ -5,7 +5,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /home/ubuntu/eatda/ai:/root/eatda
+      - /home/ubuntu/eatda/ai:/home/ubuntu/eatda/ai
     networks:
       - backend
 
