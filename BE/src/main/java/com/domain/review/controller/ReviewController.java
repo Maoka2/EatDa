@@ -1,8 +1,8 @@
 package com.domain.review.controller;
 
-import com.domain.review.constants.ReviewConstants;
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
+import com.domain.review.dto.request.ReviewLocationRequest;
 import com.domain.review.dto.request.ReviewFinalizeRequest;
 import com.domain.review.dto.response.MyReviewResponse;
 import com.domain.review.dto.response.ReviewAssetRequestResponse;
@@ -15,7 +15,6 @@ import com.domain.review.dto.response.ReviewScrapResult;
 import com.domain.review.service.ReviewScrapService;
 import com.domain.review.service.ReviewService;
 import com.domain.review.service.ReviewThumbnailService;
-import com.domain.review.validator.SeoulLocation;
 import com.global.annotation.ExcludeFromLogging;
 import com.global.config.swagger.annotation.ApiInternalServerError;
 import com.global.config.swagger.annotation.ApiUnauthorizedError;
@@ -247,33 +246,18 @@ public class ReviewController {
     @PreAuthorize("hasAnyAuthority('EATER','MAKER')")
     @GetMapping("/feed")
     public ResponseEntity<BaseResponse> getReviewFeed(
-            @RequestParam
-            @NotNull(message = "위도는 필수입니다")
-            @SeoulLocation(type = SeoulLocation.LocationType.LATITUDE, message = "위도는 서울 지역 범위여야 합니다")
-            Double latitude,
-
-            @RequestParam
-            @NotNull(message = "경도는 필수입니다")
-            @SeoulLocation(type = SeoulLocation.LocationType.LONGITUDE, message = "경도는 서울 지역 범위여야 합니다")
-            Double longitude,
-
+            @Valid ReviewLocationRequest request,
             @RequestParam(defaultValue = "500")
             Integer distance,
-
             @RequestParam(required = false)
             Long lastReviewId,
-
             @AuthenticationPrincipal final String email
     ) {
         log.info("Review feed request - lat: {}, lon: {}, distance: {}m, lastReviewId: {}",
-                latitude, longitude, distance, lastReviewId);
-
-        if (!ReviewConstants.SEARCH_DISTANCES.contains(distance)) {
-            throw new IllegalArgumentException("거리는 300, 500, 700, 850, 1000, 2000m 중 하나여야 합니다");
-        }
+                request.latitude(), request.longitude(), distance, lastReviewId);
 
         ReviewFeedResult<ReviewFeedResponse> result = reviewService.getReviewFeed(
-                latitude, longitude, distance, lastReviewId, email
+                request, distance, lastReviewId, email
         );
 
         String code = result.nearbyReviewsFound() ? "FEED_FETCHED" : "FEED_FALLBACK";
