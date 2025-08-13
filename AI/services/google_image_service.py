@@ -60,6 +60,7 @@ class GoogleImageService:
         실패 시 None 반환. reference_image_paths는 로컬 파일 경로 목록.
         """
         if not self.is_available():
+            self.logger.warning("GoogleImageService: not available.")
             return None
 
         contents: list = [prompt]
