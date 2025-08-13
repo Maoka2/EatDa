@@ -235,7 +235,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
                         file,
                         relativeBase,
                         file.getOriginalFilename(),
-                        convertToWebp
+                        false
                 ))
                 .toList();
     }

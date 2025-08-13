@@ -317,7 +317,7 @@ public class EventServiceImpl implements EventService {
                         file,
                         relativeBase,
                         file.getOriginalFilename(),
-                        convertToWebp
+                        false
                 ))
                 .toList();
     }
