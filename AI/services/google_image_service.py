@@ -36,7 +36,7 @@ class GoogleImageService:
         # 퍼블릭 URL로 반환하고 싶으면 두 값을 설정하세요
         # AI_ASSET_DIR: 이미지 저장 디렉터리, AI_PUBLIC_BASE_URL: 외부에서 접근 가능한 베이스 URL
         self.asset_dir = '/home/ubuntu/eatda/test/data/images/menuPosters/gonaging@example.com'
-        self.public_base_url ='https://i13a609.p.ssafy.io/test'
+        self.public_base_url ='https://i13a609.p.ssafy.io/eatda/test'
 
         if not self.api_key or genai is None:
             self.client = None

@@ -151,7 +151,7 @@ class MenuboardGenerateConsumer:
             if not asset_url or not isinstance(asset_url, str) or not asset_url.startswith("data:"):
                 return asset_url
             asset_dir='/home/ubuntu/eatda/test/data/images/menuPosters/gonaging@example.com'
-            base_url='https://i13a609.p.ssafy.io/test'
+            base_url='https://i13a609.p.ssafy.io/eatda/test'
             if not asset_dir or not base_url:
                 return asset_url
             # ~ 확장 및 디렉터리 보장
