@@ -11,7 +11,10 @@ import static com.global.redis.constants.RedisConstants.STREAM_MESSAGE_BATCH_SIZ
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.global.redis.constants.RedisStreamKey;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -87,12 +90,12 @@ public class RedisStreamCleanerService {
         int deletedCount = 0;
 
         for (final MapRecord<String, Object, Object> record : records) {
-            LocalDateTime expireAt = extractExpireAt(record, streamKey);
+            Instant expireAt = extractExpireAt(record, streamKey);
             if (Objects.isNull(expireAt)) {
                 continue;
             }
 
-            if (expireAt.isBefore(LocalDateTime.now())) {
+            if (expireAt.isBefore(Instant.now())) {
                 redisTemplate.opsForStream().delete(streamKey, record.getId());
                 deletedCount++;
             }
@@ -102,13 +105,13 @@ public class RedisStreamCleanerService {
     }
 
     /**
-     * 메시지에서 expireAt 값을 추출하고 LocalDateTime으로 변환합니다.
+     * 메시지에서 expireAt 값을 추출하고 Instant(UTC)로 변환합니다.
      *
      * @param record    Redis 메시지 레코드
      * @param streamKey 메시지가 속한 Stream 키
-     * @return 변환된 LocalDateTime 값 또는 실패 시 null
+     * @return 변환된 Instant 값 또는 실패 시 null
      */
-    private LocalDateTime extractExpireAt(final MapRecord<String, Object, Object> record, final String streamKey) {
+    private Instant extractExpireAt(final MapRecord<String, Object, Object> record, final String streamKey) {
         Object raw = record.getValue().get(STREAM_FIELD_EXPIRE_AT);
         if (Objects.isNull(raw)) {
             log.debug(REDIS_STREAM_CLEANER_MISSING_EXPIRE_MESSAGE, record.getId(), streamKey);
@@ -116,7 +119,28 @@ public class RedisStreamCleanerService {
         }
 
         try {
-            return objectMapper.convertValue(raw, LocalDateTime.class);
+            if (raw instanceof Instant i) {
+                return i;
+            }
+            if (raw instanceof Long epochMillis) {
+                return Instant.ofEpochMilli(epochMillis);
+            }
+            if (raw instanceof LocalDateTime ldt) {
+                // 테스트에서 LocalDateTime을 그대로 쓰는 경우 지원
+                return ldt.atZone(ZoneId.systemDefault()).toInstant();
+            }
+            if (raw instanceof String s) {
+                // 1차: ISO-8601(오프셋/UTC) 시도
+                try {
+                    return Instant.parse(s);
+                } catch (DateTimeParseException ignored) {
+                    // 2차: 오프셋 없는 LocalDateTime 문자열 지원
+                    LocalDateTime ldt = LocalDateTime.parse(s);
+                    return ldt.atZone(ZoneId.systemDefault()).toInstant();
+                }
+            }
+            // 기타 타입은 ObjectMapper에 위임
+            return objectMapper.convertValue(raw, Instant.class);
         } catch (Exception e) {
             log.warn(REDIS_STREAM_CLEANER_PARSE_ERROR_MESSAGE, record.getId(), streamKey, e);
             return null;

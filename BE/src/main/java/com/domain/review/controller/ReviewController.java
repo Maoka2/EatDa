@@ -14,7 +14,9 @@ import com.domain.review.dto.response.ReviewFinalizeResponse;
 import com.domain.review.dto.response.ReviewScrapResult;
 import com.domain.review.service.ReviewScrapService;
 import com.domain.review.service.ReviewService;
+import com.domain.review.service.ReviewThumbnailService;
 import com.domain.review.validator.SeoulLocation;
+import com.global.annotation.ExcludeFromLogging;
 import com.global.config.swagger.annotation.ApiInternalServerError;
 import com.global.config.swagger.annotation.ApiUnauthorizedError;
 import com.global.constants.ErrorCode;
@@ -31,31 +33,36 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/reviews")
-@RequiredArgsConstructor
+@Validated
 public class ReviewController {
 
     private final ReviewService reviewService;
     private final ReviewScrapService reviewScrapService;
+    private final ReviewThumbnailService reviewThumbnailService;
 
     @Operation(
             summary = "1단계 - 리뷰 에셋 생성 요청",
@@ -92,12 +99,13 @@ public class ReviewController {
     )
     @ApiUnauthorizedError
     @ApiInternalServerError
+    @PreAuthorize("hasAuthority('EATER')")
     @PostMapping(value = "/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse> requestReviewAsset(
             @ModelAttribute final ReviewAssetCreateRequest request,
-            @RequestHeader(value = "X-User-Id", required = false) final Long userId
+            @AuthenticationPrincipal final String email
     ) {
-        ReviewAssetRequestResponse response = reviewService.requestReviewAsset(request, userId);
+        ReviewAssetRequestResponse response = reviewService.requestReviewAsset(request, email);
         return ApiResponseFactory.success(SuccessCode.REVIEW_ASSET_REQUESTED, response);
     }
 
@@ -132,7 +140,6 @@ public class ReviewController {
                     )
             }
     )
-    @ApiUnauthorizedError
     @ApiInternalServerError
     @PostMapping("/assets/callback")
     public ResponseEntity<BaseResponse> handleReviewAssetCallback(
@@ -164,7 +171,8 @@ public class ReviewController {
                                                       "status": 200,
                                                       "data": {
                                                         "type": "IMAGE",
-                                                        "assetUrl": "https://cdn.example.com/reviews/abc123.png"
+                                                        "imageUrl": "https://cdn.example.com/reviews/abc123.png",
+                                                        "shortsUrl": null,
                                                       },
                                                       "timestamp": "2025-07-25T16:00:00Z"
                                                     }
@@ -174,10 +182,10 @@ public class ReviewController {
                     )
             }
     )
-    @ApiUnauthorizedError
     @ApiInternalServerError
     @GetMapping("/assets/{reviewAssetId}/result")
-    public ResponseEntity<BaseResponse> getReviewAssetResult(@PathVariable final Long reviewAssetId) {
+    public ResponseEntity<BaseResponse> getReviewAssetResult(
+            @PathVariable @ExcludeFromLogging final Long reviewAssetId) {
         ReviewAssetResultResponse response = reviewService.getReviewAssetResult(reviewAssetId);
         return ApiResponseFactory.success(SuccessCode.REVIEW_ASSET_GENERATION_SUCCESS, response);
     }
@@ -215,10 +223,13 @@ public class ReviewController {
     )
     @ApiUnauthorizedError
     @ApiInternalServerError
+    @PreAuthorize("hasAuthority('EATER')")
     @PostMapping("/finalize")
     public ResponseEntity<BaseResponse> finalizeReview(
-            @Valid @RequestBody final ReviewFinalizeRequest request) {
-        ReviewFinalizeResponse response = reviewService.finalizeReview(request);
+            @Valid @RequestBody final ReviewFinalizeRequest request,
+            @AuthenticationPrincipal final String email
+    ) {
+        ReviewFinalizeResponse response = reviewService.finalizeReview(request, email);
         return ApiResponseFactory.success(SuccessCode.REVIEW_REGISTERED, response);
     }
 
@@ -231,6 +242,9 @@ public class ReviewController {
      * @param lastReviewId 무한스크롤용 마지막 리뷰 ID (선택)
      * @return 리뷰 피드 목록
      */
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PreAuthorize("hasAnyAuthority('EATER','MAKER')")
     @GetMapping("/feed")
     public ResponseEntity<BaseResponse> getReviewFeed(
             @RequestParam
@@ -247,7 +261,9 @@ public class ReviewController {
             Integer distance,
 
             @RequestParam(required = false)
-            Long lastReviewId
+            Long lastReviewId,
+
+            @AuthenticationPrincipal final String email
     ) {
         log.info("Review feed request - lat: {}, lon: {}, distance: {}m, lastReviewId: {}",
                 latitude, longitude, distance, lastReviewId);
@@ -257,7 +273,7 @@ public class ReviewController {
         }
 
         ReviewFeedResult<ReviewFeedResponse> result = reviewService.getReviewFeed(
-                latitude, longitude, distance, lastReviewId
+                latitude, longitude, distance, lastReviewId, email
         );
 
         String code = result.nearbyReviewsFound() ? "FEED_FETCHED" : "FEED_FALLBACK";
@@ -275,22 +291,23 @@ public class ReviewController {
      * 리뷰 상세 정보 조회
      *
      * @param reviewId 조회할 리뷰 ID (필수)
-     * @param userId   현재 로그인한 사용자 ID (인증 시 자동 주입, 스크랩 여부 판단용)
+     * @param email    현재 로그인한 사용자 email (인증 시 자동 주입, 스크랩 여부 판단용)
      * @return 리뷰 상세 정보
      */
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PreAuthorize("hasAnyAuthority('EATER','MAKER')")
     @GetMapping("/{reviewId}")
     public ResponseEntity<BaseResponse> getReviewDetail(
             @PathVariable
             @NotNull(message = "리뷰 ID는 필수입니다")
             @Positive(message = "리뷰 ID는 양수여야 합니다")
             Long reviewId,
-            @RequestHeader(value = "X-User-Id", required = false)
-            Long userId
-            //            @AuthenticationPrincipal Long userId  //
+            @AuthenticationPrincipal String email
     ) {
-        log.info("Review detail request - reviewId: {}, userId: {}", reviewId, userId);
+        log.info("Review detail request - reviewId: {}", reviewId);
 
-        ReviewDetailResponse reviewDetail = reviewService.getReviewDetail(reviewId, userId);
+        ReviewDetailResponse reviewDetail = reviewService.getReviewDetail(reviewId, email);
 
         SuccessResponse<ReviewDetailResponse> response = SuccessResponse.of(
                 "REVIEW_DETAIL_FETCHED",
@@ -305,25 +322,20 @@ public class ReviewController {
     /**
      * 내 리뷰 목록 조회
      */
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PreAuthorize("hasAuthority('EATER')")
     @GetMapping("/me")
     public ResponseEntity<BaseResponse> getMyReviews(
             @RequestParam(required = false) Long lastReviewId,
             @RequestParam(defaultValue = "20") int pageSize,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId
-            //            @AuthenticationPrincipal Long userId  // 또는 @CurrentUser Long userId
+            @AuthenticationPrincipal String eaterEmail
     ) {
-        log.info("My reviews request - userId: {}, lastReviewId: {}, pageSize: {}",
-                userId, lastReviewId, pageSize);
-
-        // 인증 체크
-        if (userId == null) {
-            throw new ApiException(ErrorCode.UNAUTHORIZED);
-        }
+        log.info("My reviews request - lastReviewId: {}, pageSize: {}",
+                lastReviewId, pageSize);
 
         // 서비스 호출
-        ReviewFeedResult<MyReviewResponse> result = reviewService.getMyReviews(
-                userId, lastReviewId, pageSize
-        );
+        ReviewFeedResult<MyReviewResponse> result = reviewService.getMyReviews(lastReviewId, pageSize, eaterEmail);
 
         // 응답 생성
         Map<String, Object> responseData = new HashMap<>();
@@ -343,30 +355,26 @@ public class ReviewController {
     /**
      * 리뷰 스크랩 토글 (추가/해제)
      *
-     * @param reviewId 스크랩할 리뷰 ID (필수)
-     * @param userId   현재 로그인한 사용자 ID (필수)
+     * @param reviewId   스크랩할 리뷰 ID (필수)
+     * @param eaterEmail 현재 로그인한 사용자 이메일 (필수)
      * @return 스크랩 결과 (스크랩 여부, 현재 스크랩 수)
      */
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PreAuthorize("hasAuthority('EATER')")
     @PostMapping("/{reviewId}/scrap/toggle")
     public ResponseEntity<BaseResponse> toggleReviewScrap(
             @PathVariable
             @NotNull(message = "리뷰 ID는 필수입니다")
             @Positive(message = "리뷰 ID는 양수여야 합니다")
             Long reviewId,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId
-            //            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal String eaterEmail
     ) {
-        log.info("Scrap toggle request - reviewId: {}, userId: {}", reviewId, userId);
-
-        // 인증 체크
-        if (userId == null) {
-            log.warn("Unauthorized scrap toggle attempt for review: {}", reviewId);
-            throw new ApiException(ErrorCode.UNAUTHORIZED);
-        }
+        log.info("Scrap toggle request - reviewId: {}", reviewId);
 
         try {
             // 서비스 호출
-            ReviewScrapResult result = reviewScrapService.toggleScrap(reviewId, userId);
+            ReviewScrapResult result = reviewScrapService.toggleScrap(reviewId, eaterEmail);
 
             // 응답 메시지 분기
             String message = result.isNewScrap()
@@ -385,8 +393,8 @@ public class ReviewController {
                     responseData
             );
 
-            log.info("Scrap toggle successful - reviewId: {}, userId: {}, isScrapped: {}",
-                    reviewId, userId, result.isNewScrap());
+            log.info("Scrap toggle successful - reviewId: {}, isScrapped: {}",
+                    reviewId, result.isNewScrap());
 
             return ResponseEntity.ok(response);
 
@@ -397,8 +405,8 @@ public class ReviewController {
             throw e;
         } catch (Exception e) {
             // 예상치 못한 예외
-            log.error("Unexpected error during scrap toggle - reviewId: {}, userId: {}",
-                    reviewId, userId, e);
+            log.error("Unexpected error during scrap toggle - reviewId: {}",
+                    reviewId, e);
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
@@ -406,30 +414,26 @@ public class ReviewController {
     /**
      * 리뷰 삭제
      *
-     * @param reviewId 삭제할 리뷰 ID (필수)
-     * @param userId   현재 로그인한 사용자 ID (필수)
+     * @param reviewId   삭제할 리뷰 ID (필수)
+     * @param eaterEmail 현재 로그인한 사용자 이메일 (필수)
      * @return 삭제 완료 응답
      */
+    @ApiUnauthorizedError
+    @ApiInternalServerError
+    @PreAuthorize("hasAuthority('EATER')")
     @DeleteMapping("/{reviewId}")
     public ResponseEntity<BaseResponse> deleteReview(
             @PathVariable
             @NotNull(message = "리뷰 ID는 필수입니다")
             @Positive(message = "리뷰 ID는 양수여야 합니다")
             Long reviewId,
-            @RequestHeader(value = "X-User-Id", required = false) Long userId
-            //            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal String eaterEmail
     ) {
-        log.info("Delete review request - reviewId: {}, userId: {}", reviewId, userId);
-
-        // 인증 체크
-        if (userId == null) {
-            log.warn("Unauthorized delete attempt for review: {}", reviewId);
-            throw new ApiException(ErrorCode.UNAUTHORIZED);
-        }
+        log.info("Delete review request - reviewId: {}", reviewId);
 
         try {
             // 서비스 호출 (작성자 확인 및 삭제 처리)
-            reviewService.removeReview(reviewId, userId);
+            reviewService.removeReview(reviewId, eaterEmail);
 
             // 성공 응답
             SuccessResponse<?> response = SuccessResponse.of(
@@ -438,7 +442,7 @@ public class ReviewController {
                     200
             );
 
-            log.info("Review deleted successfully - reviewId: {}, userId: {}", reviewId, userId);
+            log.info("Review deleted successfully - reviewId: {}", reviewId);
 
             return ResponseEntity.ok(response);
 
@@ -449,9 +453,17 @@ public class ReviewController {
             throw e;
         } catch (Exception e) {
             // 예상치 못한 예외
-            log.error("Unexpected error during review deletion - reviewId: {}, userId: {}",
-                    reviewId, userId, e);
+            log.error("Unexpected error during review deletion - reviewId: {}",
+                    reviewId, e);
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @PostMapping("/thumbnail")
+    public ResponseEntity<BaseResponse> extractThumbnail(@RequestParam("videoUrl") String videoUrl,
+                                                         @RequestParam("filePath") String filePath,
+                                                         @RequestParam("fileName") String fileName) {
+        Path path = reviewThumbnailService.extractThumbnail(videoUrl, filePath, fileName);
+        return ApiResponseFactory.success(SuccessCode.THUMBNAILIZATION, path);
     }
 }

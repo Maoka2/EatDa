@@ -6,7 +6,10 @@ import static com.global.constants.ErrorCode.REVIEW_ASSET_URL_REQUIRED;
 import com.domain.review.constants.ReviewAssetType;
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
+import com.domain.review.dto.request.ReviewFinalizeRequest;
+import com.domain.review.entity.Review;
 import com.domain.review.entity.ReviewAsset;
+import com.domain.user.entity.User;
 import com.global.constants.ErrorCode;
 import com.global.constants.Status;
 import com.global.exception.ApiException;
@@ -60,6 +63,24 @@ public class ReviewValidator {
                 (Objects.isNull(request.assetUrl()) || request.assetUrl().isBlank())) {
             log.warn(LOG_ASSET_URL_REQUIRED_WHEN_SUCCESS, asset.getId());
             throw new ApiException(REVIEW_ASSET_URL_REQUIRED);
+        }
+    }
+
+    public static void checkOwner(final User eater, final Review review) {
+        if (!Objects.equals(eater.getId(), review.getUser().getId())) {
+            throw new ApiException(ErrorCode.REVIEW_OWNER_MISMATCH);
+        }
+    }
+
+    public static void checkReviewAssetReady(final ReviewAsset asset) {
+        if (!asset.getStatus().isSuccess()) {
+            throw new ApiException(ErrorCode.REVIEW_ASSET_NOT_READY, asset.getId());
+        }
+    }
+
+    public static void checkAssetMatches(final ReviewAsset asset, final ReviewFinalizeRequest req) {
+        if (!Objects.equals(asset.getType(), req.type())) {
+            throw new ApiException(ErrorCode.REVIEW_ASSET_TYPE_MISMATCH, asset.getType().name());
         }
     }
 

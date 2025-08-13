@@ -5,6 +5,7 @@ import static com.global.constants.ErrorCode.STORE_NOT_FOUND;
 
 import com.domain.menu.entity.Menu;
 import com.domain.menu.repository.MenuRepository;
+import com.domain.review.constants.ReviewAssetType;
 import com.domain.review.constants.ReviewConstants;
 import com.domain.review.dto.redis.ReviewAssetGenerateMessage;
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
@@ -29,16 +30,23 @@ import com.domain.review.repository.ReviewAssetRepository;
 import com.domain.review.repository.ReviewMenuRepository;
 import com.domain.review.repository.ReviewRepository;
 import com.domain.review.service.PoiStoreDistanceService;
+import com.domain.review.service.ReviewAssetService;
 import com.domain.review.service.ReviewService;
+import com.domain.review.service.ReviewThumbnailService;
 import com.domain.review.validator.ReviewValidator;
 import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
 import com.domain.user.entity.User;
 import com.domain.user.repository.EaterRepository;
+import com.domain.user.repository.MakerRepository;
+import com.global.config.FileStorageProperties;
 import com.global.constants.ErrorCode;
 import com.global.constants.Status;
 import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
+import com.global.filestorage.FileUrlResolver;
+import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -57,17 +65,27 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class ReviewServiceImpl implements ReviewService {
 
+    private static final String IMAGE_BASE_PATH = "reviews/";
+    private static final String DATA_DIR = "data";
+    private static final String SHORTS_DIR = "shorts";
+
     // === Repository 및 의존성 주입 ===
     private final ReviewRepository reviewRepository;
     private final ReviewAssetRepository reviewAssetRepository;
     private final ReviewMenuRepository reviewMenuRepository;
+    private final EaterRepository eaterRepository;
+    private final MakerRepository makerRepository;
     private final MenuRepository menuRepository;
     private final StoreRepository storeRepository;
     private final ReviewMapper reviewMapper;
     private final ReviewAssetRedisPublisher reviewAssetRedisPublisher;
     private final FileStorageService fileStorageService;
     private final PoiStoreDistanceService poiStoreDistanceService;
-    private final EaterRepository eaterRepository;
+    private final ReviewAssetService reviewAssetService;
+
+    private final ReviewThumbnailService reviewThumbnailService;
+    private final FileStorageProperties fileStorageProperties;
+    private final FileUrlResolver fileUrlResolver;
 
     // @formatter:off
     /**
@@ -79,18 +97,23 @@ public class ReviewServiceImpl implements ReviewService {
     // @formatter:on
     @Override
     @Transactional
-    public ReviewAssetRequestResponse requestReviewAsset(final ReviewAssetCreateRequest request, final Long userId) {
+    public ReviewAssetRequestResponse requestReviewAsset(final ReviewAssetCreateRequest request,
+                                                         final String eaterEmail) {
+        User eater = findEaterByEmail(eaterEmail);
         Store store = storeRepository.findById(request.storeId())
                 .orElseThrow(() -> new ApiException(STORE_NOT_FOUND));
-        User user = eaterRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(FORBIDDEN));
         ReviewValidator.validateCreateRequest(request);
 
-        Review review = createPendingReview(store, user);
+        Review review = createPendingReview(store, eater);
         ReviewAsset reviewAsset = createPendingReviewAsset(review, request);
 
-        List<String> uploadedImageUrls = uploadImages(request.image());
-        publishReviewAssetMessage(reviewAsset, request, store, uploadedImageUrls); // Redis 메시지 발행
+        // 타입에 따라 WebP 변환 여부 결정
+        boolean convertToWebp = shouldConvertToWebp(request.type());
+        // 변환 여부를 넘겨서 업로드
+        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(),
+                true);
+        log.info(uploadedImageUrls.toString());
+        publishReviewAssetMessage(reviewAsset, eater.getId(), request, store, uploadedImageUrls); // Redis 메시지 발행
 
         return reviewMapper.toRequestResponse(review, reviewAsset);
     }
@@ -125,8 +148,24 @@ public class ReviewServiceImpl implements ReviewService {
             throw new ApiException(ErrorCode.REVIEW_ASSET_NOT_READY, reviewAssetId);
         }
 
-        if (Objects.isNull(asset.getAssetUrl()) || asset.getAssetUrl().isBlank()) {
-            throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
+        if (Objects.isNull(asset.getType())) {
+            throw new ApiException(ErrorCode.ASSET_TYPE_REQUIRED, reviewAssetId);
+        }
+
+        switch (asset.getType()) {
+            case IMAGE -> {
+                String imageUrl = asset.getImageUrl();
+                if (Objects.isNull(imageUrl) || imageUrl.isBlank()) {
+                    throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
+                }
+            }
+            case SHORTS_RAY_2, SHORTS_GEN_4 -> {
+                String shortsUrl = asset.getShortsUrl();
+                if (Objects.isNull(shortsUrl)|| shortsUrl.isBlank()) {
+                    throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
+                }
+            }
+            default -> throw new ApiException(ErrorCode.REVIEW_TYPE_INVALID, reviewAssetId);
         }
 
         return reviewMapper.toAssetResultResponse(asset);
@@ -137,20 +176,18 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public ReviewFinalizeResponse finalizeReview(final ReviewFinalizeRequest request) {
-        // 리뷰 조회 및 상태 검증
+    public ReviewFinalizeResponse finalizeReview(final ReviewFinalizeRequest request, final String eaterEmail) {
+        // 조회
+        User eater = findEaterByEmail(eaterEmail);
         Review review = reviewRepository.findById(request.reviewId())
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND, request.reviewId()));
-        if (!review.getStatus().isSuccess()) {
-            throw new ApiException(ErrorCode.REVIEW_NOT_SUCCESS, review.getId());
-        }
-
-        // 에셋 조회 및 상태 검증
         ReviewAsset asset = reviewAssetRepository.findById(request.reviewAssetId())
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_ASSET_NOT_FOUND, request.reviewAssetId()));
-        if (!Objects.equals(asset.getType(), request.type())) {
-            throw new ApiException(ErrorCode.REVIEW_ASSET_TYPE_MISMATCH, asset.getType().name());
-        }
+
+        // 검증
+        ReviewValidator.checkOwner(eater, review);
+        ReviewValidator.checkReviewAssetReady(asset);
+        ReviewValidator.checkAssetMatches(asset, request);
 
         // 도메인 업데이트
         review.updateDescription(request.description());
@@ -166,8 +203,11 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ReviewFeedResult<ReviewFeedResponse> getReviewFeed(Double latitude, Double longitude,
-                                                              Integer distance, Long lastReviewId) {
+    public ReviewFeedResult<ReviewFeedResponse> getReviewFeed(final Double latitude, final Double longitude,
+                                                              final Integer distance, final Long lastReviewId,
+                                                              final String email) {
+        validatedToken(email);
+
         // 1. 파라미터 검증
         validateLocationParameters(latitude, longitude, distance);
 
@@ -206,7 +246,9 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ReviewDetailResponse getReviewDetail(Long reviewId, Long currentUserId) {
+    public ReviewDetailResponse getReviewDetail(final Long reviewId, final String email) {
+        validatedToken(email);
+
         // 1. 리뷰 조회 (연관 엔티티 포함)
         Review review = reviewRepository.findByIdWithDetails(reviewId)
                 .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
@@ -217,8 +259,8 @@ public class ReviewServiceImpl implements ReviewService {
         // 3. 스크랩 정보 계산
         List<ReviewScrap> scraps = review.getScraps();
         int scrapCount = scraps.size();
-        boolean isScrapped = currentUserId != null && scraps.stream()
-                .anyMatch(scrap -> scrap.getUser().getId().equals(currentUserId));
+        boolean isScrapped = scraps.stream()
+                .anyMatch(scrap -> scrap.getUser().getEmail().equals(email));
 
         // 4. 응답 생성
         return buildReviewDetailResponse(review, scrapCount, isScrapped);
@@ -229,10 +271,9 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional(readOnly = true)
-    public ReviewFeedResult<MyReviewResponse> getMyReviews(Long userId, Long lastReviewId, int pageSize) {
-        if (userId == null) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-        }
+    public ReviewFeedResult<MyReviewResponse> getMyReviews(final Long lastReviewId, final int pageSize,
+                                                           final String eaterEmail) {
+        User eater = findEaterByEmail(eaterEmail);
 
         if (pageSize <= 0 || pageSize > ReviewConstants.MAX_PAGE_SIZE) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
@@ -241,7 +282,7 @@ public class ReviewServiceImpl implements ReviewService {
         try {
             // 요청된 사이즈보다 1개 더 가져와서 hasNext 판단
             Pageable pageable = PageRequest.of(0, pageSize + 1);
-            List<Review> reviews = reviewRepository.findMyReviews(userId, lastReviewId, pageable);
+            List<Review> reviews = reviewRepository.findMyReviews(eater.getId(), lastReviewId, pageable);
 
             // hasNext 판단 및 응답 생성
             boolean hasNext = reviews.size() > pageSize;
@@ -261,17 +302,19 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional
-    public void removeReview(Long reviewId, Long currentUserId) {
+    public void removeReview(final Long reviewId, final String eaterEmail) {
         try {
+            User eater = findEaterByEmail(eaterEmail);
+
             Review review = reviewRepository.findById(reviewId)
                     .orElseThrow(() -> new ApiException(ErrorCode.REVIEW_NOT_FOUND));
 
-            if (!review.getUser().getId().equals(currentUserId)) {
+            if (!review.getUser().getId().equals(eater.getId())) {
                 throw new ApiException(FORBIDDEN);
             }
 
             reviewRepository.deleteById(reviewId);
-            log.info("Review ID {} successfully deleted by User ID {}", reviewId, currentUserId);
+            log.info("Review ID {} successfully deleted by User ID {}", reviewId, eater.getId());
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
@@ -429,7 +472,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .storeName(review.getStore().getName())
                 .description(review.getDescription())
                 .distance(storeDistanceMap.get(review.getStore().getId()))
-                .menuNames(List.of()) // TODO: 메뉴 연결 시 수정
+                .menuNames(extractMenuNames(review))
                 .build();
     }
 
@@ -443,7 +486,9 @@ public class ReviewServiceImpl implements ReviewService {
                 .reviewId(review.getId())
                 .storeName(review.getStore().getName())
                 .description(review.getDescription())
-                .menuNames(List.of()) // TODO: 메뉴 연결 시 수정
+                .imageUrl(review.getReviewAsset().getImageUrl())
+                .shortsUrl(review.getReviewAsset().getShortsUrl())
+                .menuNames(extractMenuNames(review))
                 .build();
     }
 
@@ -457,8 +502,10 @@ public class ReviewServiceImpl implements ReviewService {
                 .reviewId(review.getId())
                 .storeName(review.getStore().getName())
                 .description(review.getDescription())
-                .menuNames(List.of()) // TODO: 메뉴 연결 시 수정
-                .assetUrl(null) // TODO: 에셋 연결 시 수정
+                .menuNames(extractMenuNames(review))
+                .imageUrl(review.getReviewAsset().getImageUrl())
+                .shortsUrl(review.getReviewAsset().getShortsUrl())
+                .thumbnailUrl(review.getReviewAsset().getThumbnailPath())
                 .createdAt(review.getCreatedAt())
                 .build();
     }
@@ -470,6 +517,7 @@ public class ReviewServiceImpl implements ReviewService {
                                                            boolean isScrapped) {
         Store store = review.getStore();
         User user = review.getUser();
+        ReviewAsset reviewAsset = review.getReviewAsset();
 
         ReviewDetailResponse.StoreInfo storeInfo = ReviewDetailResponse.StoreInfo.builder()
                 .storeId(store.getId())
@@ -490,10 +538,34 @@ public class ReviewServiceImpl implements ReviewService {
                 .user(userInfo)
                 .description(review.getDescription())
                 .createdAt(review.getCreatedAt())
+                .asset(ReviewDetailResponse.AssetInfo.builder()
+                        .type(reviewAsset.getType().name())
+                        .imageUrl(reviewAsset.getImageUrl())
+                        .shortsUrl(reviewAsset.getShortsUrl())
+                        .thumbnailUrl(reviewAsset.getThumbnailPath())
+                        .build())
                 .scrapCount(scrapCount)
                 .isScrapped(isScrapped)
-                .menuNames(List.of()) // TODO: 메뉴 연결 시 수정
+                .menuNames(extractMenuNames(review))
                 .build();
+    }
+
+    /**
+     * 리뷰에 연결된 메뉴 이름 리스트 추출
+     * - Review -> ReviewMenu -> Menu.name 경로로 안전하게 매핑
+     * - null 안전 처리 및 중복 제거
+     */
+    private List<String> extractMenuNames(Review review) {
+        if (review == null || review.getReviewMenus() == null) {
+            return List.of();
+        }
+        return review.getReviewMenus().stream()
+                .map(ReviewMenu::getMenu)
+                .filter(Objects::nonNull)
+                .map(Menu::getName)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
     }
 
     /**
@@ -515,21 +587,62 @@ public class ReviewServiceImpl implements ReviewService {
     /**
      * 이미지 파일들을 로컬에 업로드하고 URL 반환
      */
-    private List<String> uploadImages(final List<MultipartFile> images) {
+    private List<String> uploadImages(final List<MultipartFile> images, final String relativeBase,
+                                      final boolean convertToWebp) {
         return images.stream()
                 .map(file -> fileStorageService.storeImage(
                         file,
-                        "reviews",
-                        file.getOriginalFilename()
+                        relativeBase,
+                        file.getOriginalFilename(),
+                        convertToWebp
                 ))
                 .toList();
     }
 
+    // java
     private void updateAssetUrlIfSuccess(final ReviewAssetCallbackRequest request,
                                          final Status status,
                                          final ReviewAsset asset) {
-        if (status.isSuccess() && request.assetUrl() != null) {
-            asset.updateAssetUrl(request.assetUrl());
+        if (!status.isSuccess()) {
+            return; // 실패면 URL 업데이트 없음
+        }
+
+        final String url = request.assetUrl();
+        if (url == null || url.isBlank()) {
+            throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, asset.getId());
+        }
+
+        // 요청에 타입이 포함되어 있으므로 우선 사용하고, 없으면 엔티티 타입 사용
+        final var type = request.type() != null ? request.type() : asset.getType();
+        if (type == null) {
+            throw new ApiException(ErrorCode.ASSET_TYPE_REQUIRED, asset.getId());
+        }
+
+        switch (type) {
+            case IMAGE -> asset.updateImageUrl(url);
+            case SHORTS_RAY_2, SHORTS_GEN_4 -> {
+                // 1) SHORTS URL 저장
+                asset.updateShortsUrl(url);
+
+                // 2) 썸네일 생성 대상 경로/파일명 구성: {baseDir}/data/shorts/{email}/{fileName}.jpg
+                final String email = asset.getReview().getUser().getEmail();
+                final Path baseDir = fileStorageProperties.getBaseDirPath();
+                final Path targetDir = baseDir
+                        .resolve(DATA_DIR)
+                        .resolve(SHORTS_DIR)
+                        .resolve(email);
+
+                final String fileName = deriveBaseName(url, "shorts-" + asset.getId());
+
+                // 3) ffmpeg로 썸네일 추출
+                final Path savedPath = reviewThumbnailService.extractThumbnail(url, targetDir.toString(), fileName);
+
+                // 4) 퍼블릭 URL로 변환해서 엔티티에 저장
+                final String publicUrl = fileUrlResolver.toPublicUrl(savedPath.toString());
+
+                asset.updateThumbnailPath(publicUrl);
+            }
+            default -> throw new ApiException(ErrorCode.REVIEW_TYPE_INVALID, asset.getId());
         }
     }
 
@@ -550,17 +663,63 @@ public class ReviewServiceImpl implements ReviewService {
     /**
      * Redis Stream 내 리뷰 에셋 생성 요청 메시지 발행
      */
-    private void publishReviewAssetMessage(final ReviewAsset reviewAsset, final ReviewAssetCreateRequest request,
+    private void publishReviewAssetMessage(final ReviewAsset reviewAsset, final long userId,
+                                           final ReviewAssetCreateRequest request,
                                            final Store store, final List<String> uploadedImageUrls) {
-        ReviewAssetGenerateMessage message = ReviewAssetGenerateMessage.of(
+
+        // 메뉴 상세 객체 배열로 변환 (스펙: id/name/description/imageUrl)
+        List<ReviewAssetGenerateMessage.MenuItem> menuItems =
+                menuRepository.findAllById(request.menuIds()).stream()
+                        .map(m -> new ReviewAssetGenerateMessage.MenuItem(
+                                m.getId(),
+                                m.getName(),
+                                m.getDescription(),
+                                m.getImageUrl() // 엔티티 필드명에 맞게 조정 필요
+                        ))
+                        .toList();
+
+        ReviewAssetGenerateMessage message = reviewAssetService.prepareForRedis(
                 reviewAsset.getId(),
                 request.type(),
                 request.prompt(),
                 store.getId(),
-                null, // 사용자 ID 지정 필요
-                request.menuIds(),
+                userId,
+                menuItems,
                 uploadedImageUrls
         );
+
         reviewAssetRedisPublisher.publish(message);
+    }
+
+    // IMAGE일 때만 true, SHORTS 계열은 false
+    private boolean shouldConvertToWebp(ReviewAssetType type) {
+        return type == ReviewAssetType.IMAGE;
+    }
+
+    private void validatedToken(final String email) {
+        boolean isEater = eaterRepository.findByEmailAndDeletedFalse(email).isPresent();
+        boolean isMaker = makerRepository.findByEmailAndDeletedFalse(email).isPresent();
+
+        if (!isEater && !isMaker) {
+            throw new ApiException(FORBIDDEN);
+        }
+    }
+
+    private User findEaterByEmail(final String eaterEmail) {
+        return eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
+                .orElseThrow(() -> new ApiException(FORBIDDEN));
+    }
+
+    // URL에서 파일명(확장자 제거)을 추출. 실패 시 fallbackName 사용
+    private String deriveBaseName(String url, String fallbackName) {
+        try {
+            String path = new URI(url).getPath();
+            if (path == null || path.isBlank()) return fallbackName;
+            String name = path.substring(path.lastIndexOf('/') + 1);
+            int dot = name.lastIndexOf('.');
+            return (dot > 0 ? name.substring(0, dot) : name);
+        } catch (Exception e) {
+            return fallbackName;
+        }
     }
 }

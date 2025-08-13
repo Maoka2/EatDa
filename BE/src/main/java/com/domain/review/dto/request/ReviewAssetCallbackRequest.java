@@ -1,6 +1,7 @@
 package com.domain.review.dto.request;
 
 import com.domain.review.constants.ReviewAssetType;
+import com.global.annotation.ExcludeFromLogging;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,6 +19,7 @@ public record ReviewAssetCallbackRequest(
         String result,
 
         @Schema(description = "에셋 URL (성공 시 필수)", example = "https://cdn.example.com/asset/abc123.png")
+        @ExcludeFromLogging
         String assetUrl,
 
         @NotNull(message = "TYPE_REQUIRED")

@@ -9,6 +9,17 @@ spring:
       ddl-auto: validate
     show-sql: false
 
+logging:
+  level:
+    com.domain..controller: INFO
+    com.domain..service: WARN
+    com.domain..repository: WARN
+    org.hibernate.SQL: OFF
+    org.hibernate.type.descriptor.sql: OFF
+
+filestorage: # 파일 저장소 설정
+  base-url: "https://i13a609.p.ssafy.io/eatda/prod"
+
 springdoc:
   swagger-ui:
     config-url: /prod/v3/api-docs/swagger-config

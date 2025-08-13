@@ -1,14 +1,14 @@
 package com.global.redis.dto;
 
 import com.global.redis.constants.RetryFailReason;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface RedisRetryableMessage {
-    LocalDateTime getExpireAt();
+    Instant getExpireAt();
 
     int getRetryCount();
 
-    LocalDateTime getNextRetryAt();
+    Instant getNextRetryAt();
 
     RetryFailReason getRetryFailReason();
 }

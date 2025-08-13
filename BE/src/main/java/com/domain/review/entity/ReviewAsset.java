@@ -14,10 +14,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.sql.Struct;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Entity
 @Table(name = "review_asset")
@@ -38,7 +40,13 @@ public class ReviewAsset {
     private ReviewAssetType type;
 
     @Column(columnDefinition = "TEXT")
-    private String assetUrl;
+    private String imageUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String shortsUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String thumbnailPath;
 
     @NotNull
     @Column(columnDefinition = "TEXT", nullable = false)
@@ -50,30 +58,38 @@ public class ReviewAsset {
 
     @Builder
     public ReviewAsset(final Review review, final ReviewAssetType type, final String assetUrl, final String prompt,
-                       final Status status) {
+                       final String thumbnailPath, final Status status) {
         this.review = review;
         this.type = type;
-        this.assetUrl = assetUrl;
+        switch (type) {
+            case IMAGE -> this.imageUrl = assetUrl;
+            case SHORTS_RAY_2, SHORTS_GEN_4 -> this.shortsUrl = assetUrl;
+        }
         this.prompt = prompt;
+        this.thumbnailPath = thumbnailPath;
         this.status = status != null ? status : Status.PENDING;
     }
 
     /**
-     * AI 결과를 콜백받으면 '리뷰 에섯'의 status을 업데이트하고, 해당 '리뷰'의 status도 업데이트 한다
+     * AI 결과를 콜백받으면 '리뷰 에섯'의 status을 업데이트한다
      */
     public void updateStatus(final Status status) {
         this.status = status;
-
-        if (this.review != null) {
-            this.review.updateStatus(status);
-        }
     }
 
-    public void updateAssetUrl(final String assetUrl) {
-        this.assetUrl = assetUrl;
+    public void updateImageUrl(final String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public void updateShortsUrl(final String shortsUrl) {
+        this.shortsUrl = shortsUrl;
     }
 
     public void registerReview(final Review review) {
         this.review = review;
+    }
+
+    public void updateThumbnailPath(final String thumbnailPath) {
+        this.thumbnailPath = thumbnailPath;
     }
 }

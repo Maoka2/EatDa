@@ -18,7 +18,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.global.redis.constants.RedisStreamKey;
 import com.global.redis.dto.RedisRetryableMessage;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,12 +37,12 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 // @formatter:off
 /**
  /**
-  * Redis Stream에 발행되는 메시지를 처리하는 추상 클래스.
-  * RedisRetryableMessage를 통해 메시지 재시도 기능을 제공하고,
-  * RedisStreamWriter 인터페이스로 메시지 발행 책임을 수행한다.
-  *
-  * @param <T> 발행할 메시지의 타입 (RedisRetryableMessage 구현체)
-  */
+ * Redis Stream에 발행되는 메시지를 처리하는 추상 클래스.
+ * RedisRetryableMessage를 통해 메시지 재시도 기능을 제공하고,
+ * RedisStreamWriter 인터페이스로 메시지 발행 책임을 수행한다.
+ *
+ * @param <T> 발행할 메시지의 타입 (RedisRetryableMessage 구현체)
+ */
 // @formatter:on
 @Slf4j
 public abstract class RedisStreamPublisher<T extends RedisRetryableMessage> implements RedisStreamWriter<T> {
@@ -99,12 +103,14 @@ public abstract class RedisStreamPublisher<T extends RedisRetryableMessage> impl
      * @return key-value 쌍의 Map (Redis field-value 구조용)
      */
     private Map<String, Object> convertPayloadToMap(final T payload) {
-        return objectMapper.convertValue(payload, new TypeReference<>() {
-        });
+        return objectMapper.convertValue(payload, new TypeReference<>() {});
     }
 
     /**
      * Lua XADD 스크립트용 인자 목록(maxLen, field-value)을 구성한다.
+     * - Collection/Map은 JSON 문자열로 직렬화
+     * - Instant/OffsetDateTime/ZonedDateTime은 ISO-8601 문자열
+     * - 그 외는 String.valueOf
      *
      * @param maxLen     최대 메시지 수
      * @param payloadMap 메시지 필드 맵
@@ -113,9 +119,33 @@ public abstract class RedisStreamPublisher<T extends RedisRetryableMessage> impl
     private List<Object> buildScriptArguments(final long maxLen, final Map<String, Object> payloadMap) {
         List<Object> args = new ArrayList<>();
         args.add(String.valueOf(maxLen));
+
         for (Map.Entry<String, Object> entry : payloadMap.entrySet()) {
             args.add(entry.getKey());
-            args.add(String.valueOf(entry.getValue()));
+            Object v = entry.getValue();
+
+            try {
+                if (v == null) {
+                    args.add("null");
+                } else if (v instanceof CharSequence) {
+                    args.add(v.toString());
+                } else if (v instanceof Collection || v instanceof Map) {
+                    // 복합 타입은 반드시 JSON 문자열로
+                    args.add(objectMapper.writeValueAsString(v));
+                } else if (v instanceof Instant) {
+                    args.add(((Instant) v).toString()); // ISO-8601 UTC
+                } else if (v instanceof OffsetDateTime) {
+                    args.add(((OffsetDateTime) v).toString()); // ISO-8601
+                } else if (v instanceof ZonedDateTime) {
+                    args.add(((ZonedDateTime) v).toString()); // ISO-8601
+                } else {
+                    // 숫자/불리언/기타 단순 타입
+                    args.add(String.valueOf(v));
+                }
+            } catch (Exception ex) {
+                // JSON 직렬화 실패 등은 명확히 올림
+                throw new IllegalArgumentException("Failed to serialize field '" + entry.getKey() + "'", ex);
+            }
         }
         return args;
     }

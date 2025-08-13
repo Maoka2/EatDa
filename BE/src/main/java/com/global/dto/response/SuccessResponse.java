@@ -46,4 +46,13 @@ public record SuccessResponse<T>(
                 .timestamp(TimestampUtils.now())
                 .build();
     }
+
+    public static <T> SuccessResponse<T> of(final SuccessCode successCode) {
+        return SuccessResponse.<T>builder()
+                .code(successCode.getCode())
+                .message(successCode.getMessage())
+                .status(successCode.getStatus())
+                .timestamp(TimestampUtils.now())
+                .build();
+    }
 }
