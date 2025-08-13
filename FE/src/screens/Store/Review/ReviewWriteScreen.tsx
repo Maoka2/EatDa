@@ -58,7 +58,7 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
   const [resultModalMessage, setResultModalMessage] = useState("");
   
   // route params에서 storeId 가져오기
-  const storeId = 8; 
+  const storeId = 9; 
 
   // 컴포넌트 마운트 시 AsyncStorage에서 토큰 가져오기
   useEffect(() => {
