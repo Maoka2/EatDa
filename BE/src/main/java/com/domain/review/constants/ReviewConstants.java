@@ -22,7 +22,7 @@ public final class ReviewConstants {
     public static final Double MIN_LONGITUDE = 126.60;
 
     // 페이징 관련
-    public static final int DEFAULT_PAGE_SIZE = 20;
+    public static final int DEFAULT_PAGE_SIZE = 18;
     public static final int MAX_PAGE_SIZE = 100;
     public static final int PAGINATION_BUFFER = 1; // hasNext 판단을 위한 추가 조회 개수
 

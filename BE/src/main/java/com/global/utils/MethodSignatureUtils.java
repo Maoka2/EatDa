@@ -78,8 +78,11 @@ public final class MethodSignatureUtils {
      * 주어진 파라미터에 @ExcludeFromLogging 어노테이션이 있는지 검사합니다.
      */
     private static boolean isExcluded(final Annotation[] annotations) {
-        return Arrays.stream(annotations)
-                .anyMatch(a -> a.annotationType() == ExcludeFromLogging.class);
+        return Arrays.stream(annotations).anyMatch(a ->
+                a.annotationType() == ExcludeFromLogging.class
+                        || a.annotationType()
+                        == org.springframework.security.core.annotation.AuthenticationPrincipal.class
+        );
     }
 
     /**

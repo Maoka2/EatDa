@@ -10,11 +10,12 @@ import com.global.constants.SuccessCode;
 import com.global.dto.response.ApiResponseFactory;
 import com.global.dto.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/makers")
 @RequiredArgsConstructor
+@Slf4j
 public class MakerController {
 
     private final MakerService makerService;
@@ -36,12 +38,22 @@ public class MakerController {
     )
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse> signup(
-            @Valid @RequestPart("base") MakerSignUpBaseRequest baseRequest,
-            @Valid @RequestPart(value = "menus", required = false) List<MakerSignUpMenuRequest> menuRequests,
+            @Validated @RequestPart("base") MakerSignUpBaseRequest baseRequest,
+            @Validated @RequestPart(value = "menus", required = false) List<MakerSignUpMenuRequest> menuRequests,
             @RequestPart(value = "license", required = false) MultipartFile licenseImageRequest,
             @RequestPart(value = "images", required = false) List<MultipartFile> menuImageRequests) {
+
+        log.info("===== [Controller] Maker signup START =====");
+        log.info("BaseRequest: {}", baseRequest);
+        log.info("MenuRequests size: {}", menuRequests != null ? menuRequests.size() : 0);
+        log.info("LicenseImage: {}", licenseImageRequest != null ? licenseImageRequest.getOriginalFilename() : "null");
+        log.info("MenuImages size: {}", menuImageRequests != null ? menuImageRequests.size() : 0);
+
         User maker = makerService.registerMaker(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
-        return ApiResponseFactory.success(SuccessCode.MAKER_SIGNUP, makerMapper.toResponse(maker));
+
+        log.info("===== [Controller] Maker signup END, MakerId={} =====", maker.getId());
+        return ApiResponseFactory.success(SuccessCode.MAKER_SIGNUP,
+                makerMapper.toResponse(maker, maker.getStores().getFirst()));
     }
 
     @Operation(
@@ -49,7 +61,7 @@ public class MakerController {
             description = "Eater의 회원가입을 진행합니다."
     )
     @PostMapping("/check-email")
-    public ResponseEntity<BaseResponse> checkEmail(@Valid @RequestBody final MakerCheckEmailRequest request) {
+    public ResponseEntity<BaseResponse> checkEmail(@Validated @RequestBody final MakerCheckEmailRequest request) {
         makerService.validateEmailAvailable(request);
         return ApiResponseFactory.success(SuccessCode.EMAIL_AVAILABLE);
     }

@@ -11,6 +11,7 @@ import com.domain.user.validator.UserValidator;
 import com.global.constants.ErrorCode;
 import com.global.exception.ApiException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,7 +19,10 @@ import org.springframework.stereotype.Service;
 public class EaterServiceImpl implements EaterService {
 
     private final EaterRepository eaterRepository;
+
     private final EaterMapper eaterMapper;
+
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * 냠냠이 회원가입을 처리
@@ -29,7 +33,7 @@ public class EaterServiceImpl implements EaterService {
     @Override
     public User registerEater(final EaterSignUpRequest request) {
         validateSignUpRequest(request);
-        return eaterRepository.save(eaterMapper.toEntity(request));
+        return eaterRepository.save(eaterMapper.toEntity(request, passwordEncoder.encode(request.password())));
     }
 
     /**
@@ -67,7 +71,7 @@ public class EaterServiceImpl implements EaterService {
     // @formatter:on
     private void validateSignUpRequest(final EaterSignUpRequest request) {
         UserValidator.validateEmail(request.email());
-        UserValidator.validatePassword(request.password(), request.passwordConfirm());
+        UserValidator.validateConfirmPassword(request.password(), request.passwordConfirm());
         UserValidator.validateNickname(request.nickname());
 
         validateDuplicateEmail(request.email());

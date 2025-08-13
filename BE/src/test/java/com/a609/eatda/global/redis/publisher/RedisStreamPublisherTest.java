@@ -1,20 +1,18 @@
-package com.global.redis.publisher;
+package com.a609.eatda.global.redis.publisher;
 
 import static com.global.redis.constants.RedisStreamKey.MENU_POSTER;
 import static com.global.redis.constants.RedisStreamKey.REVIEW_ASSET;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.global.redis.constants.RedisStreamKey;
 import com.global.redis.constants.RetryFailReason;
 import com.global.redis.dto.RedisRetryableMessage;
-import java.time.LocalDateTime;
+import com.global.redis.publisher.RedisStreamPublisher;
+import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -79,12 +77,11 @@ class RedisStreamPublisherTest {
                 .thenThrow(new IllegalArgumentException("fail"));
 
         assertThrows(RuntimeException.class,
-                () -> publisher.publishToStreamWithMaxLen(REVIEW_ASSET, payload));
+                () -> publisher.publishToStreamWithMaxLenPublic(REVIEW_ASSET, payload));
     }
 
     @Test
     void Redis_스크립트가_정상_호출된다() {
-        // execute(RedisCallback<T>) 가 정상적으로 호출되는지 확인
         DummyPayload payload = new DummyPayload("name", 42);
 
         when(objectMapper.convertValue(any(), any(TypeReference.class)))
@@ -100,7 +97,7 @@ class RedisStreamPublisherTest {
             return callback.doInRedis(connection);
         });
 
-        publisher.publishToStreamWithMaxLen(MENU_POSTER, payload);
+        publisher.publishToStreamWithMaxLenPublic(MENU_POSTER, payload);
     }
 
     @ParameterizedTest(name = "{index}: {0}")
@@ -114,12 +111,11 @@ class RedisStreamPublisherTest {
         when(key.value()).thenReturn("stream.key");
         when(key.maxLen()).thenReturn(1000L);
 
-        assertThrows(expectedException, () -> publisher.publishToStreamWithMaxLen(key, payload));
+        assertThrows(expectedException, () -> publisher.publishToStreamWithMaxLenPublic(key, payload));
     }
 
     @Test
     void payload_field_직렬화_실패시_RuntimeException_발생한다() {
-        // ObjectMapper는 성공하도록 둔다
         DummyPayload payload = new DummyPayload("name", 42);
 
         when(objectMapper.convertValue(any(), any(TypeReference.class)))
@@ -133,13 +129,15 @@ class RedisStreamPublisherTest {
         RedisStreamKey validKey = mock(RedisStreamKey.class);
 
         assertThrows(RuntimeException.class,
-                () -> publisher.publishToStreamWithMaxLen(validKey, payload));
+                () -> publisher.publishToStreamWithMaxLenPublic(validKey, payload));
     }
+
+    // ====== 테스트용 payload & publisher ======
 
     record DummyPayload(String name, int value) implements RedisRetryableMessage {
         @Override
-        public LocalDateTime getExpireAt() {
-            return LocalDateTime.now().plusMinutes(5);
+        public Instant getExpireAt() {
+            return Instant.now().plusSeconds(300);
         }
 
         @Override
@@ -148,8 +146,8 @@ class RedisStreamPublisherTest {
         }
 
         @Override
-        public LocalDateTime getNextRetryAt() {
-            return LocalDateTime.now();
+        public Instant getNextRetryAt() {
+            return Instant.now();
         }
 
         @Override
@@ -161,6 +159,13 @@ class RedisStreamPublisherTest {
     static class DummyPublisher extends RedisStreamPublisher<DummyPayload> {
         DummyPublisher(RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper) {
             super(redisTemplate, objectMapper);
+        }
+
+        /**
+         * 테스트 전용: protected 메서드 공개 래퍼
+         */
+        public void publishToStreamWithMaxLenPublic(RedisStreamKey key, DummyPayload payload) {
+            super.publishToStreamWithMaxLen(key, payload);
         }
     }
 }

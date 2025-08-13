@@ -28,6 +28,12 @@ public class UserValidator {
         }
     }
 
+    // @formatter:off
+    /**
+     * 비밀번호가 null이거나 공백이면 예외 발생
+     * 비밀번호 길이가 너무 짧으면 예외 발생
+     */
+    // @formatter:on
     public static void validatePassword(String password) {
         if (Objects.isNull(password) || password.isBlank()) {
             throw new ApiException(ErrorCode.PASSWORD_REQUIRED, password);
@@ -39,19 +45,13 @@ public class UserValidator {
 
     // @formatter:off
     /**
-     * 비밀번호가 null이거나 공백이면 예외 발생
-     * 비밀번호 확인이 null이거나 공백이면 예외 발생
+     * 확인 비밀번호가 null이거나 공백이면 예외 발생
      * 비밀번호와 확인 비밀번호가 일치하지 않으면 예외 발생
-     * 비밀번호 길이가 너무 짧으면 예외 발생
      */
     // @formatter:on
-    public static void validatePassword(String password, String confirmPassword) {
-        if (Objects.isNull(password) || password.isBlank()) {
-            throw new ApiException(ErrorCode.PASSWORD_REQUIRED, password);
-        }
-        if (password.length() < PASSWORD_MIN_LENGTH) {
-            throw new ApiException(ErrorCode.PASSWORD_TOO_SHORT, password);
-        }
+    public static void validateConfirmPassword(String password, String confirmPassword) {
+        validatePassword(password);
+
         if (Objects.isNull(confirmPassword) || confirmPassword.isBlank()) {
             throw new ApiException(ErrorCode.CONFIRM_PASSWORD_REQUIRED, confirmPassword);
         }

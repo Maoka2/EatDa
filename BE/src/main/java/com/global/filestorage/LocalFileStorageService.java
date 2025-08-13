@@ -9,15 +9,21 @@ import static com.global.filestorage.constants.FileStorageConstants.MIME_TYPE_WE
 import static com.global.filestorage.constants.FileStorageConstants.NULL;
 
 import com.global.config.FileStorageProperties;
+import com.global.constants.ErrorCode;
 import com.global.exception.GlobalException;
+import com.global.utils.ImageOptimizationUtils;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,10 +32,10 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Service
 @RequiredArgsConstructor
+@Getter
 public class LocalFileStorageService implements FileStorageService {
 
     private final FileStorageProperties properties;
-    private final ImageOptimizer imageOptimizer;
 
     /**
      * 이미지 파일을 저장소에 저장 - WebP 변환 및 리사이징 등 최적화 수행 후 저장
@@ -40,11 +46,39 @@ public class LocalFileStorageService implements FileStorageService {
      * @return 저장된 파일의 전체 경로
      */
     @Override
-    public String storeImage(final MultipartFile file, final String relativePath, final String originalName) {
+    public String storeImage(final MultipartFile file, final String relativePath, final String originalName,
+                             final boolean convertToWebp) {
+
         try {
             String originalMimeType = extractAndValidateMimeType(file);
-            InputStream optimizedStream = imageOptimizer.optimize(file);
-            return storeOptimizedImage(optimizedStream, MIME_TYPE_WEBP, properties.getImageRoot(), relativePath);
+            InputStream optimizedStream = ImageOptimizationUtils.optimize(file, convertToWebp);
+            String targetMimeType = convertToWebp ? MIME_TYPE_WEBP : originalMimeType;
+
+            return storeOptimizedImage(optimizedStream, targetMimeType, properties.getImageRoot(), relativePath);
+        } catch (IOException e) {
+            throw new GlobalException(FILE_UPLOAD_ERROR, originalName, e);
+        }
+    }
+
+    @Override
+    public String storeImage(final MultipartFile file,
+                             final String relativePath,
+                             final String originalName) {
+        try {
+            // 1) MIME 타입 검증 및 확장자 도출 (등록되지 않은 타입이면 예외)
+            final String mimeType = extractAndValidateMimeType(file);
+            final String extension = resolveExtensionFromMimeType(mimeType);
+
+            // 2) 상대 경로 정리(디렉토리 트래버설 방지) 후 전체 경로 생성
+            final String safeRelativePath = sanitize(relativePath);
+            final Path fullPath = generateFullPath(properties.getImageRoot(), safeRelativePath, extension);
+
+            // 3) 디렉토리 생성은 generateFullPath에서 보장됨 → 파일 그대로 저장
+            //    (변환/리사이징/압축 등 일절 수행하지 않음)
+            file.transferTo(fullPath.toFile());
+
+            // 4) 저장된 전체 경로 반환
+            return fullPath.toString();
         } catch (IOException e) {
             throw new GlobalException(FILE_UPLOAD_ERROR, originalName, e);
         }
@@ -61,6 +95,28 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public String storeVideo(final MultipartFile file, final String relativePath, final String originalName) {
         return storeOptimizedVideo(file, properties.getVideoRoot(), relativePath, originalName);
+    }
+
+    /**
+     * 저장된 파일을 Resource로 로드
+     *
+     * @param filePath 파일 경로 (전체 경로)
+     * @return Spring Resource 객체
+     */
+    @Override
+    public Resource loadAsResource(final String filePath) {
+        try {
+            Path file = Paths.get(filePath);
+            Resource resource = new UrlResource(file.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            } else {
+                throw new GlobalException(ErrorCode.FILE_NOT_FOUND, filePath);
+            }
+        } catch (MalformedURLException e) {
+            throw new GlobalException(ErrorCode.FILE_READ_ERROR, filePath, e);
+        }
     }
 
     /**
@@ -92,19 +148,34 @@ public class LocalFileStorageService implements FileStorageService {
      *
      * @param inputStream  이미지 데이터 스트림
      * @param mimeType     이미지 MIME 타입
-     * @param baseDir      저장소 루트 디렉토리 (이미지용)
+     * @param imageRoot    저장소 루트 디렉토리 (이미지용)
      * @param relativePath 루트 기준 상대 경로
      * @return 저장된 파일의 전체 경로
      */
-    private String storeOptimizedImage(final InputStream inputStream, final String mimeType, final String baseDir,
+    private String storeOptimizedImage(final InputStream inputStream, final String mimeType, final String imageRoot,
                                        final String relativePath) throws IOException {
         String extension = resolveExtensionFromMimeType(mimeType);
-        Path fullPath = generateFullPath(baseDir, relativePath, extension);
+
+        Path fullPath = generateFullPath(imageRoot, relativePath, extension);
 
         // 스트림을 디스크에 저장
         Files.copy(inputStream, fullPath);
         return fullPath.toString();
     }
+
+    private String sanitize(String relativePath) {
+        if (relativePath == null) {
+            return "";
+        }
+        String cleaned = relativePath.replace("\\", "/")
+                .replaceAll("^/+", "")   // 선행 슬래시 제거
+                .replaceAll("/+", "/");  // 중복 슬래시 정리
+        if (cleaned.contains("..")) {
+            throw new IllegalArgumentException("Invalid relativePath: " + cleaned);
+        }
+        return cleaned;
+    }
+
 
     /**
      * 고유 파일명을 포함한 전체 파일 경로 생성 + 필요한 디렉토리 생성

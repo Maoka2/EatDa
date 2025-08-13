@@ -1,10 +1,11 @@
-package com.global.redis.cleaner;
+package com.a609.eatda.global.redis.cleaner;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 
+import com.global.redis.cleaner.RedisStreamCleanerScheduler;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

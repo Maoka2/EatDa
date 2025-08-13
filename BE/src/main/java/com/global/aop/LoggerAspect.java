@@ -20,8 +20,13 @@ import org.springframework.stereotype.Component;
 public class LoggerAspect {
     // 포인트컷용 상수
     public static final String CONTROLLER_PATTERN = "execution(* com..*Controller.*(..))";
-    public static final String SERVICE_PATTERN = "execution(* com..*service.*(..))";
-    public static final String REPOSITORY_PATTERN = "execution(* com..*repository.*(..))";
+    // Service: Service 또는 ServiceImpl로 끝나는 모든 메서드
+    private static final String SERVICE_PATTERN =
+            "execution(* com..*Service.*(..)) || execution(* com..*ServiceImpl.*(..))";
+
+    // Repository: Repository로 끝나는 모든 메서드 + JpaRepository 프록시
+    private static final String REPOSITORY_PATTERN =
+            "execution(* com..*Repository.*(..)) || execution(* org.springframework.data.repository.Repository+.*(..))";
 
     private final LogExecutionHandler executionHandler;
 

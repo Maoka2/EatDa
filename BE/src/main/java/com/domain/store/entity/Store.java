@@ -86,4 +86,8 @@ public class Store extends BaseEntity {
         this.h3Index9 = h3Index9;
         this.h3Index10 = h3Index10;
     }
+
+    public void addMaker(final User maker) {
+        this.maker = maker;
+    }
 }

@@ -17,7 +17,7 @@ public interface ReviewService {
     /**
      * 1단계 - 리뷰 에셋 생성 요청 처리
      */
-    ReviewAssetRequestResponse requestReviewAsset(ReviewAssetCreateRequest request, Long userId);
+    ReviewAssetRequestResponse requestReviewAsset(ReviewAssetCreateRequest request, String eaterEmail);
 
     /**
      * 2단계 - FastAPI 콜백 처리 (에셋 생성 완료 후 상태/URL 반영)
@@ -32,14 +32,14 @@ public interface ReviewService {
     /**
      * 4단계 - 리뷰 최종 등록
      */
-    ReviewFinalizeResponse finalizeReview(ReviewFinalizeRequest request);
+    ReviewFinalizeResponse finalizeReview(ReviewFinalizeRequest request, String eaterEmail);
 
     ReviewFeedResult<ReviewFeedResponse> getReviewFeed(Double latitude, Double longitude, Integer distance,
-                                                       Long lastReviewId);
+                                                       Long lastReviewId, String email);
 
-    ReviewDetailResponse getReviewDetail(Long reviewId, Long currentUserId);
+    ReviewDetailResponse getReviewDetail(Long reviewId, String email);
 
-    ReviewFeedResult<MyReviewResponse> getMyReviews(Long userId, Long lastReviewId, int pageSize);
+    ReviewFeedResult<MyReviewResponse> getMyReviews(Long lastReviewId, int pageSize, String eaterEmail);
 
-    void removeReview(Long reviewId, Long currentUserId);
+    void removeReview(Long reviewId, String eaterEmail);
 }

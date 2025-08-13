@@ -4,6 +4,7 @@ import com.domain.review.entity.ReviewScrap;
 import com.domain.store.entity.Store;
 import com.domain.user.constants.Provider;
 import com.domain.user.constants.Role;
+import com.global.annotation.Sensitive;
 import com.global.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -39,10 +40,11 @@ public class User extends BaseEntity {
 
     @NotNull
     @Column(length = 255)
+    @Sensitive
     private String password;
 
     @NotNull
-    @Column(length = 50, unique = true)
+    @Column(length = 50)
     private String nickname;
 
     @NotNull
@@ -108,5 +110,13 @@ public class User extends BaseEntity {
      */
     public void clearScraps() {
         new ArrayList<>(this.scraps).forEach(this::removeScrap);
+    }
+
+    public void addStore(Store store) {
+        if (this.stores == null) {
+            this.stores = new ArrayList<>(); // 안전장치
+        }
+        this.stores.add(store);                 // 메모리상 컬렉션 동기화
+        store.addMaker(this);                   // 연관관계의 주인 측 세팅
     }
 }

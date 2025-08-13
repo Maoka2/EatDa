@@ -1,10 +1,11 @@
-package com.global.exception;
+package com.a609.eatda.global.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.global.constants.ErrorCode;
 import com.global.dto.response.BaseResponse;
 import com.global.dto.response.ErrorResponse;
+import com.global.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -34,7 +35,7 @@ public class GlobalExceptionHandlerTest {
 
         assertThat(body).isNotNull();
         assertThat(body.code()).isEqualTo("VALIDATION_ERROR");
-        assertThat(body.details())
+        assertThat(body.data())
                 .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
                 .containsEntry("email", ErrorCode.EMAIL_REQUIRED.getMessage());
     }
@@ -60,7 +61,7 @@ public class GlobalExceptionHandlerTest {
 
         assertThat(body).isNotNull();
         assertThat(body.code()).isEqualTo("VALIDATION_ERROR");
-        assertThat(body.details())
+        assertThat(body.data())
                 .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
                 .containsEntry("email", "이메일은 입력해야 하는데요.");
     }

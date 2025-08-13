@@ -20,12 +20,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 public class EaterServiceTest {
 
     @Mock
     private EaterRepository eaterRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @Mock
     private EaterMapper eaterMapper;
@@ -47,21 +51,25 @@ public class EaterServiceTest {
     @Test
     void 회원가입_성공() {
         EaterSignUpRequest request = createEaterSingUpRequest("email@email.com", "password", "password", "nickname");
-        User mockUser = User.builder()
+
+        given(passwordEncoder.encode("password")).willReturn("encodedPassword");
+
+        User mockEncodedUser = User.builder()
                 .email("email@email.com")
-                .password("password")
+                .password("encodedPassword")
                 .nickname("nickname")
                 .role(Role.EATER)
                 .build();
 
-        given(eaterMapper.toEntity(request)).willReturn(mockUser);
-        given(eaterRepository.save(mockUser)).willReturn(mockUser);
+        given(eaterMapper.toEntity(request, "encodedPassword")).willReturn(mockEncodedUser);
+
+        given(eaterRepository.save(mockEncodedUser)).willReturn(mockEncodedUser);
 
         User result = eaterService.registerEater(request);
 
         assertThat(result).isNotNull();
         assertThat(result.getEmail()).isEqualTo("email@email.com");
-        assertThat(result.getPassword()).isEqualTo("password");
+        assertThat(result.getPassword()).isEqualTo("encodedPassword");
         assertThat(result.getNickname()).isEqualTo("nickname");
         assertThat(result.getRole()).isEqualTo(Role.EATER);
     }

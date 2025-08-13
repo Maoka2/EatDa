@@ -1,4 +1,4 @@
-package com.global.utils;
+package com.a609.eatda.global.utils;
 
 import static com.global.constants.Messages.LOG_ERROR_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.global.annotation.ExcludeFromLogging;
 import com.global.annotation.Sensitive;
+import com.global.utils.MaskingUtils;
 import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
 
