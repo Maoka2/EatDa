@@ -102,7 +102,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         log.info("handleMenuPosterAssetCallback: assetId={}", asset.getId());
         AssetValidator.validateCallbackRequest(asset, request);
         Status status = Status.fromString(request.result());
-        log.info("Success 처리 중: assetId={}", asset.getId());
+        log.info("Success 처리 중: assetId={}, boolean={}, status={}", asset.getId(), status.isSuccess(), status.toString());
         asset.processCallback(status, request.assetUrl());
         log.info("Success 완료 중: assetId={}", asset.getId());
     }
