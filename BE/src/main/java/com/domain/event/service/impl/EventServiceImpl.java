@@ -281,7 +281,8 @@ public class EventServiceImpl implements EventService {
         return events.stream()
                 .map(event -> ActiveStoreEventResponse.from(
                         event,
-                        assetMap.get(event.getId())  // null일 수 있음을 고려
+                        assetMap.get(event.getId()),
+                        event.getStore()
                 ))
                 .toList();
     }
