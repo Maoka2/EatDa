@@ -177,7 +177,16 @@ class MenuboardGenerateConsumer:
                 "type": req.type,
             }
             try:
-                self.logger.info(f"[메뉴판컨슈머] callback payload: id={message_id}, payload={callback_data}")
+                # 로그에는 data URL 전체를 남기지 않도록 축약 표시
+                log_payload = dict(callback_data)
+                au = log_payload.get("assetUrl")
+                if isinstance(au, str) and au.startswith("data:"):
+                    try:
+                        header, b64 = au.split(",", 1)
+                        log_payload["assetUrl"] = f"{header},<base64 {len(b64)} bytes>"
+                    except Exception:
+                        log_payload["assetUrl"] = "data:<inline image>"
+                self.logger.info(f"[메뉴판컨슈머] callback payload: id={message_id}, payload={log_payload}")
             except Exception:
                 pass
             await menuboard_generate_callback_service.send_callback_to_spring(callback_data)

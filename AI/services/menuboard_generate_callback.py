@@ -23,13 +23,22 @@ class MenuPosterCallbackService:
             async with aiohttp.ClientSession() as session:
                 # 상세 요청 로그
                 try:
+                    # data URL이 너무 길어 로그를 오염시키지 않도록 축약 출력
+                    pretty_payload = dict(callback_data)
+                    au = pretty_payload.get("assetUrl")
+                    if isinstance(au, str) and au.startswith("data:"):
+                        try:
+                            header, b64 = au.split(",", 1)
+                            pretty_payload["assetUrl"] = f"{header},<base64 {len(b64)} bytes>"
+                        except Exception:
+                            pretty_payload["assetUrl"] = "data:<inline image>"
                     self.logger.info(
                         "\n".join(
                             [
                                 "[MenuPosterCallback] Sending callback",
                                 f"- url: {self.callback_url}",
                                 f"- headers: {headers}",
-                                f"- payload: {callback_data}",
+                                f"- payload: {pretty_payload}",
                             ]
                         )
                     )
