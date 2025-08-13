@@ -151,7 +151,7 @@ class EventImageConsumer:
             result, url = await self.process_image(req)
 
             callback_data = {
-                "AssetId": req.eventAssetId,
+                "assetId": req.eventAssetId,
                 "result": result,
                 "assetUrl": url,
                 "type": "IMAGE",

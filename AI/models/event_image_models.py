@@ -25,7 +25,7 @@ class EventAssetGenerateMessage(BaseModel):
 
 
 class EventAssetCallbackRequest(BaseModel):
-    AssetId: int = Field(...)
+    assetId: int = Field(...)
     result: str = Field(..., description='"SUCCESS" 또는 "FAIL"')
     assetUrl: Optional[str] = Field(None)
     type: Literal["IMAGE"] = Field("IMAGE", description='항상 "IMAGE"')
