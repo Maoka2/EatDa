@@ -29,7 +29,7 @@ logging:
     org.hibernate.stat: OFF
 
 filestorage: # 파일 저장소 설정
-  base-dir: /home/ubuntu/eatda/test
+  base-dir: "${user.home}/eatda/test"
   base-url: "https://i13a609.p.ssafy.io/eatda/test"
 
 springdoc:
