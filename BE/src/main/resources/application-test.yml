@@ -17,10 +17,8 @@ spring:
 
 logging:
   level:
-    com.global.aop: TRACE
-    com.domain..controller: INFO
-    com.domain..service: INFO
-    com.domain..repository: INFO
+    com.global: INFO
+    com.domain: INFO
     org.hibernate.SQL: OFF
 
 filestorage: # 파일 저장소 설정
