@@ -420,13 +420,14 @@ export const getReviewAssetResult = async (
 };
 
 /* =========================================================
-   6) 리뷰 최종 등록 (Spring Backend)
+   6) 리뷰 최종 등록 (Spring Backend) - menuIds 추가
    ========================================================= */
 interface ReviewFinalizeRequest {
   reviewId: number;
   reviewAssetId: number;
   description: string;
   type: string;
+  menuIds: number[]; // ⭐ menuIds 추가
 }
 
 export const finalizeReview = async (
@@ -457,6 +458,15 @@ export const finalizeReview = async (
     throw new Error("유효하지 않은 에셋 타입입니다.");
   }
 
+  // ⭐ menuIds 검증 추가
+  if (!request.menuIds || request.menuIds.length === 0) {
+    throw new Error("최소 하나의 메뉴를 선택해주세요.");
+  }
+
+  if (!request.menuIds.every(id => typeof id === 'number' && id > 0)) {
+    throw new Error("유효하지 않은 메뉴 ID가 포함되어 있습니다.");
+  }
+
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -464,7 +474,7 @@ export const finalizeReview = async (
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(request),
+      body: JSON.stringify(request), // ⭐ menuIds가 포함된 request 전송
     });
 
     const text = await res.text().catch(() => "");

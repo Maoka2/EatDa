@@ -53,7 +53,16 @@ export default function MenuSelectStep({
         setError("");
         
         const menus = await getStoreMenus(storeId, accessToken);
-        setMenuData(menus);
+        console.log("[MenuSelectStep] 받은 메뉴 데이터:", menus);
+        
+        // ⭐ 메뉴 ID를 1부터 시작하도록 변환 (undefined나 0 처리)
+        const adjustedMenus = menus.map((menu, index) => ({
+          ...menu,
+          id: (menu.id === undefined || menu.id === null || menu.id === 0) ? index + 1 : menu.id
+        }));
+        
+        console.log("[MenuSelectStep] 조정된 메뉴 데이터:", adjustedMenus);
+        setMenuData(adjustedMenus);
         
       } catch (error: any) {
         console.error("메뉴 데이터 가져오기 실패:", error);
@@ -76,7 +85,14 @@ export default function MenuSelectStep({
       try {
         setLoading(true);
         const menus = await getStoreMenus(storeId, accessToken);
-        setMenuData(menus);
+        
+        // ⭐ 메뉴 ID를 1부터 시작하도록 변환 (undefined나 0 처리)
+        const adjustedMenus = menus.map((menu, index) => ({
+          ...menu,
+          id: (menu.id === undefined || menu.id === null || menu.id === 0) ? index + 1 : menu.id
+        }));
+        
+        setMenuData(adjustedMenus);
         setError("");
       } catch (error: any) {
         setError(error.message || "메뉴를 불러오는데 실패했습니다.");
@@ -127,18 +143,34 @@ export default function MenuSelectStep({
 
       <FlatList
         data={menuData}
-        keyExtractor={(item, index) => `menu-${index}`} // 안전한 키 생성
+        keyExtractor={(item, index) => {
+          // ⭐ 안전한 키 생성
+          if (item && typeof item.id === 'number') {
+            return `menu-${item.id}`;
+          }
+          return `menu-fallback-${index}`;
+        }}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => {
-          // 안전한 ID 처리
-          const itemId = item.id?.toString() || index.toString();
+        renderItem={({ item }) => {
+          // ⭐ ID 안전성 체크 추가
+          if (!item || item.id === undefined || item.id === null) {
+            console.warn("[MenuSelectStep] 유효하지 않은 메뉴 아이템:", item);
+            return null; // 렌더링하지 않음
+          }
+          
+          const itemId = item.id.toString();
           const isSel = selected.includes(itemId);
+          
+          console.log(`[MenuSelectStep] 메뉴 렌더링: ID=${item.id}, itemId=${itemId}, selected=${isSel}`);
           
           return (
             <TouchableOpacity
               style={[styles.card, isSel && styles.cardSelected]}
-              onPress={() => onToggle(itemId)}
+              onPress={() => {
+                console.log(`[MenuSelectStep] 메뉴 선택: ${itemId}`);
+                onToggle(itemId);
+              }}
               activeOpacity={0.7}
             >
               <Image
@@ -157,6 +189,8 @@ export default function MenuSelectStep({
                     {item.price.toLocaleString()}원
                   </Text>
                 )}
+                {/* ⭐ 디버깅용 ID 표시 (개발 시에만) */}
+                <Text style={styles.debugId}>ID: {item.id}</Text>
               </View>
               <View
                 style={[styles.checkWrap, isSel && styles.checkWrapSelected]}
@@ -172,7 +206,12 @@ export default function MenuSelectStep({
       <View style={styles.absoluteBottom}>
         <TouchableOpacity
           style={[styles.button, !selected.length && styles.buttonDisabled]}
-          onPress={selected.length > 0 ? onNext : () => {}}
+          onPress={() => {
+            if (selected.length > 0) {
+              console.log("[MenuSelectStep] 선택된 메뉴 IDs:", selected);
+              onNext();
+            }
+          }}
           disabled={!selected.length}
           activeOpacity={selected.length > 0 ? 0.7 : 1}
         >
@@ -310,6 +349,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FF69B4",
     marginTop: 4,
+  },
+  // ⭐ 디버깅용 스타일 (나중에 제거 가능)
+  debugId: {
+    fontSize: 10,
+    color: "#999999",
+    marginTop: 2,
+    fontStyle: "italic",
   },
   checkWrap: {
     width: 24,

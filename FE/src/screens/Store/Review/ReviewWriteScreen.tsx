@@ -254,19 +254,36 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
         return;
       }
 
+      // ⭐ selected가 비어있는지 검증
+      if (selected.length === 0) {
+        Alert.alert("오류", "선택된 메뉴가 없습니다.");
+        return;
+      }
+
+      // ⭐ menuIds 변환
+      const menuIds = selected.map(id => {
+        const numId = parseInt(id, 10);
+        if (isNaN(numId)) {
+          throw new Error(`유효하지 않은 메뉴 ID: ${id}`);
+        }
+        return numId;
+      });
+
       console.log("[ReviewWriteScreen] 리뷰 최종 등록 시작:", {
         reviewId,
         reviewAssetId,
+        menuIds, // ⭐ menuIds 로깅 추가
         description: text.substring(0, 50) + "...",
         type: assetType
       });
 
-      // 3단계: 리뷰 최종 등록
+      // 3단계: 리뷰 최종 등록 - ⭐ menuIds 추가
       const result = await finalizeReview({
         reviewId,
         reviewAssetId,
         description: text.trim(),
         type: assetType,
+        menuIds, // ⭐ menuIds 추가
       }, accessToken);
 
       console.log("[ReviewWriteScreen] 리뷰 등록 완료:", result);
@@ -407,18 +424,27 @@ export default function ReviewWriteScreen({ navigation, route }: Props) {
       )}
 
       {step === "write" && (
-        <WriteStep
-          isGenerating={genLoading}
-          aiDone={aiOk}
-          text={text}
-          onChange={setText}
-          onNext={handleWriteComplete}
-          onBack={handleWriteBack}
-          onClose={handleClose}
-          generatedAssetUrl={generatedAssetUrl} // 생성된 에셋 URL 전달
-          generatedAssetType={assetType} // ⭐ 생성된 에셋 타입도 전달
-        />
-      )}
+  <WriteStep
+    isGenerating={genLoading}
+    aiDone={aiOk}
+    text={text}
+    onChange={setText}
+    onNext={handleWriteComplete}
+    onBack={handleWriteBack}
+    onClose={handleClose}
+    generatedAssetUrl={generatedAssetUrl}
+    generatedAssetType={assetType}
+    reviewId={reviewId}
+    reviewAssetId={reviewAssetId}
+    accessToken={accessToken}
+    selectedMenuIds={selected.map(id => parseInt(id, 10))} // string[] → number[] 변환
+    storeId={storeId}
+    onReviewComplete={(completedReviewId) => {
+      console.log("리뷰 등록 완료:", completedReviewId);
+      navigation.navigate("ReviewTabScreen");
+    }}
+  />
+)}
     </SafeAreaView>
   );
 }
