@@ -19,7 +19,15 @@ from consumers.review_generate_consumer import ReviewGenerateConsumer
 # 환경 변수 로드
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
+# 타임스탬프 포함 로깅 포맷 설정 (모든 로거 공통)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+# httpx 로거도 동일 포맷/레벨로 노출
+logging.getLogger("httpx").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
