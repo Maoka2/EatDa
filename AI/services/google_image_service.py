@@ -132,12 +132,23 @@ class GoogleImageService:
                         except Exception as se:
                             self.logger.exception(f"GoogleImageService: failed to create directory '{self.asset_dir}': {se}")
                             return None
-                        file_name = f"{uuid.uuid4().hex}.png"
+                        # 항상 JPG로 저장하도록 변경
+                        file_name = f"{uuid.uuid4().hex}.jpg"
                         file_path = os.path.join(self.asset_dir, file_name)
                         try:
-                            Image.open(BytesIO(inline_data.data)).save(file_path)
+                            img = Image.open(BytesIO(inline_data.data))
+                            # JPG 저장을 위한 RGB 변환 및 알파 제거 처리
+                            if img.mode in ("RGBA", "LA"):
+                                background = Image.new("RGB", img.size, (255, 255, 255))
+                                alpha = img.split()[-1]
+                                background.paste(img, mask=alpha)
+                                img = background
+                            else:
+                                img = img.convert("RGB")
+                            img.save(file_path, format="JPEG", quality=90, optimize=True)
                         except Exception as se1:
                             try:
+                                # 최후 수단: 원본 바이트 그대로 저장(확장자는 .jpg이지만 원본 포맷일 수 있음)
                                 with open(file_path, "wb") as f:
                                     f.write(inline_data.data)
                             except Exception as se2:
