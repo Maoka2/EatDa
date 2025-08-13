@@ -1,0 +1,162 @@
+package com.a609.eatda.global.redis.handler;
+
+import static com.global.redis.constants.RetryFailReason.TIMEOUT;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+import com.global.redis.constants.RedisStreamKey;
+import com.global.redis.constants.RetryFailReason;
+import com.global.redis.dto.RedisRetryableMessage;
+import com.global.redis.handler.RedisStreamRetryHandler;
+import com.global.redis.publisher.RedisStreamWriter;
+import java.time.Duration;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class RedisStreamRetryHandlerTest {
+
+    RedisStreamWriter<DummyMessage> retryPublisher;
+    RedisStreamWriter<DummyMessage> dlqPublisher;
+    DummyRetryHandler handler;
+
+    @BeforeEach
+    void setUp() {
+        retryPublisher = mock(RedisStreamWriter.class);
+        dlqPublisher = mock(RedisStreamWriter.class);
+        handler = new DummyRetryHandler(retryPublisher, dlqPublisher,
+                Duration.ofSeconds(1), Duration.ofSeconds(10));
+    }
+
+    @Test
+    void 재시도_조건을_만족하면_retryPublisher가_호출된다() {
+        DummyMessage originalMessage = new DummyMessage(2, Instant.now(), TIMEOUT);
+
+        handler.handleRetry(originalMessage);
+
+        verify(retryPublisher, times(1)).publish(eq(RedisStreamKey.TEST_RETRY), any(DummyMessage.class));
+        verify(dlqPublisher, never()).publish(any(), any());
+    }
+
+    @Test
+    void 재시도_한도를_초과하면_dlqPublisher가_호출된다() {
+        DummyMessage message = new DummyMessage(3, Instant.now(), TIMEOUT);
+        handler.handleRetry(message);
+        verify(dlqPublisher, times(1)).publish(eq(RedisStreamKey.TEST_DLQ), eq(message));
+        verify(retryPublisher, never()).publish(any(), any());
+    }
+
+    @Test
+    void 추상_메서드_미구현시_예외_발생() {
+        IncompleteHandler incomplete = new IncompleteHandler(retryPublisher, dlqPublisher,
+                Duration.ofSeconds(1), Duration.ofSeconds(10));
+
+        DummyMessage dummy = new DummyMessage(1, Instant.now(), TIMEOUT);
+
+        assertThrows(UnsupportedOperationException.class, incomplete::exposeRetryStreamKey);
+        assertThrows(UnsupportedOperationException.class, incomplete::exposeDLQStreamKey);
+        assertThrows(UnsupportedOperationException.class,
+                () -> incomplete.exposeUpdateRetryFields(dummy, 2, Instant.now()));
+    }
+
+    @Test
+    void 지수_백오프_계산이_정확히_반영된다() {
+        DummyMessage input = new DummyMessage(2, Instant.now(), TIMEOUT);
+
+        DummyRetryHandler handler = new DummyRetryHandler(retryPublisher, dlqPublisher,
+                Duration.ofSeconds(1), Duration.ofSeconds(5)) {
+            @Override
+            protected DummyMessage updateRetryFields(DummyMessage original, int retryCount, Instant nextRetryAt) {
+                // 기대: 1s × 2^2 = 4s (baseDelay 1s, retryCount=2)
+                long expectedDelay = 4_000L;
+                long actualDelay = Duration.between(Instant.now(), nextRetryAt).toMillis();
+                // 300ms 정도 허용 오차(테스트 환경/스케줄러 지연 고려)
+                assertTrue(Math.abs(actualDelay - expectedDelay) < 300);
+                return super.updateRetryFields(original, retryCount, nextRetryAt);
+            }
+        };
+
+        handler.handleRetry(input);
+    }
+
+    static class DummyMessage implements RedisRetryableMessage {
+        private final int retryCount;
+        private final Instant nextRetryAt;
+        private final RetryFailReason failReason;
+
+        DummyMessage(int retryCount, Instant nextRetryAt, RetryFailReason failReason) {
+            this.retryCount = retryCount;
+            this.nextRetryAt = nextRetryAt;
+            this.failReason = failReason;
+        }
+
+        @Override
+        public int getRetryCount() {
+            return retryCount;
+        }
+
+        @Override
+        public Instant getNextRetryAt() {
+            return nextRetryAt;
+        }
+
+        @Override
+        public Instant getExpireAt() {
+            return nextRetryAt.plus(Duration.ofMinutes(5));
+        }
+
+        @Override
+        public RetryFailReason getRetryFailReason() {
+            return failReason;
+        }
+    }
+
+    static class DummyRetryHandler extends RedisStreamRetryHandler<DummyMessage> {
+        DummyRetryHandler(RedisStreamWriter<DummyMessage> retryPublisher,
+                          RedisStreamWriter<DummyMessage> dlqPublisher,
+                          Duration baseDelay, Duration maxDelay) {
+            super(retryPublisher, dlqPublisher, baseDelay, maxDelay);
+        }
+
+        @Override
+        protected RedisStreamKey getRetryStreamKey() {
+            return RedisStreamKey.TEST_RETRY;
+        }
+
+        @Override
+        protected RedisStreamKey getDLQStreamKey() {
+            return RedisStreamKey.TEST_DLQ;
+        }
+
+        @Override
+        protected DummyMessage updateRetryFields(DummyMessage original, int retryCount, Instant nextRetryAt) {
+            return new DummyMessage(retryCount, nextRetryAt, original.failReason);
+        }
+    }
+
+    /**
+     * 테스트 전용: protected 메서드를 super 로 호출하는 public 래퍼
+     */
+    static class IncompleteHandler extends RedisStreamRetryHandler<DummyMessage> {
+        IncompleteHandler(RedisStreamWriter<DummyMessage> retryPublisher,
+                          RedisStreamWriter<DummyMessage> dlqPublisher,
+                          Duration baseDelay, Duration maxDelay) {
+            super(retryPublisher, dlqPublisher, baseDelay, maxDelay);
+        }
+
+        public RedisStreamKey exposeRetryStreamKey() {
+            return super.getRetryStreamKey(); // protected → 상속으로 접근
+        }
+
+        public RedisStreamKey exposeDLQStreamKey() {
+            return super.getDLQStreamKey();
+        }
+
+        public DummyMessage exposeUpdateRetryFields(DummyMessage original, int retryCount, Instant nextRetryAt) {
+            return super.updateRetryFields(original, retryCount, nextRetryAt);
+        }
+    }
+}

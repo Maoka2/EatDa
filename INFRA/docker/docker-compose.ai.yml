@@ -1,0 +1,15 @@
+services:
+  ai:
+    image: eatda-ai:latest
+    container_name: eatda-ai
+    ports:
+      - "8000:8000"
+    volumes:
+      - /home/ubuntu/eatda/ai:/root/eatda
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: backend

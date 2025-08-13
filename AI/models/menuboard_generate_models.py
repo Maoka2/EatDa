@@ -17,7 +17,7 @@ class MenuItem(BaseModel):
 
 
 class MenuPosterGenerateMessage(BaseModel):
-    menuPosterId: int = Field(..., description="포스터 생성 요청의 식별자 (menu_poster.id)")
+    menuPosterAssetId: int = Field(..., description="포스터 생성 요청의 식별자 (menu_poster.id)")
     type: str = Field(..., description="생성 타입 (IMAGE 고정)")
     prompt: str = Field(..., description="사용자 입력 프롬프트")
     storeId: int = Field(..., description="대상 가게 ID")
@@ -30,7 +30,7 @@ class MenuPosterGenerateMessage(BaseModel):
 
 
 class MenuPosterCallbackRequest(BaseModel):
-    menuPosterId: int = Field(...)
+    assetId: int = Field(...)
     result: str = Field(..., description='"SUCCESS" 또는 "FAIL"')
     assetUrl: Optional[str] = Field(None)
     type: str = Field(..., description='"IMAGE" 고정')

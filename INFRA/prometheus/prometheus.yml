@@ -1,0 +1,43 @@
+# global.scrape_interval : 기본 메트릭 수집 주기 (모든 job에 적용됨)
+# job_name               : 해당 수집 대상(job)의 이름 (Grafana나 Alert에서 식별자 역할)
+# metrics_path           : Micrometer 메트릭이 노출되는 경로 (Spring Actuator 설정과 동일)
+# scheme                 : 메트릭 요청 시 사용할 프로토콜 (http 또는 https)
+# scrape_interval        : 적용되는 개별 수집 주기 (Override)
+# static_configs         : 수집 대상의 정적 주소 목록 (컨테이너 이름 또는 호스트:포트 형식)
+# targets:                : 실제 메트릭을 제공하는 Spring Boot 컨테이너 주소 (컨테이너 이름 or 호스트명:포트)
+
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "eatda-test-blue"
+    metrics_path: "/actuator/prometheus"
+    scheme: "http"
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - "eatda-test-blue:8080"
+
+  - job_name: "eatda-test-green"
+    metrics_path: "/actuator/prometheus"
+    scheme: "http"
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - "eatda-test-green:8080"
+
+  - job_name: "eatda-prod-blue"
+    metrics_path: "/actuator/prometheus"
+    scheme: "http"
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - "eatda-prod-blue:8080"
+
+  - job_name: "eatda-prod-green"
+    metrics_path: "/actuator/prometheus"
+    scheme: "http"
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - "eatda-prod-green:8080"

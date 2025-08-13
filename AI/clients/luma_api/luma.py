@@ -39,20 +39,21 @@ async def run_luma():
     concepts: 비디오 생성에 특정 시각적 개념을 적용
     '''
 
-    generation = await client.generations.create(
-        prompt=detailed_luma_prompt,
-        model="ray-2",
-        loop=True,
-        aspect_ratio="9:16",
-        duration="5s",
-        keyframes={
+    # keyframes를 사용할 때는 loop를 함께 보낼 수 없음
+    create_kwargs = {
+        "prompt": detailed_luma_prompt,
+        "model": "ray-2",
+        "aspect_ratio": "9:16",
+        "duration": "5s",
+        "keyframes": {
             "frame0": {
                 "type": "image",
                 # url 관련 상세 정보는 notion / 세부 작업 현황 / AI / 쇼츠 생성 ai에 있습니다
                 "url": "https://storage.googleapis.com/be_my_logo/am_i_being_a_king.jpg"
             }
         }
-    )
+    }
+    generation = await client.generations.create(**create_kwargs)
 
     print(f"영상 생성 요청 완료")
 

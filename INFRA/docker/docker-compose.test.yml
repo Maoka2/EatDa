@@ -1,0 +1,29 @@
+services:
+  test-blue:
+    image: eatda:test-blue
+    container_name: eatda-test-blue
+    ports:
+      - "8083:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+    volumes:
+      - /home/ubuntu/eatda/test:/root/eatda
+    networks:
+      - backend
+
+  test-green:
+    image: eatda:test-green
+    container_name: eatda-test-green
+    ports:
+      - "8084:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+    volumes:
+      - /home/ubuntu/eatda/test:/root/eatda
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: backend

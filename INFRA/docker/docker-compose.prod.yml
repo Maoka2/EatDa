@@ -1,0 +1,29 @@
+services:
+  prod-blue:
+    image: eatda:prod-blue
+    container_name: eatda-prod-blue
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - /home/ubuntu/eatda/prod:/root/eatda
+    networks:
+      - backend
+
+  prod-green:
+    image: eatda:prod-green
+    container_name: eatda-prod-green
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - /home/ubuntu/eatda/prod:/root/eatda
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: backend

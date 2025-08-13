@@ -8,6 +8,10 @@ plugins {
 group = 'com.a609'
 version = '0.0.1-SNAPSHOT'
 
+bootJar {
+    archiveFileName = 'app.jar'
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -29,22 +33,68 @@ ext {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    runtimeOnly 'com.h2database:h2'
-    runtimeOnly 'com.mysql:mysql-connector-j'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Spring Boot 기본 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-web'            // 웹 애플리케이션 구축을 위한 스타터
+
+    // 문서화 및 API 명세 도구
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'     // Swagger UI 기반 OpenAPI 3 문서 자동 생성
+
+    implementation 'com.uber:h3:4.1.1'
+
+    // 데이터베이스 관련 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'       // JPA를 사용한 데이터 접근
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis:3.5.3' // Redis 캐시 및 데이터 저장소 연동
+    implementation 'org.springframework.boot:spring-boot-starter-batch:3.5.3'     // Spring Batch 작업을 위한 스타터
+    runtimeOnly 'com.h2database:h2'                                              // 개발용 인메모리 데이터베이스
+    runtimeOnly 'com.mysql:mysql-connector-j'                                    // MySQL 데이터베이스 드라이버
+
+    // 유효성 검사 관련 의존성
+    implementation 'jakarta.validation:jakarta.validation-api:3.1.1'             // Jakarta Bean Validation API
+
+    // 인증 및 인가
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    // 개발 도구 및 유틸리티
+    compileOnly 'org.projectlombok:lombok'                                       // 보일러플레이트 코드 감소
+    annotationProcessor 'org.projectlombok:lombok'                               // Lombok 어노테이션 처리
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'              // 개발 편의를 위한 도구
+    implementation 'commons-io:commons-io:2.20.0'                                // 파일 및 IO 작업을 위한 유틸리티 라이브러리
+
+    // 이미지 변환 및 최적화 라이브러리
+    implementation 'com.sksamuel.scrimage:scrimage-core:4.1.3'                   // 이미지 변환, 크기 조정, 효과 적용 등 이미지 처리 기능
+    implementation 'com.sksamuel.scrimage:scrimage-webp:4.1.3'                   // WebP 포맷 변환 지원
+    implementation 'org.bytedeco:ffmpeg:6.0-1.5.9'                               // 동영상 및 미디어 파일 처리를 위한 라이브러리
+
+    // 매핑 관련 의존성
+    implementation 'org.mapstruct:mapstruct:1.6.3'                              // 객체 간 매핑 자동화
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'               // 객체 간 매핑 자동화
+
+    // 모니터링 도구
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'      // 애플리케이션의 헬스 체크 및 메트릭 엔드포인트 제공
+    implementation 'io.micrometer:micrometer-registry-prometheus'               // Prometheus 형식으로 메트릭 데이터를 노출
+
+    // 테스트 관련 의존성
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'       // 스프링 부트 테스트 프레임워크
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'    // API 문서화
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                 // JUnit 플랫폼 실행기
 }
 
 tasks.named('test') {
     outputs.dir snippetsDir
     useJUnitPlatform()
+
+    doFirst {
+        def mockitoAgent = configurations.testRuntimeClasspath.find {
+            it.name.contains('byte-buddy-agent')
+        }
+        if (mockitoAgent) {
+            jvmArgs "-javaagent:${mockitoAgent.absolutePath}"
+        }
+    }
 }
 
 tasks.named('asciidoctor') {

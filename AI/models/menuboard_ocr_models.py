@@ -1,18 +1,23 @@
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List, Optional, Annotated
+from typing import List, Optional, Literal
 
 
 # RN to FastAPI model
 class OCRMenuRequest(BaseModel):
-    sourceId: int = Field(..., description="OCR 요청 식별자 (asset_source.id)")
-    storeId: int = Field(..., description="대상 가게 ID")
-    userId: int = Field(..., description="요청 사용자 ID")
-    imageUrl: HttpUrl = Field(..., description="업로드된 이미지 URL")
-    type: str = Field(..., example="MENU", description="요청 타입: MENU 고정")
-    requestedAt: datetime = Field(..., description="요청 시각 (ISO8601)")
-    expireAt: datetime = Field(..., description="만료 시각 (ISO8601)")
-    retryCount: int = Field(default=0, description="재시도 횟수 (기본 0)")
+    file: Optional[bytes] = Field(None, description="업로드된 메뉴 이미지 파일")
+
+# FastAPI to RN model - Initial request respond (POST /ai/api/menu-extraction)
+class OCRMenuRespond(BaseModel):
+    code: Literal["MENUBOARD_REQUESTED", "MENUBOARD_REQUESTED_FAILED"] = Field(
+        ..., description="응답 코드"
+    )
+    message: str = Field(..., description="응답 메시지")
+    status: int = Field(..., description="HTTP 유사 상태 코드 숫자-200 성공, 400 실패")
+    assetId: Optional[int] = Field(
+        None, description="OCR 요청 식별자(12자리 숫자, 성공 시 포함, 실패 시 없음)"
+    )
+    timestamp: datetime = Field(..., description="응답 생성 시간(ISO8601)")
 
 
 class ClovaImageSpec(BaseModel):
@@ -33,18 +38,17 @@ class ExtractedMenu(BaseModel):
     price: Optional[int] = Field(None, description="메뉴 가격 (null 허용)")
 
 
-# FastAPI to RN model
-class OCRMenuRespond(BaseModel):
-    sourceId: int = Field(..., description="OCR 요청 식별자 (asset_source.id)")
-    result: Annotated[str, Field(pattern="^(SUCCESS|FAIL)$", description="생성 결과 (SUCCESS 또는 FAIL)")]
-    extractedMenus: List[ExtractedMenu] = Field(..., description="추출된 메뉴 항목 목록")
+# Polling result respond (GET /api/menu-extraction/{assetId}/result)
+class MenuExtractionResultResponse(BaseModel):
+    code: Literal["MENUBOARD_PENDING", "MENUBOARD_SUCCESS", "MENUBOARD_FAIL"] = Field(
+        ..., description="처리 상태 코드"
+    )
+    message: str = Field(..., description="처리 상태 메시지")
+    status: int = Field(..., description="HTTP 유사 상태 코드 숫자")
+    extractedMenus: Optional[List[ExtractedMenu]] = Field(
+        None, description="추출된 메뉴 목록 (SUCCESS 시에만 포함)"
+    )
+    timestamp: datetime = Field(..., description="응답 생성 시간(ISO8601)")
 
-
-# OCR 콜백 요청 모델 (FastAPI → Spring 서버)
-class OCRCallbackRequest(BaseModel):
-    sourceId: int = Field(..., description="OCR 요청 식별자 (asset_source.id)")
-    result: Annotated[str, Field(pattern="^(SUCCESS|FAIL)$", description="OCR 처리 결과")]
-    extractedMenus: List[ExtractedMenu] = Field(..., description="추출된 메뉴 항목 목록 (실패시 빈 배열)")
-    type: str = Field(default="MENU", description="요청 타입: MENU 고정")
 
 

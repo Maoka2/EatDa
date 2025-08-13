@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: EatDa
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 200MB
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+logging:
+  level:
+    com.global.aop: INFO        # AOP 진입/종료 로그
+    com.global.exception: INFO  # 전역 예외 핸들러
+
+management: # Spring-Actuator 설정
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus # Spring-Actuator에서 외부로 노출할 엔드포인트
+  prometheus:
+    metrics: # 시스템이나 애플리케이션의 동작 상태를 수치로 표현한 정보
+      export:
+        enabled: true   # prometheus 엔드포인트 활성화 여부 *default = true
+
+filestorage: # 파일 저장소 설정
+  base-dir: ${user.home}/eatda
+  base-url: ""
+
+jwt:
+  secret-key: SnnjiquvcPa8IZXG7XyOr36wYRfYLbkAsB6AxbPcnivRyAot428rMAvEXmFKFDH3vAkBmfEmS12YxSrZdTIknQ==
+  access-expiration: 86400000
+  refresh-expiration: 86400000

@@ -5,6 +5,9 @@ GOOGLE_API_KEY =
 # shorts 생성 api 키
 LUMAAI_API_KEY = 
 RUNWAY_API_KEY = 
+RUNWAY_API_BASE_URL = https://api.dev.runwayml.com
+RUNWAY_API_FALLBACK_ENABLED = false
+RUNWAY_API_FALLBACK_BASE_URL = https://api.runwayml.com
 GMS_BASE_URL = https://gms.ssafy.io/gmsapi/api.openai.com/v1
 
 # 생성 자산 저장/공개 경로(구글 이미지 생성용)
