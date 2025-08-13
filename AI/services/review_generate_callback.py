@@ -12,7 +12,7 @@ import logging
 class ReviewCallbackService:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-      #  self.callback_url = os.getenv("SPRING_CALLBACK_URL", "https://i13a609.p.ssafy.io/test/api/reviews/assets/callback")
+     #  self.callback_url = os.getenv("SPRING_CALLBACK_URL", "https://i13a609.p.ssafy.io/test/api/reviews/assets/callback")
         self.callback_url = "https://i13a609.p.ssafy.io/test/api/reviews/assets/callback"
 
     async def send_callback_to_spring(self, callback_data: dict) -> dict:
