@@ -22,7 +22,7 @@ except Exception as e:  # pragma: no cover
 from models.menuboard_generate_models import (
     MenuPosterGenerateMessage,
 )
-from services import image_service
+from services import google_image_service, gpt_service
 from services.menuboard_generate_callback import menuboard_generate_callback_service
 
 
@@ -70,9 +70,16 @@ class MenuboardGenerateConsumer:
         return MenuPosterGenerateMessage.model_validate(data)
 
     async def process_image(self, req: MenuPosterGenerateMessage) -> Tuple[str, str | None]:
-        if not image_service.is_available():
+        if not google_image_service.is_available():
             return "FAIL", None
-        url = await image_service.generate_image_url(req.prompt)
+        # 메뉴보드 전용 GPT 보강 후 이미지 생성 (참고 이미지가 있다면 함께 전달)
+        enhanced = await gpt_service.enhance_prompt_for_menuboard(req.prompt)
+        # 참고 이미지 경로(referenceImages)는 EC2에 저장된 로컬 파일 경로라고 가정하고 그대로 전달
+        # google_image_service는 로컬 경로가 실제 존재하는 경우에만 이미지를 contents에 포함함
+        url = google_image_service.generate_image_url(
+            enhanced,
+            reference_image_paths=req.referenceImages,
+        )
         return ("SUCCESS" if url else "FAIL"), url
 
     async def handle_message(self, message_id: str, fields: Dict[str, str]) -> None:
