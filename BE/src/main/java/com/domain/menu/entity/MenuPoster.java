@@ -4,15 +4,25 @@ import com.domain.store.entity.Store;
 import com.domain.user.entity.User;
 import com.global.constants.Status;
 import com.global.entity.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Entity
@@ -39,6 +49,9 @@ public class MenuPoster extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private Status status;
+
+    @OneToOne(mappedBy = "menuPoster", cascade = CascadeType.ALL, orphanRemoval = true)
+    private MenuPosterAsset menuPosterAsset;
 
     @OneToMany(mappedBy = "menuPoster", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MenuPosterMenu> menuPosterMenus = new ArrayList<>();
@@ -68,6 +81,7 @@ public class MenuPoster extends BaseEntity {
     public void updateStatus(Status status) {
         this.status = status;
     }
+
     public void markAsSent() {
         this.isSent = true;
     }

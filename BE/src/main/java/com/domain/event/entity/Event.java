@@ -3,6 +3,7 @@ package com.domain.event.entity;
 import com.domain.store.entity.Store;
 import com.global.constants.Status;
 import com.global.entity.BaseEntity;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -48,6 +50,9 @@ public class Event extends BaseEntity {
     @NotNull
     @Enumerated(EnumType.STRING)
     private Status status = Status.PENDING;
+
+    @OneToOne(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    private EventAsset eventAsset;
 
     @Builder
     public Event(String title, final Store store, final LocalDate startDate, final LocalDate endDate, Status status) {
