@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class AssetValidator {
     private static final long MAX_IMAGE_SIZE_MB = 10;
-    private static final long MIN_IMAGE_SIZE_MB = 10;
+    private static final long MIN_IMAGE_SIZE_MB = 1;
     private static final int IMAGE_BYTE = 1024;
 
     private static final String LOG_IMAGE_TOO_LARGE =
