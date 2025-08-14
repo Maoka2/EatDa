@@ -1,4 +1,4 @@
-package com.domain.review.service;
+package com.global.utils.geo;
 
 import com.uber.h3core.H3Core;
 import org.springframework.stereotype.Service;
@@ -7,10 +7,10 @@ import java.io.IOException;
 import java.util.List;
 
 @Service
-public class H3Service {
+public class H3Utils {
     private final H3Core h3;
 
-    public H3Service() throws IOException {
+    public H3Utils() throws IOException {
         this.h3 = H3Core.newInstance();
     }
 
