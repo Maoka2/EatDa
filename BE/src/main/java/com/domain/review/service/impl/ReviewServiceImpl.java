@@ -193,8 +193,11 @@ public class ReviewServiceImpl implements ReviewService {
 
         // 도메인 업데이트
         asset.registerReview(review);
-        String downloadedVideoPath = fileStorageService.storeVideoFromUrl(asset.getShortsUrl(), DATA_DIR, SHORTS_DIR);
-        asset.updateShortsUrl(downloadedVideoPath);
+        if (!asset.getType().equals(ReviewAssetType.IMAGE)) {
+            String downloadedVideoPath = fileStorageService.storeVideoFromUrl(asset.getShortsUrl(), DATA_DIR,
+                    SHORTS_DIR);
+            asset.updateShortsUrl(downloadedVideoPath);
+        }
         review.updateDescription(request.description());
         createReviewMenus(review, request.menuIds());
         review.updateStatus(Status.SUCCESS);
