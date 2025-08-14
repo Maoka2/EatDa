@@ -167,6 +167,10 @@ public class ReviewServiceImpl implements ReviewService {
                 if (Objects.isNull(shortsUrl) || shortsUrl.isBlank()) {
                     throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
                 }
+                log.info("Downloading shorts video from URL: {}", shortsUrl);
+                String downloadedVideoPath = fileStorageService.storeVideoFromUrl(asset.getShortsUrl(), DATA_DIR,
+                        SHORTS_DIR);
+                asset.updateShortsUrl(downloadedVideoPath);
             }
             default -> throw new ApiException(ErrorCode.REVIEW_TYPE_INVALID, reviewAssetId);
         }
@@ -197,6 +201,7 @@ public class ReviewServiceImpl implements ReviewService {
         review.updateDescription(request.description());
         createReviewMenus(review, request.menuIds());
         review.updateStatus(Status.SUCCESS);
+        reviewRepository.save(review);
         return reviewMapper.toFinalizeResponse(review);
     }
 
