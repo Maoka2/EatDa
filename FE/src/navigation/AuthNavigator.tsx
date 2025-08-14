@@ -66,7 +66,10 @@ export type AuthStackParamList = {
   MypageScreen: undefined;
 
   CompleteModal: undefined;
-  GenerateStep: undefined;
+  GenerateStep: {
+    storeId: number;
+    selectedMenuIds: number[];
+  };
   MenuSelectStep: undefined;
   OCRStep: undefined;
   ReviewWriteScreen: undefined;

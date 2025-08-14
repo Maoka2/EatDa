@@ -1,4 +1,5 @@
-// 3. GenerateStep.tsx
+// src/screens/Store/Menu/GenerateStep.tsx  ← 당신 경로에 맞게 유지
+
 import React, { useState, useEffect } from "react";
 import {
   ScrollView,
@@ -13,31 +14,22 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import ImageUploader from "../../../components/ImageUploader";
 import { requestMenuPosterAsset } from "./services/api";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
-interface GenProps {
-  uploadedImages: string[];
-  prompt: string;
-  onAdd: (imageUrl: string) => void;
-  onRemove: (i: number) => void;
-  onPrompt: (t: string) => void;
-  onNext: () => void;
-  onBack: () => void;
+interface GenPropsFromRoute {
   storeId: number;
   selectedMenuIds: number[];
 }
 
-export default function GenerateStep({
-  uploadedImages,
-  prompt,
-  onAdd,
-  onRemove,
-  onPrompt,
-  onNext,
-  onBack,
-  storeId,
-  selectedMenuIds,
-}: GenProps) {
+export default function GenerateStep() {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const { storeId, selectedMenuIds } = (route?.params ||
+    {}) as GenPropsFromRoute;
+
   const { width } = useWindowDimensions();
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [prompt, setPrompt] = useState("");
   const [localImages, setLocalImages] = useState<(string | null)[]>([
     null,
     null,
@@ -48,9 +40,7 @@ export default function GenerateStep({
   useEffect(() => {
     const newImages: (string | null)[] = [null, null, null];
     uploadedImages.forEach((img, index) => {
-      if (index < 3) {
-        newImages[index] = img;
-      }
+      if (index < 3) newImages[index] = img;
     });
     setLocalImages(newImages);
   }, [uploadedImages]);
@@ -59,26 +49,40 @@ export default function GenerateStep({
     const newImages = [...localImages];
     newImages[index] = imageUrl;
     setLocalImages(newImages);
-    onAdd(imageUrl);
+    setUploadedImages((prev) => {
+      const copy = [...prev];
+      // index 자리에 맞춰 유지하고 싶으면 다음 로직으로 대체 가능
+      // while (copy.length <= index) copy.push("");
+      // copy[index] = imageUrl;
+      // return copy.filter(Boolean);
+      return [...copy, imageUrl];
+    });
   };
 
   const handleRemoveImage = (index: number) => {
     const newImages = [...localImages];
     newImages[index] = null;
     setLocalImages(newImages);
-    onRemove(index);
+    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const hasImages = localImages.some((img) => img !== null);
   const isDisabled = !hasImages || !prompt.trim();
 
   const handleConfirm = async () => {
+    if (
+      !storeId ||
+      !Array.isArray(selectedMenuIds) ||
+      selectedMenuIds.length === 0
+    ) {
+      Alert.alert("오류", "가게/메뉴 선택 정보가 없습니다.");
+      return;
+    }
     if (isDisabled) return;
 
     try {
       setLoading(true);
 
-      // FormData 구성
       const formData = new FormData();
       formData.append("storeId", String(storeId));
       selectedMenuIds.forEach((id) => formData.append("menuIds", String(id)));
@@ -95,10 +99,25 @@ export default function GenerateStep({
       });
 
       const res = await requestMenuPosterAsset(formData);
-      console.log("[GenerateStep] Asset Request Response:", res);
+      const menuPosterId: number | undefined =
+        (res && (res as any).menuPosterId) ||
+        (res &&
+          (res as any).raw &&
+          (res as any).raw.data &&
+          (res as any).raw.data.menuPosterId) ||
+        (res && (res as any).raw && (res as any).raw.menuPosterId);
 
-      Alert.alert("성공", "메뉴판 생성 요청이 완료되었습니다.");
-      onNext();
+      if (!menuPosterId) {
+        console.warn("[GenerateStep] menuPosterId not found in response:", res);
+        Alert.alert(
+          "오류",
+          "생성 요청은 성공했지만 포스터 ID를 찾지 못했습니다."
+        );
+        return;
+      }
+
+      // ✅ 바로 WriteStep으로 이동하면서 menuPosterId 전달
+      navigation.navigate("MenuPosterWriteStep", { menuPosterId });
     } catch (err: any) {
       console.error("[GenerateStep] Asset Request Error:", err);
       Alert.alert(
@@ -124,8 +143,10 @@ Best 5 메뉴판에 선정되면 특별한 혜택이 주어집니다-!
 
   return (
     <>
-      {/* 뒤로가기 버튼 */}
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+      >
         <Ionicons name="chevron-back" size={width * 0.06} color="#1A1A1A" />
       </TouchableOpacity>
 
@@ -159,14 +180,13 @@ Best 5 메뉴판에 선정되면 특별한 혜택이 주어집니다-!
             placeholderTextColor="#999999"
             textAlignVertical="top"
             value={prompt}
-            onChangeText={onPrompt}
+            onChangeText={setPrompt}
             scrollEnabled={true}
             numberOfLines={10}
           />
         </View>
       </ScrollView>
 
-      {/* 확인 버튼 */}
       <View style={styles.bottom}>
         <TouchableOpacity
           style={[styles.button, isDisabled && styles.buttonDisabled]}
@@ -184,16 +204,8 @@ Best 5 메뉴판에 선정되면 특별한 혜택이 주어집니다-!
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 10,
-  },
-  scroll: {
-    flex: 1,
-    backgroundColor: "#F7F8F9",
-  },
+  backButton: { position: "absolute", top: 40, left: 16, zIndex: 10 },
+  scroll: { flex: 1, backgroundColor: "#F7F8F9" },
   header: {
     paddingTop: 60,
     paddingBottom: 24,
@@ -207,11 +219,7 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 14,
-    color: "#666666",
-    textAlign: "center",
-  },
+  subtitle: { fontSize: 14, color: "#666666", textAlign: "center" },
   upSec: {
     paddingHorizontal: 20,
     paddingVertical: 20,
@@ -269,9 +277,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  buttonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 });

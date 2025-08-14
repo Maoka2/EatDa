@@ -19,16 +19,11 @@ export default function MenuCustomScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
 
-  // StoreScreen에서 넘겨준 파라미터
   const storeId = route?.params?.storeId;
-  // (storeName, address는 필요시 MenuSelectStep UI에서 쓰도록 전달 가능하지만,
-  // 지금 목표는 메뉴 불러오기 로직이므로 사용하지 않음)
 
-  // MenuSelectStep 인터페이스에 맞춘 상태
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<number[]>([]);
   const [accessToken, setAccessToken] = useState<string>("");
 
-  // storeId 유효성 체크
   useEffect(() => {
     if (!storeId || storeId <= 0) {
       Alert.alert("오류", "유효한 가게 ID가 없습니다.", [
@@ -37,7 +32,6 @@ export default function MenuCustomScreen() {
     }
   }, [storeId, navigation]);
 
-  // 토큰 로드
   useEffect(() => {
     (async () => {
       try {
@@ -55,8 +49,7 @@ export default function MenuCustomScreen() {
     })();
   }, [navigation]);
 
-  // MenuSelectStep 콜백
-  const onToggle = (id: string) => {
+  const onToggle = (id: number) => {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
@@ -65,15 +58,16 @@ export default function MenuCustomScreen() {
   const onBack = () => navigation.goBack();
 
   const onNext = () => {
-    // 다음 단계(프롬프트/이미지 업로드 → requestMenuPosterAsset 호출)는 이후에 붙임
-    // 지금은 선택 완료만 확인
     if (!selected.length) {
       Alert.alert("알림", "메뉴를 한 개 이상 선택해주세요.");
       return;
     }
-    // 이후 단계로 넘어갈 때 selected를 넘기면 됨
-    // navigation.navigate("다음화면", { storeId, selectedMenuIds: selected.map(Number) });
-    Alert.alert("선택 완료", `선택된 메뉴: ${selected.length}개`);
+
+    // 다음 화면으로 넘어갈 때 storeId, 선택된 메뉴 배열 같이 넘김
+    navigation.navigate("GenerateStep", {
+      storeId,
+      selectedMenuIds: selected,
+    });
   };
 
   return (
