@@ -124,7 +124,7 @@ class GoogleImageService:
 
         try:
             response = self.client.models.generate_content(  # type: ignore[union-attr]
-                model="gemini-2.0-flash-preview-image-generation",
+                model="imagen-4.0-generate-preview-06-06",
                 contents=contents,
                 # 이 모델은 응답 모달리티 조합으로 ["TEXT", "IMAGE"]를 요구함
                 config=types.GenerateContentConfig(response_modalities=["TEXT", "IMAGE"]) if types else None,

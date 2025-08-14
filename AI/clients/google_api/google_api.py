@@ -16,7 +16,7 @@ text_input = ('Hi, This is a picture of me.'
 
 try:
     response = client.models.generate_content(
-        model="gemini-2.0-flash-preview-image-generation",
+        model="imagen-4.0-generate-preview-06-06",
         contents=[text_input, image],
         config=types.GenerateContentConfig(
           response_modalities=['TEXT', 'IMAGE']
@@ -96,6 +96,8 @@ except Exception as e:
 
 
 
+
+# google api 모델 정의
 from typing import List, Optional, Literal, Any, Dict
 from pydantic import BaseModel
 
