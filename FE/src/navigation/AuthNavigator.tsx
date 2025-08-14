@@ -20,7 +20,10 @@ import EventMakingScreen from "../screens/EventMaking/EventMakingScreen";
 import StoreScreen from "../screens/Store/StoreScreen";
 
 import MapScreen from "../screens/Store/Map/MapScreen";
+
+// 메뉴 관련
 import MenuCustomScreen from "../screens/Store/Menu/MenuCustomScreen";
+import GenerateStep from "../screens/Store/Menu/GenerateStep";
 
 import MypageScreen from "../screens/Mypage/MypageScreen";
 
@@ -140,6 +143,7 @@ export default function AuthNavigator() {
         name="MenuCustomScreen"
         component={MenuCustomScreen}
       ></Stack.Screen>
+      <Stack.Screen name="GenerateStep" component={GenerateStep} />
 
       {/* 리뷰 작성 관련 */}
       <Stack.Screen

@@ -1,15 +1,20 @@
 import { getTokens } from "../../../Login/services/tokenStorage";
-const BASE_URL = "https://i13a609.p.ssafy.io/test";
+// const BASE_URL = "https://i13a609.p.ssafy.io/test";
+
+const BASE_HOST = "https://i13a609.p.ssafy.io";
+const BASE_PREFIX = "/test";
+const BASE_API_URL = `${BASE_HOST}${BASE_PREFIX}/api`;
+const BASE_AI_URL = `${BASE_HOST}/ai/api`;
 
 // ==================== 공통 타입 ====================
 
-export type StoreMenuItem = {
-  menuId: number;
+export interface MenuData {
+  id: number;
   name: string;
-  price: number;
-  description?: string;
+  description: string;
   imageUrl?: string;
-};
+  price?: number;
+}
 
 export interface ApiResponse<T> {
   code: string;
@@ -19,133 +24,46 @@ export interface ApiResponse<T> {
   timestamp: string;
 }
 
-// ==================== 메뉴 불러오기 ====================
 
-export async function getStoreMenu(storeId: number): Promise<StoreMenuItem[]> {
-  const { accessToken } = await getTokens();
-  if (!accessToken) throw new Error("인증이 필요합니다.");
-
-  const url = `${BASE_URL}/api/menu/${encodeURIComponent(String(storeId))}`;
-
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  const raw = await res.text();
-  let json: ApiResponse<StoreMenuItem[]> | null = null;
-  try {
-    json = raw ? (JSON.parse(raw) as ApiResponse<StoreMenuItem[]>) : null;
-  } catch {}
-
-  if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error(json?.message || "인증이 필요합니다.");
-    }
-    throw new Error(json?.message || `HTTP ${res.status}`);
-  }
-
-  if (!json || !Array.isArray(json.data)) {
-    throw new Error("응답 형식이 올바르지 않습니다.");
-  }
-
-  return json.data;
-}
-
-export type MenuSelectItem = {
-  id: number;
-  name: string;
-  description?: string;
-  imageUrl?: string;
-  price?: number;
-};
-
-export async function getStoreMenus(
+export const getStoreMenus = async (
   storeId: number,
-  accessToken?: string
-): Promise<MenuSelectItem[]> {
-  let token = accessToken;
-  if (!token) {
-    const t = await getTokens();
-    token = t.accessToken ?? "";
-  }
-  if (!token) throw new Error("인증이 필요합니다.");
+  accessToken: string
+): Promise<MenuData[]> => {
+  const url = `${BASE_API_URL}/menu/${storeId}`;
+  console.log("[getStoreMenus] GET", url);
 
-  const url = `${BASE_URL}/api/menu/${encodeURIComponent(String(storeId))}`;
   const res = await fetch(url, {
     method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
   });
 
-  const raw = await res.text();
-
-  // 공통 envelope 파싱 시도
-  let env: any = null;
-  try {
-    env = raw ? JSON.parse(raw) : null;
-  } catch {
-    throw new Error("응답이 JSON 형식이 아닙니다.");
-  }
+  const text = await res.text().catch(() => "");
 
   if (!res.ok) {
-    if (res.status === 401)
-      throw new Error(env?.message || "인증이 필요합니다.");
-    throw new Error(env?.message || `HTTP ${res.status}`);
+    console.log("[getStoreMenus] status:", res.status, "payload:", text);
+    throw new Error(text || "메뉴 조회 실패");
   }
 
-  const data = env?.data;
-  if (!data) throw new Error("응답 형식이 올바르지 않습니다.");
-
-  // 케이스 A: 기존 형식 — data가 배열이고 각 원소에 menuId 포함
-  if (Array.isArray(data)) {
-    return data.map((m: any) => {
-      const id =
-        typeof m?.menuId === "number"
-          ? m.menuId
-          : typeof m?.id === "number"
-          ? m.id
-          : NaN;
-
-      if (!Number.isFinite(id)) {
-        throw new Error("응답에 menuId가 없습니다.");
-      }
-
-      return {
-        id,
-        name: String(m?.name ?? ""),
-        description: String(m?.description ?? ""),
-        imageUrl: m?.imageUrl ?? undefined,
-        price: typeof m?.price === "number" ? m.price : undefined,
-      } as MenuSelectItem;
-    });
+  let json: any = {};
+  try {
+    json = JSON.parse(text || "{}");
+  } catch {
+    throw new Error("잘못된 응답 형식입니다.");
   }
 
-  // 케이스 B: 분리형 — data = { menuIds: number[], menus: Array<...> }
-  const menuIds: any[] = Array.isArray(data?.menuIds) ? data.menuIds : [];
-  const menus: any[] = Array.isArray(data?.menus) ? data.menus : [];
+  const menus = json.data?.menus || json.menus || json.data || [];
 
-  if (menuIds.length && menus.length) {
-    if (menuIds.length !== menus.length) {
-      throw new Error("응답의 menuIds와 menus 길이가 일치하지 않습니다.");
-    }
-    return menus.map((m, idx) => {
-      const id = menuIds[idx];
-      if (!Number.isFinite(id)) {
-        throw new Error("응답의 menuIds에 유효하지 않은 값이 있습니다.");
-      }
-      return {
-        id,
-        name: String(m?.name ?? ""),
-        description: String(m?.description ?? ""),
-        imageUrl: m?.imageUrl ?? undefined,
-        price: typeof m?.price === "number" ? m.price : undefined,
-      } as MenuSelectItem;
-    });
-  }
-
-  // 어떤 케이스에도 맞지 않으면 오류
-  throw new Error("응답 형식이 올바르지 않습니다. (지원되지 않는 data 구조)");
-}
+  return menus.map((menu: any) => ({
+    id: menu.id,
+    name: menu.name,
+    description: menu.description || "",
+    imageUrl: menu.imageUrl,
+    price: menu.price,
+  }));
+};
 
 // ==================== 포스터 asset 요청 ====================
 
@@ -164,7 +82,7 @@ export const requestMenuPosterAsset = async (formData: FormData) => {
   const { accessToken } = await getTokens();
   if (!accessToken) throw new Error("인증이 필요합니다.");
 
-  const res = await fetch(`${BASE_URL}/api/menu-posters/assets/request`, {
+  const res = await fetch(`${BASE_API_URL}/menu-posters/assets/request`, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}` },
     body: formData,
@@ -217,7 +135,7 @@ export async function getMenuPosterResult(
   const { accessToken } = await getTokens();
   if (!accessToken) throw new Error("인증이 필요합니다.");
 
-  const url = `${BASE_URL}/api/menu-posters/${encodeURIComponent(
+  const url = `${BASE_API_URL}/menu-posters/${encodeURIComponent(
     String(menuPosterId)
   )}/result`;
 
@@ -293,7 +211,7 @@ export async function finalizeMenuPoster(
 ): Promise<ApiResponse<any>> {
   const { accessToken } = await getTokens();
 
-  const res = await fetch(`${BASE_URL}/api/menu-posters/finalize`, {
+  const res = await fetch(`${BASE_API_URL}/menu-posters/finalize`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -331,7 +249,7 @@ export async function sendMenuPoster(
   const { accessToken } = await getTokens();
   if (!accessToken) throw new Error("인증이 필요합니다.");
 
-  const url = `${BASE_URL}/api/menu-posters/send`;
+  const url = `${BASE_API_URL}/menu-posters/send`;
 
   const res = await fetch(url, {
     method: "POST",
@@ -355,6 +273,177 @@ export async function sendMenuPoster(
   return json!;
 }
 
-// 선물 받은 메뉴 포스터 채택 API
-// 채택한 메뉴 포스터 해제 API
-// 채택한 메뉴 포스터 순서 변경 API
+// ==================== 메뉴 포스터 채택(교체 저장) ====================
+
+export interface AdoptMenuPostersRequest {
+  storeId: number;
+  menuPosterIds: number[]; // 최대 5개, 중복 불가
+}
+
+export interface AdoptMenuPostersData {
+  storeId: number;
+  adoptedMenuPosterIds: number[];
+}
+
+export type AdoptMenuPostersResponse = ApiResponse<AdoptMenuPostersData | null>;
+
+export async function adoptMenuPosters(
+  payload: AdoptMenuPostersRequest
+): Promise<AdoptMenuPostersData> {
+  const { storeId, menuPosterIds } = payload;
+
+  // ---- 클라이언트 선검증 ----
+  if (!storeId || typeof storeId !== "number") {
+    throw new Error("유효한 storeId가 필요합니다.");
+  }
+  if (!Array.isArray(menuPosterIds) || menuPosterIds.length === 0) {
+    throw new Error("menuPosterIds는 최소 1개 이상이어야 합니다.");
+  }
+  if (menuPosterIds.length > 5) {
+    throw new Error("menuPosterIds는 최대 5개까지 선택 가능합니다.");
+  }
+  const set = new Set(menuPosterIds);
+  if (set.size !== menuPosterIds.length) {
+    throw new Error("menuPosterIds에는 중복이 없어야 합니다.");
+  }
+
+  const { accessToken } = await getTokens();
+  if (!accessToken) throw new Error("인증이 필요합니다.");
+
+  const url = `${BASE_API_URL}/menu-posters/adopted`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ storeId, menuPosterIds }),
+  });
+
+  const raw = await res.text();
+  let json: AdoptMenuPostersResponse | null = null;
+  try {
+    json = raw ? (JSON.parse(raw) as AdoptMenuPostersResponse) : null;
+  } catch {
+    // 서버가 예외적으로 비JSON을 줄 가능성 방어
+  }
+
+  if (!res.ok) {
+    // 명세상의 에러 메시지 우선 사용
+    throw new Error((json && json.message) || raw || `HTTP ${res.status}`);
+  }
+
+  // 성공 응답: data 안에 { storeId, adoptedMenuPosterIds } 기대
+  const dataObj = (json && json.data) as AdoptMenuPostersData | null;
+
+  if (dataObj && Array.isArray(dataObj.adoptedMenuPosterIds)) {
+    return dataObj;
+  }
+
+  // 혹시 서버가 data를 null로 주거나 구조가 다른 경우, 최소한 클라가 보낸 값으로 정상 리턴
+  // (백엔드와 응답 구조 합의되면 이 fallback은 제거해도 됨)
+  return {
+    storeId,
+    adoptedMenuPosterIds: menuPosterIds,
+  };
+}
+// ==================== 메뉴 포스터 채택 해제 ====================
+
+export interface UnadoptMenuPosterRequest {
+  storeId: number;
+  menuPosterId: number;
+}
+
+export interface UnadoptMenuPosterResponseData {
+  storeId: number;
+  unadoptedMenuPosterIds: number[];
+}
+
+export async function unadoptMenuPoster(
+  payload: UnadoptMenuPosterRequest
+): Promise<ApiResponse<UnadoptMenuPosterResponseData>> {
+  const { accessToken } = await getTokens();
+  if (!accessToken) throw new Error("인증이 필요합니다.");
+
+  const url = `${BASE_API_URL}/menu-posters/adopted`;
+
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    // 명세상 DELETE 도 JSON 본문으로 전달
+    body: JSON.stringify(payload),
+  });
+
+  const raw = await res.text();
+  let json: ApiResponse<UnadoptMenuPosterResponseData> | null = null;
+  try {
+    json = raw
+      ? (JSON.parse(raw) as ApiResponse<UnadoptMenuPosterResponseData>)
+      : null;
+  } catch {
+    // 비 JSON 응답 대비
+  }
+
+  if (!res.ok) {
+    throw new Error((json && json.message) || raw || `HTTP ${res.status}`);
+  }
+
+  if (!json) throw new Error("응답 형식이 올바르지 않습니다.");
+  return json;
+}
+
+// ==================== 채택된 메뉴 포스터 정렬 순서 업데이트 ====================
+
+export interface UpdateAdoptedSortOrderRequest {
+  storeId: number;
+  sortedPosterIds: number[];
+}
+
+export interface UpdateAdoptedSortOrderResponseData {
+  storeId: number;
+  updatedPosterIds: number[];
+}
+
+/**
+ * 채택된 메뉴판의 노출 순서를 수정합니다.
+ * PUT /api/menu-posters/adopted/sort-order
+ */
+export async function updateAdoptedMenuPosterSortOrder(
+  payload: UpdateAdoptedSortOrderRequest
+): Promise<ApiResponse<UpdateAdoptedSortOrderResponseData>> {
+  const { accessToken } = await getTokens();
+  if (!accessToken) throw new Error("인증이 필요합니다.");
+
+  const url = `${BASE_API_URL}/menu-posters/adopted/sort-order`;
+
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const raw = await res.text();
+  let json: ApiResponse<UpdateAdoptedSortOrderResponseData> | null = null;
+  try {
+    json = raw
+      ? (JSON.parse(raw) as ApiResponse<UpdateAdoptedSortOrderResponseData>)
+      : null;
+  } catch {
+    // 비 JSON 응답 대비
+  }
+
+  if (!res.ok) {
+    // 명세: 400 / 401 / 403 / 500
+    throw new Error((json && json.message) || raw || `HTTP ${res.status}`);
+  }
+
+  if (!json) throw new Error("응답 형식이 올바르지 않습니다.");
+  return json;
+}

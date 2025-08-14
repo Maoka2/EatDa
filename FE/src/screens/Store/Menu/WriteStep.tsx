@@ -13,12 +13,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  finalizeMenuPoster,
-  waitForMenuPosterReady,
-  sendMenuPoster,
-} from "./services/api";
+import { finalizeMenuPoster, waitForMenuPosterReady } from "./services/api";
 import { useNavigation } from "@react-navigation/native";
+import CompleteModal from "../../Store/Menu/CompleteModal"; // 모달 경로에 맞게 조정
 
 interface Props {
   menuPosterId: number;
@@ -30,12 +27,17 @@ export default function WriteStep({ menuPosterId, onComplete }: Props) {
   const [isWriting, setIsWriting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [assetId, setAssetId] = useState<number | null>(null);
+  const [assetUrl, setAssetUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // 전송 확인 모달
+  const [sendModalVisible, setSendModalVisible] = useState(false);
 
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
+  // 에셋 생성 완료 대기 (polling)
   useEffect(() => {
     let isCancelled = false;
 
@@ -48,6 +50,7 @@ export default function WriteStep({ menuPosterId, onComplete }: Props) {
         if (!isCancelled) {
           setIsCompleted(true);
           setAssetId(result.assetId);
+          setAssetUrl(result.assetUrl);
         }
       } catch (err: any) {
         if (!isCancelled) {
@@ -65,46 +68,41 @@ export default function WriteStep({ menuPosterId, onComplete }: Props) {
     };
   }, [menuPosterId]);
 
+  // 작성 완료(= finalize) 후 전송 모달 띄우기
   const handleComplete = async () => {
     if (!assetId) {
       setError("에셋 ID를 찾을 수 없습니다.");
+      return;
+    }
+    if (description.trim().length < 30) {
+      setError("설명은 30자 이상 입력해주세요.");
       return;
     }
 
     try {
       setIsWriting(true);
 
-      console.log("[WriteStep] handleComplete START", {
-        menuPosterId,
-        assetId,
-        descriptionLength: description.length,
-      });
-
-      // 1. Finalize 요청
-      console.log("[WriteStep] Sending finalizeMenuPoster...");
+      // 1) 최종 등록(finalize)
       const finalizeRes = await finalizeMenuPoster({
         menuPosterId,
         menuPosterAssetId: assetId,
         description,
         type: "IMAGE",
       });
-      console.log("[WriteStep] finalizeMenuPoster Response:", finalizeRes);
 
-      // 2. Send 요청
-      console.log("[WriteStep] Sending sendMenuPoster...");
-      const sendRes = await sendMenuPoster({ menuPosterId });
-      console.log("[WriteStep] sendMenuPoster Response:", sendRes);
-
-      Alert.alert("성공", sendRes.message || "포스터가 전송되었습니다.");
-
-      console.log("[WriteStep] handleComplete SUCCESS");
-      onComplete();
+      // 2) 전송 모달 오픈 (실제 전송 API는 모달에서)
+      setSendModalVisible(true);
     } catch (err: any) {
-      console.error("[WriteStep] ERROR:", err);
-      setError(err.message || "포스터 완료/전송 처리 중 오류 발생");
+      setError(err.message || "포스터 완료 처리 중 오류 발생");
     } finally {
       setIsWriting(false);
     }
+  };
+
+  // 모달에서 전송까지 끝난 뒤 상위로 완료 알림
+  const handleSentDone = () => {
+    setSendModalVisible(false);
+    onComplete();
   };
 
   const isButtonDisabled =
@@ -136,7 +134,7 @@ export default function WriteStep({ menuPosterId, onComplete }: Props) {
             {isWriting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.completeButtonText}>완료 및 전송</Text>
+              <Text style={styles.completeButtonText}>작성 완료</Text>
             )}
           </TouchableOpacity>
         </>
@@ -153,6 +151,15 @@ export default function WriteStep({ menuPosterId, onComplete }: Props) {
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
+
+      {/* 전송 확인 모달: 실제 전송 API 호출은 모달 내부에서 진행 */}
+      <CompleteModal
+        visible={sendModalVisible}
+        onClose={() => setSendModalVisible(false)}
+        generatedContent={assetUrl ?? undefined}
+        onSent={handleSentDone}
+        menuPosterId={menuPosterId}
+      />
     </View>
   );
 }

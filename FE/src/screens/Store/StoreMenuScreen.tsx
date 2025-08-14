@@ -6,59 +6,65 @@ import {
   Image,
   ActivityIndicator,
   StyleSheet,
+  Alert,
 } from "react-native";
-import { getStoreMenu, StoreMenuItem } from "./Menu/services/api";
+import { getStoreMenus, MenuData } from "./Menu/services/api";
 import NoDataScreen from "../../components/NoDataScreen";
+type Props = { storeId: number; accessToken: string }; //
 
-type Props = { storeId: number }; // ✅ 정확한 prop 이름: storeId
-
-export default function StoreMenuScreen({ storeId }: Props) {
-  const [items, setItems] = useState<StoreMenuItem[]>([]);
+export default function StoreMenuScreen({ storeId, accessToken }: Props) {
+  const [menuData, setMenuData] = useState<MenuData[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [fetchedOnce, setFetchedOnce] = useState(false);
+  const [error, setError] = useState<string>("");
 
-  const fetchMenus = useCallback(async () => {
-    if (!Number.isFinite(storeId) || storeId <= 0) {
-      setItems([]);
-      setFetchedOnce(true);
-      return;
-    }
-
-    setLoading(true);
-    const t0 = Date.now();
-    try {
-      const list = await getStoreMenu(storeId);
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e) {
-      console.warn("[StoreMenu] fetch failed:", e);
-      setItems([]);
-    } finally {
-      setFetchedOnce(true);
-      setLoading(false);
-      console.log(
-        `[StoreMenu] fetch done (storeId=${storeId}, ${Date.now() - t0}ms)`
-      );
-    }
-  }, [storeId]);
-
-  useEffect(() => {
-    fetchMenus();
-  }, [fetchMenus]);
+  // 실제 메뉴 데이터 가져오기
+    useEffect(() => {
+      const fetchMenuData = async () => {
+        try {
+          setLoading(true);
+          setError("");
+          
+          const menus = await getStoreMenus(storeId, accessToken);
+          console.log("[MenuSelectStep] 받은 메뉴 데이터:", menus);
+          
+          // ⭐ 메뉴 ID를 1부터 시작하도록 변환 (undefined나 0 처리)
+          const adjustedMenus = menus.map((menu, index) => ({
+            ...menu,
+            id: (menu.id === undefined || menu.id === null || menu.id === 0) ? index + 1 : menu.id
+          }));
+          
+          console.log("[MenuSelectStep] 조정된 메뉴 데이터:", adjustedMenus);
+          setMenuData(adjustedMenus);
+          
+        } catch (error: any) {
+          console.error("메뉴 데이터 가져오기 실패:", error);
+          setError(error.message || "메뉴를 불러오는데 실패했습니다.");
+          Alert.alert("오류", "메뉴를 불러오는데 실패했습니다. 다시 시도해주세요.");
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      if (storeId && accessToken) {
+        fetchMenuData();
+      }
+    }, [storeId, accessToken]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const list = await getStoreMenu(storeId);
-      setItems(Array.isArray(list) ? list : []);
+      const list = await getStoreMenus(storeId, accessToken);
+      setMenuData(Array.isArray(list) ? list : []);
     } catch (e) {
       console.warn("[StoreMenu] refresh failed:", e);
     } finally {
       setRefreshing(false);
     }
-  }, [storeId]);
+  }, [storeId, accessToken]);
 
-  if (fetchedOnce && !loading && items.length === 0) {
+  if (fetchedOnce && !loading && menuData.length === 0) {
     return <NoDataScreen />;
   }
 
@@ -68,8 +74,8 @@ export default function StoreMenuScreen({ storeId }: Props) {
         <ActivityIndicator style={{ marginTop: 40 }} />
       ) : (
         <FlatList
-          data={items}
-          keyExtractor={(m, idx) => `${storeId}-${m.name}-${idx}`} // 
+          data={menuData}
+          keyExtractor={(m, idx) => `${storeId}-${m.name}-${idx}`} //
           refreshing={refreshing}
           onRefresh={onRefresh}
           contentContainerStyle={{ paddingVertical: 8 }}
@@ -82,9 +88,11 @@ export default function StoreMenuScreen({ storeId }: Props) {
               )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.price}>
-                  {item.price.toLocaleString()}원
-                </Text>
+                {typeof item.price === "number" ? (
+                  <Text style={styles.price}>
+                    {item.price.toLocaleString()}원
+                  </Text>
+                ) : null}
                 {item.description ? (
                   <Text style={styles.desc}>{item.description}</Text>
                 ) : null}

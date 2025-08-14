@@ -12,14 +12,14 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getStoreMenus } from "./services/api"; 
+import { getStoreMenus } from "./services/api";
 
 interface MenuData {
   id: number;
   name: string;
   description?: string;
   imageUrl?: string;
-  price?: number,
+  price?: number;
 }
 
 interface MenuSelectStepProps {
@@ -42,25 +42,43 @@ export default function MenuSelectStep({
   const { width } = useWindowDimensions();
   const [menuData, setMenuData] = useState<MenuData[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [error, setError] = useState<string>("");
   useEffect(() => {
-    const fetchMenu = async () =>{
-      try{
+    const fetchMenuData = async () => {
+      try {
         setLoading(true);
-        const data = await getStoreMenus(storeId);
-        setMenuData(data);
-      }catch(err:any){
-        console.error("[MenuSelectStep] 메뉴 불러오기 실패 ", err);
-        Alert.alert("오류", err.message || "메뉴를 불러오는데 실패하였습니다");
-      }finally{
+        setError("");
+
+        const menus = await getStoreMenus(storeId, accessToken);
+        console.log("[MenuSelectStep] 받은 메뉴 데이터:", menus);
+
+        // ⭐ 메뉴 ID를 1부터 시작하도록 변환 (undefined나 0 처리)
+        const adjustedMenus = menus.map((menu, index) => ({
+          ...menu,
+          id:
+            menu.id === undefined || menu.id === null || menu.id === 0
+              ? index + 1
+              : menu.id,
+        }));
+
+        console.log("[MenuSelectStep] 조정된 메뉴 데이터:", adjustedMenus);
+        setMenuData(adjustedMenus);
+      } catch (error: any) {
+        console.error("메뉴 데이터 가져오기 실패:", error);
+        setError(error.message || "메뉴를 불러오는데 실패했습니다.");
+        Alert.alert(
+          "오류",
+          "메뉴를 불러오는데 실패했습니다. 다시 시도해주세요."
+        );
+      } finally {
         setLoading(false);
       }
     };
 
-    if(storeId && accessToken){
-      fetchMenu();
+    if (storeId && accessToken) {
+      fetchMenuData();
     }
-  }, [storeId,accessToken]);
+  }, [storeId, accessToken]);
 
   if (loading) {
     return (
@@ -91,11 +109,11 @@ export default function MenuSelectStep({
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
-          const isSel = selected.includes((item.id));
+          const isSel = selected.includes(item.id);
           return (
             <TouchableOpacity
               style={[styles.card, isSel && styles.cardSelected]}
-              onPress={() => onToggle((item.id))}
+              onPress={() => onToggle(item.id)}
               activeOpacity={0.7}
             >
               <Image

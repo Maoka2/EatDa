@@ -15,6 +15,8 @@ import StoreMenuScreen from "./StoreMenuScreen";
 import StoreEventScreen from "./StoreEventScreen";
 import StoreReviewScreen from "./StoreReviewScreen";
 import { useAuth } from "../../contexts/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
@@ -33,6 +35,8 @@ export default function StoreScreen() {
 
   const { isLoggedIn, userRole } = useAuth();
   const isEater = isLoggedIn && userRole === "EATER";
+
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState("menu");
 
@@ -62,6 +66,12 @@ export default function StoreScreen() {
     { key: "event", label: "가게 이벤트" },
     { key: "review", label: "리뷰" },
   ];
+
+  useEffect(() => {
+    AsyncStorage.getItem("accessToken").then((token) => {
+      setAccessToken(token);
+    });
+  }, []);
 
   // ✅ 하단 버튼 핸들링: BottomButton에서 넘어온 키를 스위치로 처리
   const handleBottomPress = (screen: string) => {
@@ -102,7 +112,7 @@ export default function StoreScreen() {
       <TabSwitcher tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
 
       <View style={{ flex: 1 }}>
-        {activeTab === "menu" && <StoreMenuScreen storeId={storeId} />}
+        {activeTab === "menu" && accessToken &&  (<StoreMenuScreen storeId={storeId} accessToken={accessToken}/>)}
         {activeTab === "event" && <StoreEventScreen />}
         {activeTab === "review" && <StoreReviewScreen />}
       </View>
