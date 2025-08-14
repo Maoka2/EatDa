@@ -12,12 +12,14 @@ import com.global.dto.response.ApiResponseFactory;
 import com.global.dto.response.BaseResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/stores")
 @RequiredArgsConstructor
@@ -56,9 +58,15 @@ public class StoreController {
 
     @GetMapping("/nearby")
     public ResponseEntity<BaseResponse> getNearbyStores(
-            @ModelAttribute final StoreNearbyRequest request,
+            @RequestParam Double latitude,
+            @RequestParam Double longitude,
+            @RequestParam(required = false) Integer distance,
             @AuthenticationPrincipal final String email
-            ) {
+    ) {
+        // 로그 추가
+        log.info("Received params - lat: {}, lon: {}, dist: {}", latitude, longitude, distance);
+
+        StoreNearbyRequest request = new StoreNearbyRequest(latitude, longitude, distance);
         StoreNearbyResponse response = storeService.getNearbyStores(request, email);
         return ApiResponseFactory.success(SuccessCode.NEARBY_STORES_FOUND, response);
     }
