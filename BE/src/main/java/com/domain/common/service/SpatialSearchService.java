@@ -31,7 +31,7 @@ public class SpatialSearchService {
     private final PoiRepository poiRepository;
     private final StoreRepository storeRepository;
     private final HaversineCalculator haversineCalculator;
-    private final SpatialCacheService cacheService;
+    private final CacheService cacheService;
 
     // ===== Public APIs =====
 

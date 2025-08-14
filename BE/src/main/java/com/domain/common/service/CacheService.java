@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SpatialCacheService {
+public class CacheService {
 
     private static final String CACHE_KEY_PATTERN = "poi:%d:stores:%dm";
     private final RedisTemplate<String, Object> redisTemplate;
