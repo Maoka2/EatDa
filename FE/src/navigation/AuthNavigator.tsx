@@ -77,7 +77,7 @@ export type AuthStackParamList = {
   MenuSelectStep: undefined;
   OCRStep: undefined;
   ReviewWriteScreen: undefined;
-  MenuPosterWriteStep: { menuPosterId: number };
+  MenuPosterWriteStep: { menuPosterId: number, assetId: number, };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();

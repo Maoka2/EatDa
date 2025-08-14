@@ -24,38 +24,190 @@ export interface ApiResponse<T> {
   timestamp: string;
 }
 
+// ==================== 로깅/페치 유틸 ====================
+
+type AnyObj = Record<string, any>;
+const DEBUG_HTTP = true;
+const MAX_SNIPPET = 800;
+
+const nowIso = () => new Date().toISOString();
+const rid = (prefix = "REQ") =>
+  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const snip = (v: unknown, n = MAX_SNIPPET) => {
+  const s = typeof v === "string" ? v : JSON.stringify(v);
+  return s.length > n ? s.slice(0, n) + "…" : s;
+};
+
+const maskAuth = (headers: any) => {
+  if (!headers) return headers;
+  try {
+    const h =
+      typeof headers.get === "function"
+        ? Object.fromEntries((headers as any).entries())
+        : { ...headers };
+    if (h.Authorization) h.Authorization = "Bearer ***";
+    if (h.authorization) h.authorization = "Bearer ***";
+    return h;
+  } catch {
+    return headers;
+  }
+};
+
+const metaLog = (label: string, meta: AnyObj) => {
+  if (!DEBUG_HTTP) return;
+  console.info(`${label}\n` + JSON.stringify(meta, null, 2));
+};
+
+type SpecApiResponse<T> = {
+  code: string;
+  message: string;
+  status: number;
+  data: T | null;
+  timestamp?: string;
+};
+
+const specLog = (label: string, body: SpecApiResponse<any>) => {
+  console.info(`${label}\n` + JSON.stringify(body, null, 2));
+};
+
+const safeJsonParse = <T = any>(
+  text: string
+): { json: T | null; error: string | null } => {
+  if (!text) return { json: null, error: null };
+  try {
+    return { json: JSON.parse(text) as T, error: null };
+  } catch (e: any) {
+    return { json: null, error: e?.message || "JSON parse failed" };
+  }
+};
+
+type FetchWithLogsOptions = {
+  label: string;
+  reqId?: string;
+  expectJson?: boolean; // 응답 JSON 기대
+  note?: AnyObj; // 추가 메타
+};
+
+async function fetchWithLogs(
+  url: string,
+  init: any,
+  {
+    label,
+    reqId = rid(label),
+    expectJson = true,
+    note = {},
+  }: FetchWithLogsOptions
+) {
+  const t0 = Date.now();
+  const redactedInit = {
+    ...init,
+    headers: maskAuth(init?.headers),
+  };
+
+  metaLog(`[HTTP:${label}] REQUEST`, {
+    reqId,
+    method: init?.method || "GET",
+    url,
+    headers: redactedInit.headers,
+    bodyType: init?.body
+      ? init.body instanceof FormData
+        ? "FormData"
+        : typeof init.body
+      : "none",
+    note,
+    ts: nowIso(),
+  });
+
+  let res: Response;
+  let text = "";
+  try {
+    res = await fetch(url, init);
+  } catch (e: any) {
+    const elapsed = Date.now() - t0;
+    metaLog(`[HTTP:${label}] NETWORK_ERROR`, {
+      reqId,
+      url,
+      error: e?.message || String(e),
+      elapsedMs: elapsed,
+      ts: nowIso(),
+    });
+    throw e;
+  }
+
+  const elapsed = Date.now() - t0;
+  const contentType = res.headers?.get?.("content-type") || "";
+  try {
+    text = await res.text();
+  } catch (e: any) {
+    metaLog(`[HTTP:${label}] READ_ERROR`, {
+      reqId,
+      status: res.status,
+      ok: res.ok,
+      contentType,
+      readError: e?.message || String(e),
+      elapsedMs: elapsed,
+      ts: nowIso(),
+    });
+    throw e;
+  }
+
+  const { json, error: parseError } = expectJson
+    ? safeJsonParse(text)
+    : { json: null, error: null };
+
+  const meta = {
+    reqId,
+    url,
+    status: res.status,
+    ok: res.ok,
+    contentType,
+    elapsedMs: elapsed,
+    parsed: expectJson ? !parseError : false,
+    parseError,
+    rawSnippet: snip(text),
+    rawLength: text?.length ?? 0,
+    ts: nowIso(),
+    note,
+  };
+
+  if (!res.ok) {
+    metaLog(`[HTTP:${label}] ERROR_META`, meta);
+  } else {
+    metaLog(`[HTTP:${label}] OK_META`, meta);
+  }
+
+  return { res, text, json, meta };
+}
+
+// ==================== 메뉴 조회 ====================
 
 export const getStoreMenus = async (
   storeId: number,
   accessToken: string
 ): Promise<MenuData[]> => {
   const url = `${BASE_API_URL}/menu/${storeId}`;
-  console.log("[getStoreMenus] GET", url);
 
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  const { res, text } = await fetchWithLogs(
+    url,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
     },
-  });
-
-  const text = await res.text().catch(() => "");
+    { label: "GET_STORE_MENUS", note: { storeId } }
+  );
 
   if (!res.ok) {
-    console.log("[getStoreMenus] status:", res.status, "payload:", text);
     throw new Error(text || "메뉴 조회 실패");
   }
 
-  let json: any = {};
-  try {
-    json = JSON.parse(text || "{}");
-  } catch {
-    throw new Error("잘못된 응답 형식입니다.");
-  }
+  const { json, error } = safeJsonParse<any>(text);
+  if (error) throw new Error("잘못된 응답 형식입니다.");
 
-  const menus = json.data?.menus || json.menus || json.data || [];
-
+  const menus = json?.data?.menus || json?.menus || json?.data || [];
   return menus.map((menu: any) => ({
     id: menu.id,
     name: menu.name,
@@ -69,7 +221,7 @@ export const getStoreMenus = async (
 
 export type MenuPosterRequest = {
   storeId: number;
-  tyle: "IMAGE";
+  type: "IMAGE";
   menuIds: number[];
   prompt: string;
   images: Array<{ uri: string; name?: string; type?: string } | any>;
@@ -83,29 +235,44 @@ export const requestMenuPosterAsset = async (formData: FormData) => {
   const { accessToken } = await getTokens();
   if (!accessToken) throw new Error("인증이 필요합니다.");
 
-  const res = await fetch(`${BASE_API_URL}/menu-posters/assets/request`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body: formData,
-  });
+  const url = `${BASE_API_URL}/menu-posters/assets/request`;
 
-  const raw = await res.text();
-  let json: any = null;
-  try {
-    json = raw ? JSON.parse(raw) : null;
-  } catch {
-    // 비JSON 응답 대비
-  }
+  const { res, text } = await fetchWithLogs(
+    url,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: formData, // multipart는 Content-Type 직접 지정하지 않음
+    },
+    {
+      label: "REQ_MENU_POSTER_ASSET",
+      expectJson: true,
+      note: {
+        bodyType: "FormData (image[], storeId, type, menuIds[], prompt)",
+      },
+    }
+  );
+
+  const { json } = safeJsonParse<any>(text);
 
   if (!res.ok) {
-    console.error("ASSET REQ ERR", { status: res.status, raw });
-    throw new Error(
-      (json && (json.message || json.error)) || raw || `HTTP ${res.status}`
-    );
+    const errMsg =
+      (json && (json.message || json.error)) || text || `HTTP ${res.status}`;
+    // 스펙형 에러 출력을 원하면 아래처럼 찍어줌
+    specLog("[MENU_POSTER_ASSET ERROR]", {
+      code:
+        json?.code ||
+        (res.status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR"),
+      message: errMsg,
+      status: res.status,
+      data: null,
+      timestamp: nowIso(),
+    });
+    throw new Error(errMsg);
   }
 
-  // ← 응답 유연 파싱: data 안/밖 모두 대응
   const dataObj = json?.data ?? json;
+
   const menuPosterId =
     typeof dataObj?.menuPosterId === "number"
       ? dataObj.menuPosterId
@@ -113,16 +280,28 @@ export const requestMenuPosterAsset = async (formData: FormData) => {
       ? dataObj.id
       : NaN;
 
+  const menuPosterAssetId =
+    typeof dataObj?.menuPosterAssetId === "number"
+      ? dataObj.menuPosterAssetId
+      : typeof dataObj?.assetId === "number"
+      ? dataObj.assetId
+      : undefined;
+
+  metaLog("[REQ_MENU_POSTER_ASSET RESULT]", {
+    menuPosterId,
+    menuPosterAssetId,
+    ts: nowIso(),
+  });
+
   if (!Number.isFinite(menuPosterId)) {
     console.warn("[requestMenuPosterAsset] unexpected response shape:", json);
     return { raw: json };
   }
 
-  // 필요시 향후 확장을 대비해 원본도 함께 반환
-  return { menuPosterId, raw: json };
+  return { menuPosterId, menuPosterAssetId, raw: json };
 };
 
-// ==================== 포스터 생성 상태 조회 ====================
+// ==================== 포스터 생성 상태 조회 (자원: assetId) ====================
 
 export interface MenuPosterResultResponse {
   type: string; // IMAGE 등
@@ -131,38 +310,78 @@ export interface MenuPosterResultResponse {
 }
 
 export async function getMenuPosterResult(
-  menuPosterId: number
-): Promise<MenuPosterResultResponse | null> {
+  assetId: number
+): Promise<{ assetUrl?: string; type?: string } | null> {
   const { accessToken } = await getTokens();
   if (!accessToken) throw new Error("인증이 필요합니다.");
+  if (!Number.isFinite(assetId))
+    throw new Error("유효한 assetId가 필요합니다.");
 
-  const url = `${BASE_API_URL}/menu-posters/${encodeURIComponent(
-    String(menuPosterId)
-  )}/result`;
+  const url = `${BASE_API_URL}/menu-posters/assets/${assetId}/result`;
 
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  const { res, text } = await fetchWithLogs(
+    url,
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+    { label: "GET_ASSET_RESULT", expectJson: false, note: { assetId } }
+  );
 
-  const raw = await res.text();
-  let json: ApiResponse<MenuPosterResultResponse> | null = null;
-  try {
-    json = raw
-      ? (JSON.parse(raw) as ApiResponse<MenuPosterResultResponse>)
-      : null;
-  } catch {}
+  const contentType = res.headers?.get?.("content-type") || "";
 
   if (!res.ok) {
-    throw new Error(json?.message || `HTTP ${res.status}`);
+    const { json } = safeJsonParse<any>(text);
+    const errMsg = json?.message || text || `HTTP ${res.status}`;
+
+    // 명세 느낌의 에러 로그
+    specLog("[POSTER_RESULT ERROR]", {
+      code:
+        json?.code ||
+        (res.status === 401 ? "UNAUTHORIZED" : "INTERNAL_SERVER_ERROR"),
+      message: errMsg,
+      status: res.status,
+      data: null,
+      timestamp: nowIso(),
+    });
+    throw new Error(errMsg);
   }
 
-  if (!json) throw new Error("응답 형식이 올바르지 않습니다.");
-  return json.data ?? null;
+  // 스웨거가 string 반환 명시 (READY면 URL 문자열, PENDING이면 빈 문자열/204 계열)
+  const trimmed = (text || "").trim();
+  if (!contentType.includes("application/json")) {
+    if (trimmed) {
+      metaLog("[GET_ASSET_RESULT READY(plain)]", { assetId, url: trimmed });
+      return { assetUrl: trimmed };
+    }
+    metaLog("[GET_ASSET_RESULT PENDING(plain)]", { assetId });
+    return null;
+  }
+
+  // 혹시 JSON이면 유연 처리
+  const { json } = safeJsonParse<any>(text);
+  const maybeUrl =
+    json?.data && typeof json.data === "string"
+      ? json.data
+      : json?.data?.assetUrl || json?.assetUrl || json?.url;
+  const maybeType = json?.data?.type || json?.type;
+
+  if (maybeUrl) {
+    metaLog("[GET_ASSET_RESULT READY(json)]", {
+      assetId,
+      url: maybeUrl,
+      type: maybeType,
+    });
+    return { assetUrl: String(maybeUrl), type: maybeType };
+  }
+
+  metaLog("[GET_ASSET_RESULT PENDING(json)]", { assetId });
+  return null;
 }
 
-export const waitForMenuPosterReady = async (
-  menuPosterId: number,
+// 폴링 (assetId 기준)
+export const waitForAssetReady = async (
+  assetId: number,
   {
     intervalMs = 5000,
     maxWaitMs = 120000,
@@ -170,30 +389,62 @@ export const waitForMenuPosterReady = async (
   }: {
     intervalMs?: number;
     maxWaitMs?: number;
-    onTick?: (status: string | null, assetUrl?: string) => void;
+    onTick?: (status: "READY" | "WAITING", assetUrl?: string) => void;
   } = {}
 ): Promise<{ assetUrl: string; assetId: number }> => {
   const started = Date.now();
+  const pollId = rid("POSTER_POLL");
+  let attempt = 0;
 
   while (true) {
-    try {
-      const res = await getMenuPosterResult(menuPosterId);
-      const status = res?.assetUrl ? "READY" : "WAITING";
-      onTick?.(status, res?.assetUrl);
+    attempt += 1;
+    const elapsed = Date.now() - started;
 
-      if (res?.assetUrl && res?.menuPosterAssetId != null) {
-        return { assetUrl: res.assetUrl, assetId: res.menuPosterAssetId };
-      }
-    } catch (e) {
-      console.warn("[POLL] 상태 조회 실패:", e);
+    try {
+      const res = await getMenuPosterResult(assetId);
+      const ready = !!res?.assetUrl;
+      onTick?.(ready ? "READY" : "WAITING", res?.assetUrl);
+
+      metaLog("[POSTER_POLL TICK]", {
+        pollId,
+        assetId,
+        attempt,
+        elapsedMs: elapsed,
+        status: ready ? "READY" : "WAITING",
+        hasAssetUrl: !!res?.assetUrl,
+      });
+
+      if (ready) return { assetUrl: res!.assetUrl!, assetId };
+    } catch (e: any) {
+      metaLog("[POSTER_POLL ERROR]", {
+        pollId,
+        assetId,
+        attempt,
+        elapsedMs: elapsed,
+        error: e?.message || String(e),
+      });
+      // 계속 대기
     }
 
-    const elapsed = Date.now() - started;
     if (elapsed >= maxWaitMs) {
+      specLog("[POSTER_RESULT]", {
+        code: "POSTER_GENERATION_FAILED",
+        message: "포스터 생성에 실패했습니다.",
+        status: 200,
+        data: null,
+        timestamp: nowIso(),
+      });
+      metaLog("[POSTER_POLL TIMEOUT]", {
+        pollId,
+        assetId,
+        attempt,
+        elapsedMs: elapsed,
+        maxWaitMs,
+      });
       throw new Error("메뉴포스터 생성 시간이 초과되었습니다.");
     }
 
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    await new Promise((r) => setTimeout(r, intervalMs));
   }
 };
 
@@ -206,32 +457,42 @@ export interface FinalizeMenuPosterRequest {
   type: string;
 }
 
-// 메뉴 포스터 최종 완료 요청
 export async function finalizeMenuPoster(
   data: FinalizeMenuPosterRequest
 ): Promise<ApiResponse<any>> {
   const { accessToken } = await getTokens();
+  if (!accessToken) throw new Error("인증이 필요합니다.");
 
-  const res = await fetch(`${BASE_API_URL}/menu-posters/finalize`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  const url = `${BASE_API_URL}/menu-posters/finalize`;
+
+  const { res, text } = await fetchWithLogs(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
     },
-    body: JSON.stringify(data),
-  });
+    {
+      label: "FINALIZE_MENU_POSTER",
+      note: { ...data, descriptionLen: data.description?.length },
+    }
+  );
 
-  const raw = await res.text();
-  const json = JSON.parse(raw);
+  const { json, error } = safeJsonParse<ApiResponse<any>>(text);
   if (!res.ok) {
-    console.error("[POST][finalizeMenuPoster] 실패", raw);
-    throw new Error(json?.message || raw || "에러 발생");
+    console.error("[POST][finalizeMenuPoster] 실패", snip(text));
+    throw new Error(json?.message || text || "에러 발생");
   }
+  if (error || !json) throw new Error("응답 파싱 실패");
 
   return json;
 }
 
-// 메뉴 포스터 선물 API
+// ==================== 메뉴 포스터 선물 API ====================
+
 export interface SendMenuPosterRequest {
   menuPosterId: number;
 }
@@ -252,26 +513,23 @@ export async function sendMenuPoster(
 
   const url = `${BASE_API_URL}/menu-posters/send`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  const { res, text } = await fetchWithLogs(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+    { label: "SEND_MENU_POSTER", note: { ...payload } }
+  );
 
-  const raw = await res.text();
-  let json: SendMenuPosterResponse | null = null;
-  try {
-    json = raw ? (JSON.parse(raw) as SendMenuPosterResponse) : null;
-  } catch {}
-
-  if (!res.ok) {
-    throw new Error(json?.message || raw || `HTTP ${res.status}`);
-  }
-
-  return json!;
+  const { json, error } = safeJsonParse<SendMenuPosterResponse>(text);
+  if (!res.ok) throw new Error(json?.message || text || `HTTP ${res.status}`);
+  if (error || !json) throw new Error("응답 형식이 올바르지 않습니다.");
+  return json;
 }
 
 // ==================== 메뉴 포스터 채택(교체 저장) ====================
@@ -293,7 +551,6 @@ export async function adoptMenuPosters(
 ): Promise<AdoptMenuPostersData> {
   const { storeId, menuPosterIds } = payload;
 
-  // ---- 클라이언트 선검증 ----
   if (!storeId || typeof storeId !== "number") {
     throw new Error("유효한 storeId가 필요합니다.");
   }
@@ -313,42 +570,40 @@ export async function adoptMenuPosters(
 
   const url = `${BASE_API_URL}/menu-posters/adopted`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  const { res, text } = await fetchWithLogs(
+    url,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ storeId, menuPosterIds }),
     },
-    body: JSON.stringify({ storeId, menuPosterIds }),
-  });
+    { label: "ADOPT_MENU_POSTERS", note: { storeId, menuPosterIds } }
+  );
 
-  const raw = await res.text();
-  let json: AdoptMenuPostersResponse | null = null;
-  try {
-    json = raw ? (JSON.parse(raw) as AdoptMenuPostersResponse) : null;
-  } catch {
-    // 서버가 예외적으로 비JSON을 줄 가능성 방어
-  }
+  const { json } = safeJsonParse<AdoptMenuPostersResponse>(text);
 
   if (!res.ok) {
-    // 명세상의 에러 메시지 우선 사용
-    throw new Error((json && json.message) || raw || `HTTP ${res.status}`);
+    throw new Error(
+      (json && (json as any).message) || text || `HTTP ${res.status}`
+    );
   }
 
-  // 성공 응답: data 안에 { storeId, adoptedMenuPosterIds } 기대
   const dataObj = (json && json.data) as AdoptMenuPostersData | null;
 
   if (dataObj && Array.isArray(dataObj.adoptedMenuPosterIds)) {
     return dataObj;
   }
 
-  // 혹시 서버가 data를 null로 주거나 구조가 다른 경우, 최소한 클라가 보낸 값으로 정상 리턴
-  // (백엔드와 응답 구조 합의되면 이 fallback은 제거해도 됨)
+  // fallback
   return {
     storeId,
     adoptedMenuPosterIds: menuPosterIds,
   };
 }
+
 // ==================== 메뉴 포스터 채택 해제 ====================
 
 export interface UnadoptMenuPosterRequest {
@@ -369,31 +624,29 @@ export async function unadoptMenuPoster(
 
   const url = `${BASE_API_URL}/menu-posters/adopted`;
 
-  const res = await fetch(url, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  const { res, text } = await fetchWithLogs(
+    url,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     },
-    // 명세상 DELETE 도 JSON 본문으로 전달
-    body: JSON.stringify(payload),
-  });
+    { label: "UNADOPT_MENU_POSTER", note: { ...payload } }
+  );
 
-  const raw = await res.text();
-  let json: ApiResponse<UnadoptMenuPosterResponseData> | null = null;
-  try {
-    json = raw
-      ? (JSON.parse(raw) as ApiResponse<UnadoptMenuPosterResponseData>)
-      : null;
-  } catch {
-    // 비 JSON 응답 대비
-  }
+  const { json, error } =
+    safeJsonParse<ApiResponse<UnadoptMenuPosterResponseData>>(text);
 
   if (!res.ok) {
-    throw new Error((json && json.message) || raw || `HTTP ${res.status}`);
+    throw new Error(
+      (json && (json as any).message) || text || `HTTP ${res.status}`
+    );
   }
 
-  if (!json) throw new Error("응답 형식이 올바르지 않습니다.");
+  if (error || !json) throw new Error("응답 형식이 올바르지 않습니다.");
   return json;
 }
 
@@ -421,30 +674,28 @@ export async function updateAdoptedMenuPosterSortOrder(
 
   const url = `${BASE_API_URL}/menu-posters/adopted/sort-order`;
 
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  const { res, text } = await fetchWithLogs(
+    url,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+    { label: "UPDATE_ADOPTED_SORT_ORDER", note: { ...payload } }
+  );
 
-  const raw = await res.text();
-  let json: ApiResponse<UpdateAdoptedSortOrderResponseData> | null = null;
-  try {
-    json = raw
-      ? (JSON.parse(raw) as ApiResponse<UpdateAdoptedSortOrderResponseData>)
-      : null;
-  } catch {
-    // 비 JSON 응답 대비
-  }
+  const { json, error } =
+    safeJsonParse<ApiResponse<UpdateAdoptedSortOrderResponseData>>(text);
 
   if (!res.ok) {
-    // 명세: 400 / 401 / 403 / 500
-    throw new Error((json && json.message) || raw || `HTTP ${res.status}`);
+    throw new Error(
+      (json && (json as any).message) || text || `HTTP ${res.status}`
+    );
   }
 
-  if (!json) throw new Error("응답 형식이 올바르지 않습니다.");
+  if (error || !json) throw new Error("응답 형식이 올바르지 않습니다.");
   return json;
 }

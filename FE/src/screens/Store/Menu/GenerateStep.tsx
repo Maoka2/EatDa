@@ -98,7 +98,13 @@ export default function GenerateStep() {
       formData.append("prompt", prompt);
       formData.append("type", "IMAGE");
       localImages.forEach((uri, idx) => {
-        files.forEach((f) => formData.append("image", f as any));
+        if (uri) {
+          formData.append("image", {
+            uri,
+            name: `image_${idx}.jpg`,
+            type: "image/jpeg",
+          } as any);
+        }
       });
       if (!files.length) {
         Alert.alert("오류", "최소 1장의 이미지를 첨부해주세요.");
