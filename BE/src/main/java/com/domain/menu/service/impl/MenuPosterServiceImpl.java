@@ -188,6 +188,16 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         return AdoptMenuPostersResponse.of(request.storeId(), request.menuPosterIds());
     }
 
+    @Override
+    public List<MenuPoster> getMyMenuPosters(final String email) {
+        return menuPosterRepository.findByUserIdAndStatus(getEaterId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public List<MenuPoster> getReceivedMenuPosters(final String email) {
+        return menuPosterRepository.findByStoreIdAndStatus(getMakerId(email), Status.SUCCESS);
+    }
+
     private User validateEater(final String eaterEmail) {
         return eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
                 .orElseThrow(() -> {
@@ -266,5 +276,17 @@ public class MenuPosterServiceImpl implements MenuPosterService {
                     .build();
             menuPoster.getMenuPosterMenus().add(menuPosterMenu);
         }
+    }
+
+    private Long getEaterId(String email) {
+        return eaterRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getId();
+    }
+
+    private Long getMakerId(String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getId();
     }
 }

@@ -7,6 +7,7 @@ import com.domain.menu.dto.request.SendMenuPosterRequest;
 import com.domain.menu.dto.response.AdoptMenuPostersResponse;
 import com.domain.menu.dto.response.MenuPosterAssetRequestResponse;
 import com.domain.menu.dto.response.MenuPosterFinalizeResponse;
+import com.domain.menu.entity.MenuPoster;
 import com.domain.menu.service.MenuPosterService;
 import com.global.constants.AssetType;
 import com.global.constants.SuccessCode;
@@ -15,12 +16,19 @@ import com.global.dto.response.ApiResponseFactory;
 import com.global.dto.response.AssetResultResponse;
 import com.global.dto.response.BaseResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -86,5 +94,17 @@ public class MenuPosterController {
     ) {
         AdoptMenuPostersResponse response = menuPosterService.adoptMenuPosters(request, email);
         return ApiResponseFactory.success(SuccessCode.POSTERS_ADOPTED, response);
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<BaseResponse> getMyMenuPosters(@AuthenticationPrincipal final String email) {
+        List<MenuPoster> menuPosters = menuPosterService.getMyMenuPosters(email);
+        return ApiResponseFactory.success(SuccessCode.POSTER_GET);
+    }
+
+    @GetMapping("/received")
+    public ResponseEntity<BaseResponse> getRevceivedMenuPosters(@AuthenticationPrincipal final String email) {
+        List<MenuPoster> menuPosters = menuPosterService.getReceivedMenuPosters(email);
+        return ApiResponseFactory.success(SuccessCode.POSTER_GET);
     }
 }
