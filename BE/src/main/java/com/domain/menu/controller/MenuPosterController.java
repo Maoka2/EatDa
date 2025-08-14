@@ -7,7 +7,7 @@ import com.domain.menu.dto.request.SendMenuPosterRequest;
 import com.domain.menu.dto.response.AdoptMenuPostersResponse;
 import com.domain.menu.dto.response.MenuPosterAssetRequestResponse;
 import com.domain.menu.dto.response.MenuPosterFinalizeResponse;
-import com.domain.menu.entity.MenuPoster;
+import com.domain.menu.mapper.MenuPosterMapper;
 import com.domain.menu.service.MenuPosterService;
 import com.global.constants.AssetType;
 import com.global.constants.SuccessCode;
@@ -16,7 +16,6 @@ import com.global.dto.response.ApiResponseFactory;
 import com.global.dto.response.AssetResultResponse;
 import com.global.dto.response.BaseResponse;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -37,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MenuPosterController {
 
     private final MenuPosterService menuPosterService;
+    private final MenuPosterMapper menuPosterMapper;
 
     @PostMapping(value = "/assets/request", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse> requestMenuPosterAsset(
@@ -98,13 +98,13 @@ public class MenuPosterController {
 
     @GetMapping("/my")
     public ResponseEntity<BaseResponse> getMyMenuPosters(@AuthenticationPrincipal final String email) {
-        List<MenuPoster> menuPosters = menuPosterService.getMyMenuPosters(email);
-        return ApiResponseFactory.success(SuccessCode.POSTER_GET);
+        return ApiResponseFactory.success(SuccessCode.POSTER_GET,
+                menuPosterMapper.toResponse(menuPosterService.getMyMenuPosters(email)));
     }
 
     @GetMapping("/received")
     public ResponseEntity<BaseResponse> getRevceivedMenuPosters(@AuthenticationPrincipal final String email) {
-        List<MenuPoster> menuPosters = menuPosterService.getReceivedMenuPosters(email);
-        return ApiResponseFactory.success(SuccessCode.POSTER_GET);
+        return ApiResponseFactory.success(SuccessCode.POSTER_GET,
+                menuPosterMapper.toResponse(menuPosterService.getReceivedMenuPosters(email)));
     }
 }
