@@ -7,15 +7,19 @@ import com.domain.review.constants.ReviewAssetType;
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
 import com.domain.review.dto.request.ReviewFinalizeRequest;
+import com.domain.review.dto.request.ReviewLocationRequest;
 import com.domain.review.entity.Review;
 import com.domain.review.entity.ReviewAsset;
 import com.domain.user.entity.User;
 import com.global.constants.ErrorCode;
+import com.global.constants.SearchDistance;
 import com.global.constants.Status;
 import com.global.exception.ApiException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import com.global.utils.geo.SeoulBoundary;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -104,6 +108,24 @@ public class ReviewValidator {
                 log.warn(LOG_IMAGE_TOO_LARGE, file.getOriginalFilename(), file.getSize() / (IMAGE_BYTE * IMAGE_BYTE));
                 throw new ApiException(ErrorCode.REVIEW_IMAGE_TOO_LARGE, file.getOriginalFilename());
             }
+        }
+    }
+
+    public static void validateLocationRequest(ReviewLocationRequest request, Integer distance) {
+        // null 체크
+        if (request.latitude() == null || request.longitude() == null || distance == null) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "위치 정보와 거리는 필수입니다");
+        }
+
+        // 서울 범위 체크
+        if (!SeoulBoundary.inSeoul(request.latitude(), request.longitude())) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR, "서울 지역만 서비스 가능합니다");
+        }
+
+        // 거리 유효성 체크
+        if (!SearchDistance.isValid(distance)) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                    String.format("유효하지 않은 검색 거리입니다: %dm", distance));
         }
     }
 }

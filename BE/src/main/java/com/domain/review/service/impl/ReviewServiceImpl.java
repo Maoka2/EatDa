@@ -6,7 +6,6 @@ import static com.global.constants.ErrorCode.STORE_NOT_FOUND;
 import com.domain.menu.entity.Menu;
 import com.domain.menu.repository.MenuRepository;
 import com.domain.review.constants.ReviewAssetType;
-import com.domain.review.constants.ReviewConstants;
 import com.domain.review.dto.redis.ReviewAssetGenerateMessage;
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
@@ -21,7 +20,7 @@ import com.domain.review.dto.response.ReviewFeedResponse;
 import com.domain.review.dto.response.ReviewFeedResult;
 import com.domain.review.dto.response.ReviewFinalizeResponse;
 import com.domain.review.dto.response.StoreDistanceResult;
-import com.domain.review.entity.Poi;
+import com.domain.common.entity.Poi;
 import com.domain.review.entity.Review;
 import com.domain.review.entity.ReviewAsset;
 import com.domain.review.entity.ReviewMenu;
@@ -31,7 +30,7 @@ import com.domain.review.publisher.ReviewAssetRedisPublisher;
 import com.domain.review.repository.ReviewAssetRepository;
 import com.domain.review.repository.ReviewMenuRepository;
 import com.domain.review.repository.ReviewRepository;
-import com.domain.review.service.PoiStoreDistanceService;
+import com.domain.common.service.SpatialSearchService;
 import com.domain.review.service.ReviewAssetService;
 import com.domain.review.service.ReviewService;
 import com.domain.review.service.ReviewThumbnailService;
@@ -43,6 +42,7 @@ import com.domain.user.repository.EaterRepository;
 import com.domain.user.repository.MakerRepository;
 import com.global.config.FileStorageProperties;
 import com.global.constants.ErrorCode;
+import com.global.constants.PagingConstants;
 import com.global.constants.Status;
 import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -83,7 +84,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewMapper reviewMapper;
     private final ReviewAssetRedisPublisher reviewAssetRedisPublisher;
     private final FileStorageService fileStorageService;
-    private final PoiStoreDistanceService poiStoreDistanceService;
+    private final SpatialSearchService poiStoreDistanceService;
     private final ReviewAssetService reviewAssetService;
 
     private final ReviewThumbnailService reviewThumbnailService;
@@ -210,7 +211,7 @@ public class ReviewServiceImpl implements ReviewService {
                                                               final String email) {
         // 1. 검증
         validatedToken(email);
-        validateLocationParameters(request, distance);
+        ReviewValidator.validateLocationRequest(request, distance);
 
         // 2. POI 조회
         Optional<Poi> poiOpt = findNearestPoi(request.latitude(), request.longitude());
@@ -266,7 +267,7 @@ public class ReviewServiceImpl implements ReviewService {
                                                            final String eaterEmail) {
         User eater = findEaterByEmail(eaterEmail);
 
-        if (pageSize <= 0 || pageSize > ReviewConstants.MAX_PAGE_SIZE) {
+        if (pageSize <= 0 || pageSize > PagingConstants.MAX_SIZE.value) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
@@ -314,28 +315,6 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     // ===== Private Helper Methods =====
-
-    /**
-     * 위치 파라미터 검증
-     */
-    private void validateLocationParameters(ReviewLocationRequest request, Integer distance) {
-        if (request.latitude() == null || request.longitude() == null || distance == null) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-        }
-
-        if (request.latitude() < ReviewConstants.MIN_LATITUDE || request.latitude() > ReviewConstants.MAX_LATITUDE) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-        }
-
-        if (request.longitude() < ReviewConstants.MIN_LONGITUDE
-                || request.longitude() > ReviewConstants.MAX_LONGITUDE) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-        }
-
-        if (!ReviewConstants.SEARCH_DISTANCES.contains(distance)) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-        }
-    }
 
     /**
      * 가장 가까운 POI 찾기 (실패 시 null 반환)
@@ -401,7 +380,7 @@ public class ReviewServiceImpl implements ReviewService {
         log.info("Providing fallback feed with lastReviewId: {}", lastReviewId);
 
         Pageable pageable = PageRequest.of(0,
-                ReviewConstants.DEFAULT_PAGE_SIZE + ReviewConstants.PAGINATION_BUFFER);
+                PagingConstants.DEFAULT_SIZE.value + PagingConstants.BUFFER.value);
 
         List<Review> reviews = reviewRepository.findAllOrderByIdDescWithAssets(lastReviewId, pageable);
 
@@ -697,7 +676,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     private List<Review> fetchReviewsWithAssets(List<Long> storeIds, Long lastReviewId) {
         Pageable pageable = PageRequest.of(0,
-                ReviewConstants.DEFAULT_PAGE_SIZE + ReviewConstants.PAGINATION_BUFFER);
+                PagingConstants.DEFAULT_SIZE.value + PagingConstants.BUFFER.value);
 
         try {
             return reviewRepository.findByStoreIdInOrderByIdDescWithAssets(storeIds, lastReviewId, pageable);
@@ -717,9 +696,9 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     private PaginationResult<Review> applyPagination(List<Review> reviews) {
-        boolean hasNext = reviews.size() > ReviewConstants.DEFAULT_PAGE_SIZE;
+        boolean hasNext = reviews.size() > PagingConstants.DEFAULT_SIZE.value;
         List<Review> content = hasNext
-                ? reviews.subList(0, ReviewConstants.DEFAULT_PAGE_SIZE)
+                ? reviews.subList(0, PagingConstants.DEFAULT_SIZE.value)
                 : reviews;
 
         return new PaginationResult<>(content, hasNext);

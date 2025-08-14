@@ -1,6 +1,6 @@
 package com.domain.store.dto.request;
 
-import com.domain.review.validator.SeoulLocation;
+import com.global.utils.geo.validation.SeoulLocation;
 import jakarta.validation.constraints.NotNull;
 
 public record StoreNearbyRequest(

@@ -1,4 +1,4 @@
-package com.domain.review.validator;
+package com.global.utils.geo.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

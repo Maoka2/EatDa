@@ -3,7 +3,7 @@ package com.domain.user.service.impl;
 import com.domain.menu.entity.Menu;
 import com.domain.menu.mapper.MenuMapper;
 import com.domain.menu.repository.MenuRepository;
-import com.domain.review.service.H3Service;
+import com.global.utils.geo.H3Utils;
 import com.domain.store.entity.Store;
 import com.domain.store.mapper.StoreMapper;
 import com.domain.store.repository.StoreRepository;
@@ -37,7 +37,7 @@ public class MakerServiceImpl implements MakerService {
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
 
-    private final H3Service h3Service;
+    private final H3Utils h3Service;
 
     private final MakerMapper makerMapper;
     private final StoreMapper storeMapper;

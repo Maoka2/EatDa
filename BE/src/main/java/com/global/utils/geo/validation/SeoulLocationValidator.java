@@ -1,6 +1,6 @@
-package com.domain.review.validator;
+package com.global.utils.geo.validation;
 
-import com.domain.review.constants.ReviewConstants;
+import com.global.utils.geo.SeoulBoundary;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
@@ -19,8 +19,8 @@ public class SeoulLocationValidator implements ConstraintValidator<SeoulLocation
         }
 
         return switch (type) {
-            case LATITUDE -> value >= ReviewConstants.MIN_LATITUDE && value <= ReviewConstants.MAX_LATITUDE;
-            case LONGITUDE -> value >= ReviewConstants.MIN_LONGITUDE && value <= ReviewConstants.MAX_LONGITUDE;
+            case LATITUDE -> value >= SeoulBoundary.MIN_LATITUDE && value <= SeoulBoundary.MAX_LATITUDE;
+            case LONGITUDE -> value >= SeoulBoundary.MIN_LONGITUDE && value <= SeoulBoundary.MAX_LONGITUDE;
         };
     }
 }
