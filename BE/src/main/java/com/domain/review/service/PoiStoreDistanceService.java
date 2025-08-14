@@ -4,16 +4,12 @@ import com.domain.review.constants.ReviewConstants;
 import com.domain.review.dto.response.StoreDistanceResult;
 import com.domain.review.entity.Poi;
 import com.domain.review.repository.PoiRepository;
+import com.domain.store.dto.response.StoreInfo;
 import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +77,7 @@ public class PoiStoreDistanceService {
      * @return 거리 내 Store 목록 (거리순 정렬)
      */
     @Transactional(readOnly = true)
-    public List<StoreDistanceResult> getNearbyStores(Long poiId, int requestedDistance) {
+    public List<StoreDistanceResult> getNearbyStoresWithDistance(Long poiId, int requestedDistance) {
         log.debug("Getting stores near POI {} within {}m", poiId, requestedDistance);
 
         // 1. 요청 거리 검증 (거리 밴드만 허용)
@@ -108,6 +104,54 @@ public class PoiStoreDistanceService {
 
         log.info("Found {} stores near POI {} within {}m", results.size(), poiId, requestedDistance);
         return results;
+    }
+
+    @Transactional(readOnly = true)
+    public List<StoreInfo> getNearbyStores(Long poiId, int requestedDistance) {
+        log.debug("Getting stores near POI {} within {}m", poiId, requestedDistance);
+
+        // 1. 요청 거리 검증 (거리 밴드만 허용)
+        if (!ReviewConstants.SEARCH_DISTANCES.contains(requestedDistance)) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid distance: %d. Must be one of %s", requestedDistance,
+                            ReviewConstants.SEARCH_DISTANCES)
+            );
+        }
+
+        List<StoreDistanceResult> results = getNearbyStoresWithDistance(poiId, requestedDistance);
+
+        List<Long> storeIds = results.stream()
+                .map(StoreDistanceResult::storeId)
+                .toList();
+
+        if (storeIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<Long, Store> storeMap = storeRepository.findAllById(storeIds).stream()
+                .collect(Collectors.toMap(Store::getId, Function.identity()));
+
+        // 5. StoreInfo 리스트 생성 (거리 정보 포함)
+        List<StoreInfo> storeInfos = results.stream()
+                .map(r -> {
+                    Store store = storeMap.get(r.storeId());
+                    if (store == null) {
+                        log.warn("Store not found for ID: {}", r.storeId());
+                        return null;
+                    }
+                    return new StoreInfo(
+                            store.getId(),
+                            store.getName(),
+                            store.getLatitude(),
+                            store.getLongitude(),
+                            r.distance()
+                    );
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        log.info("Found {} stores near POI {} within {}m", storeInfos.size(), poiId, requestedDistance);
+        return storeInfos;
     }
 
     //    /**

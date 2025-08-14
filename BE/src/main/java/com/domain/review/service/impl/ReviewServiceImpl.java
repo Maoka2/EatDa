@@ -368,7 +368,7 @@ public class ReviewServiceImpl implements ReviewService {
      */
     private List<StoreDistanceResult> getNearbyStoresWithFallback(Long poiId, int distance) {
         try {
-            return poiStoreDistanceService.getNearbyStores(poiId, distance);
+            return poiStoreDistanceService.getNearbyStoresWithDistance(poiId, distance);
         } catch (IllegalArgumentException e) {
             // 잘못된 거리 파라미터
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
