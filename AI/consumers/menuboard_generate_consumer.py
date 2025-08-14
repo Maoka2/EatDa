@@ -153,7 +153,9 @@ class MenuboardGenerateConsumer:
         )
         # data URL이면 디스크에 저장하고 저장 경로로 치환
         url = self._save_data_url_to_disk(url, req.userId)
-        return ("SUCCESS" if url else "FAIL"), url
+        # 저장된 파일 경로를 퍼블릭 URL로 변환
+        public_url = self._file_path_to_public_url(url)
+        return ("SUCCESS" if public_url else "FAIL"), public_url
 
     def _save_data_url_to_disk(self, asset_url: str | None, user_id: int) -> str | None:
         try:
@@ -184,6 +186,22 @@ class MenuboardGenerateConsumer:
         except Exception as e:
             self.logger.warning(f"[메뉴판컨슈머] data URL 저장/치환 실패: {e}")
             return asset_url
+
+    def _file_path_to_public_url(self, file_path: str | None) -> str | None:
+        try:
+            if not file_path or not isinstance(file_path, str):
+                return file_path
+            prefix = "/home/ubuntu"
+            base_url = "https://i13a609.p.ssafy.io"
+            if file_path.startswith(prefix):
+                suffix = file_path[len(prefix):]
+            else:
+                suffix = file_path
+            if not suffix.startswith("/"):
+                suffix = "/" + suffix
+            return base_url + suffix
+        except Exception:
+            return file_path
 
     async def handle_message(self, message_id: str, fields: Dict[str, str]) -> None:
         try:
