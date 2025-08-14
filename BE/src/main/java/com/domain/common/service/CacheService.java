@@ -1,12 +1,21 @@
 package com.domain.common.service;
 
+import com.domain.common.entity.Poi;
+import com.domain.common.repository.PoiRepository;
 import com.domain.review.dto.response.StoreDistanceResult;
+import com.domain.store.event.StoreCreatedEvent;
 import com.global.redis.constants.RedisConstants;
+import com.global.utils.geo.H3SearchStrategy;
+import com.global.utils.geo.H3Utils;
+import com.global.utils.geo.HaversineCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,7 +26,12 @@ import java.util.stream.Collectors;
 public class CacheService {
 
     private static final String CACHE_KEY_PATTERN = "poi:%d:stores:%dm";
+    private static final int MAX_AFFECTED_DISTANCE = 2000;
+
     private final RedisTemplate<String, Object> redisTemplate;
+    private final H3Utils h3Utils;
+    private final PoiRepository poiRepository;
+    private final HaversineCalculator haversineCalculator;
 
     /**
      * 특정 거리 밴드의 캐시 존재 여부 확인
@@ -86,6 +100,61 @@ public class CacheService {
             redisTemplate.delete(keys);
             log.debug("Evicted {} cache entries for POI {}", keys.size(), poiId);
         }
+    }
+
+    @Async
+    @EventListener
+    @Transactional(readOnly = true)
+    public void handleStoreCreated(StoreCreatedEvent event) {
+        log.info("Processing cache invalidation for new store: {} at ({}, {})",
+                event.storeId(), event.latitude(), event.longitude());
+
+        try {
+            // 1. 영향받는 POI들 찾기
+            List<Poi> affectedPois = findAffectedPois(
+                    event.latitude(),
+                    event.longitude()
+            );
+
+            log.info("Found {} POIs affected by new store {}",
+                    affectedPois.size(), event.storeId());
+
+            // 2. 각 POI의 캐시 삭제
+            int deletedCount = 0;
+            for (Poi poi : affectedPois) {
+                deleteCache(poi.getId());
+                deletedCount++;
+            }
+
+            log.info("Successfully invalidated {} POI caches for new store {}",
+                    deletedCount, event.storeId());
+
+        } catch (Exception e) {
+            log.error("Failed to invalidate cache for store {}: {}",
+                    event.storeId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 새 가게 위치에서 영향받는 POI들 찾기
+     */
+    private List<Poi> findAffectedPois(Double storeLatitude, Double storeLongitude) {
+        H3SearchStrategy.Strategy strategy = H3SearchStrategy.determineStrategy(MAX_AFFECTED_DISTANCE);
+        long centerH3 = h3Utils.encode(storeLatitude, storeLongitude, strategy.resolution());
+
+        List<Long> h3Cells = h3Utils.getKRing(centerH3, strategy.kRing());
+
+        List<Poi> candidatePois = poiRepository.findByH3Index7In(h3Cells);
+
+        return candidatePois.stream()
+                .filter(poi -> {
+                    double distance = haversineCalculator.calculate(
+                            poi.getLatitude(), poi.getLongitude(),
+                            storeLatitude, storeLongitude
+                    );
+                    return distance <= MAX_AFFECTED_DISTANCE;
+                })
+                .toList();
     }
 
     private String generateCacheKey(Long poiId, int distance) {

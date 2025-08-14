@@ -7,6 +7,7 @@ import com.domain.menu.repository.MenuPosterRepository;
 import com.domain.menu.repository.MenuRepository;
 import com.domain.review.repository.ReviewRepository;
 import com.domain.store.entity.Store;
+import com.domain.store.event.StoreCreatedEvent;
 import com.domain.store.mapper.StoreMapper;
 import com.domain.store.repository.StoreRepository;
 import com.domain.user.dto.request.MakerCheckEmailRequest;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,6 +53,8 @@ public class MakerServiceImpl implements MakerService {
     private final MenuMapper menuMapper;
 
     private final PasswordEncoder passwordEncoder;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -79,8 +83,10 @@ public class MakerServiceImpl implements MakerService {
 
         maker.addStore(store);
         makerRepository.save(maker);
-        storeRepository.save(store);
+        Store savedStore = storeRepository.save(store);
         menuRepository.saveAll(menus);
+
+        publishStoreCreatedEvent(savedStore, baseRequest);
 
         return maker;
     }
@@ -152,5 +158,26 @@ public class MakerServiceImpl implements MakerService {
                 .getStores()
                 .getFirst()
                 .getId();
+    }
+
+    private void publishStoreCreatedEvent(Store store, MakerSignUpBaseRequest request) {
+        try {
+            StoreCreatedEvent event = StoreCreatedEvent.of(
+                    store.getId(),
+                    request.latitude(),
+                    request.longitude(),
+                    store.getH3Index7(),
+                    store.getH3Index8(),
+                    store.getH3Index9(),
+                    store.getH3Index10()
+            );
+
+            eventPublisher.publishEvent(event);
+            log.debug("Published store created event for store: {}", store.getId());
+        } catch (Exception e) {
+            // 이벤트 발행 실패해도 가게 등록은 성공해야 함
+            log.error("Failed to publish store created event for store {}: {}",
+                    store.getId(), e.getMessage());
+        }
     }
 }
