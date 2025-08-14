@@ -196,7 +196,7 @@ public class ReviewServiceImpl implements ReviewService {
         if (!asset.getType().equals(ReviewAssetType.IMAGE)) {
             String downloadedVideoPath = fileStorageService.storeVideoFromUrl(asset.getShortsUrl(), DATA_DIR,
                     SHORTS_DIR);
-            asset.updateShortsUrl(downloadedVideoPath);
+            asset.updateShortsUrl(fileUrlResolver.toPublicUrl(downloadedVideoPath));
         }
         review.updateDescription(request.description());
         createReviewMenus(review, request.menuIds());
