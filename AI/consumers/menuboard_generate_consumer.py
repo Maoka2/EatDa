@@ -145,7 +145,7 @@ class MenuboardGenerateConsumer:
         except Exception:
             return "FAIL", None
         enhanced = await gpt_service.enhance_prompt_for_menuboard(req.prompt)
-        # 참고 이미지 경로(referenceImages)는 EC2에 저장된 로컬 파일 경로라고 가정하고 그대로 전달
+        # 참고 이미지 경로(referenceImages)는 EC2에 저장된 로컬 파일 경로
         # google_image_service는 로컬 경로가 실제 존재하는 경우에만 이미지를 contents에 포함함
         url = google_image_service.generate_image_url(
             enhanced,

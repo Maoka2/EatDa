@@ -157,6 +157,7 @@ class EventImageConsumer:
                 return "FAIL", None
         except Exception:
             return "FAIL", None
+        # 참고 이미지 경로(referenceImages)는 EC2에 저장된 로컬 파일 경로
         if not google_image_service.is_available():
             return "FAIL", None
         # Google GenAI SDK는 동기 API이므로 스레드
