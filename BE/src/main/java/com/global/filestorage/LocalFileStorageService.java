@@ -69,11 +69,8 @@ public class LocalFileStorageService implements FileStorageService {
                              final boolean convertToWebp) {
 
         try {
-            System.out.println("Here2 " + relativePath + " " + originalName + " " + convertToWebp);
             String originalMimeType = extractAndValidateMimeType(file);
-            System.out.println("Here3 " + originalMimeType);
             InputStream optimizedStream = ImageOptimizationUtils.optimize(file, convertToWebp);
-            System.out.println("Here4 " + optimizedStream);
             String targetMimeType = convertToWebp ? MIME_TYPE_WEBP : originalMimeType;
 
             return storeOptimizedImage(optimizedStream, targetMimeType, properties.getImageRoot(), relativePath);
@@ -264,15 +261,11 @@ public class LocalFileStorageService implements FileStorageService {
      */
     private String storeOptimizedImage(final InputStream inputStream, final String mimeType, final String imageRoot,
                                        final String relativePath) throws IOException {
-        System.out.println("Here5 " + mimeType + " " + imageRoot + " " + relativePath);
         String extension = resolveExtensionFromMimeType(mimeType);
-        System.out.println("Here6 " + extension);
         Path fullPath = generateFullPath(imageRoot, relativePath, extension);
-        System.out.println("Here7 " + fullPath);
         // 스트림을 디스크에 저장
-        Files.copy(inputStream, fullPath);
-        System.out.println("Here8 " + fullPath);
-        return fullPath.toString();
+        String abs = fullPath.toString().replace('\\', '/'); // 윈도우 대비
+        return abs.replaceFirst("^/root/eatda", "/home/ubuntu/eatda/test");
     }
 
     private String sanitize(String relativePath) {
