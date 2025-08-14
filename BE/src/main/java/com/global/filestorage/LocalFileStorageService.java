@@ -280,13 +280,11 @@ public class LocalFileStorageService implements FileStorageService {
                                        final String relativePath) throws IOException {
         String extension = resolveExtensionFromMimeType(mimeType);
         Path fullPath = generateFullPath(imageRoot, relativePath, extension);
-        System.out.println("HERE4" + fullPath);
 
         // 스트림을 디스크에 저장
         Files.copy(inputStream, fullPath);
         boolean exists = Files.exists(fullPath);
         log.info("File exists after write: {}", exists);
-        System.out.println("HERE5" + exists);
         return fullPath.toString();
     }
 

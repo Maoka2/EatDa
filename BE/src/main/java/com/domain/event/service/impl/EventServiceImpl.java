@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +79,7 @@ public class EventServiceImpl implements EventService {
 
         // Step3: 이미지 유효성 검사
         log.info("Step3: Validate images - count={}", request.image() != null ? request.image().size() : 0);
-        AssetValidator.validateImages(request.image(), ErrorCode.IMAGE_TOO_LARGE);
+        AssetValidator.validateImages(Objects.requireNonNull(request.image()));
         log.info("Step3: OK");
 
         // Step4: 날짜 파싱

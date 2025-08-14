@@ -73,6 +73,7 @@ public enum ErrorCode {
     SCRAP_NOT_FOUND("SCRAP_NOT_FOUND", "해당 스크랩을 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     INVALID_STATUS("INVALID_STATUS", "유효하지 않은 상태값입니다.", HttpStatus.BAD_REQUEST.value()),
     IMAGE_TOO_LARGE("IMAGE_TOO_LARGE", "이미지 크기는 10MB 이하만 허용됩니다.", HttpStatus.BAD_REQUEST.value()),
+    IMAGE_TOO_SMALL("IMAGE_TOO_SMALL", "이미지 크기는 1MB 이상 이어야만 허용됩니다.", HttpStatus.BAD_REQUEST.value()),
 
     // 이벤트 관련
     EVENT_NOT_FOUND("EVENT_NOT_FOUND", "요청한 이벤트를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
@@ -118,6 +119,7 @@ public enum ErrorCode {
     FILE_DOWNLOAD_ERROR("FILE_DOWNLOAD_ERROR", "파일 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
     INVALID_FILE_TYPE("INVALID_FILE_TYPE", "지원하지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST.value()),
     FILE_SIZE_EXCEEDED("FILE_SIZE_EXCEEDED", "파일 크기가 제한을 초과했습니다.", HttpStatus.BAD_REQUEST.value()),
+    IMAGES_REQUIRED("IMAGES_REQUIRED_ERROR", "이미지 사이즈를 확인해주세요", HttpStatus.BAD_REQUEST.value()),
     IMAGE_PROCESSING_FAILED("IMAGE_PROCESSING_FAILED", "이미지 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
     VIDEO_PROCESSING_FAILED("VIDEO_PROCESSING_FAILED", "비디오 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 

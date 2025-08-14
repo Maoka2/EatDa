@@ -63,7 +63,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         User eater = validateEater(eaterMail);
         Store store = validateStore(request.storeId());
 
-        AssetValidator.validateImages(request.image(), ErrorCode.IMAGE_TOO_LARGE);
+        AssetValidator.validateImages(request.image());
 
         List<Menu> menus = menuValidator.validateMenusBelongToStore(request.menuIds(), store);
         MenuPoster menuPoster = createPendingPoster(eater, store);
@@ -244,7 +244,6 @@ public class MenuPosterServiceImpl implements MenuPosterService {
 
     private List<String> uploadImages(final List<MultipartFile> images, final String relativeBase,
                                       final boolean convertToWebp) {
-        System.out.println("Here1 " + relativeBase);
         return images.stream()
                 .map(file -> fileStorageService.storeEventAndMenuPosterImage(
                         file,
