@@ -1,4 +1,4 @@
-package com.domain.review.entity;
+package com.domain.common.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
