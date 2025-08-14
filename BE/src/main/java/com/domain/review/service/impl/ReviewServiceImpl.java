@@ -3,6 +3,8 @@ package com.domain.review.service.impl;
 import static com.global.constants.ErrorCode.FORBIDDEN;
 import static com.global.constants.ErrorCode.STORE_NOT_FOUND;
 
+import com.domain.common.entity.Poi;
+import com.domain.common.service.SpatialSearchService;
 import com.domain.menu.entity.Menu;
 import com.domain.menu.repository.MenuRepository;
 import com.domain.review.constants.ReviewAssetType;
@@ -20,7 +22,6 @@ import com.domain.review.dto.response.ReviewFeedResponse;
 import com.domain.review.dto.response.ReviewFeedResult;
 import com.domain.review.dto.response.ReviewFinalizeResponse;
 import com.domain.review.dto.response.StoreDistanceResult;
-import com.domain.common.entity.Poi;
 import com.domain.review.entity.Review;
 import com.domain.review.entity.ReviewAsset;
 import com.domain.review.entity.ReviewMenu;
@@ -30,7 +31,6 @@ import com.domain.review.publisher.ReviewAssetRedisPublisher;
 import com.domain.review.repository.ReviewAssetRepository;
 import com.domain.review.repository.ReviewMenuRepository;
 import com.domain.review.repository.ReviewRepository;
-import com.domain.common.service.SpatialSearchService;
 import com.domain.review.service.ReviewAssetService;
 import com.domain.review.service.ReviewService;
 import com.domain.review.service.ReviewThumbnailService;
@@ -55,7 +55,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -195,7 +194,7 @@ public class ReviewServiceImpl implements ReviewService {
         ReviewValidator.checkOwner(eater, review);
         ReviewValidator.checkReviewAssetReady(asset);
         ReviewValidator.checkAssetMatches(asset, request);
-        System.out.println("Here5 " + review);
+
         // 도메인 업데이트
         asset.registerReview(review);
         review.updateDescription(request.description());
@@ -584,8 +583,8 @@ public class ReviewServiceImpl implements ReviewService {
                 asset.updateImageUrl(url);
             }
             case SHORTS_RAY_2, SHORTS_GEN_4 -> {
-                // 1) SHORTS URL 저장
-                asset.updateShortsUrl(url);
+                // 1) SHORTS URL 저장(Public)
+                asset.updateShortsUrl(fileUrlResolver.toPublicUrl(url));
 
                 // 2) 썸네일 생성 대상 경로/파일명 구성: {baseDir}/data/shorts/{email}/{fileName}.jpg
                 final String email = asset.getReview().getUser().getEmail();
@@ -594,14 +593,12 @@ public class ReviewServiceImpl implements ReviewService {
                         .resolve(DATA_DIR)
                         .resolve(SHORTS_DIR)
                         .resolve(email);
-                System.out.println("HERE3 " + email + " " + baseDir + " " + targetDir);
+
                 final String fileName = deriveBaseName(url, "shorts-" + asset.getId());
                 // 3) ffmpeg로 썸네일 추출
                 final Path savedPath = reviewThumbnailService.extractThumbnail(url, targetDir.toString(), fileName);
 
                 // 4) 퍼블릭 URL로 변환해서 엔티티에 저장
-                //                final String publicUrl = fileUrlResolver.toPublicUrl(savedPath.toString());
-
                 asset.updateThumbnailPath(fileUrlResolver.toPublicUrl(savedPath.toString()));
             }
             default -> throw new ApiException(ErrorCode.REVIEW_TYPE_INVALID, asset.getId());
