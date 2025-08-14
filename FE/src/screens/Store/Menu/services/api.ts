@@ -79,28 +79,72 @@ export async function getStoreMenus(
 
   const raw = await res.text();
 
-  let json: ApiResponse<StoreMenuItem[]> | null = null;
+  // 공통 envelope 파싱 시도
+  let env: any = null;
   try {
-    json = raw ? (JSON.parse(raw) as ApiResponse<StoreMenuItem[]>) : null;
-  } catch {}
+    env = raw ? JSON.parse(raw) : null;
+  } catch {
+    throw new Error("응답이 JSON 형식이 아닙니다.");
+  }
 
   if (!res.ok) {
     if (res.status === 401)
-      throw new Error(json?.message || "인증이 필요합니다.");
-    throw new Error(json?.message || `HTTP ${res.status}`);
+      throw new Error(env?.message || "인증이 필요합니다.");
+    throw new Error(env?.message || `HTTP ${res.status}`);
   }
 
-  if (!json || !Array.isArray(json.data)) {
-    throw new Error("응답 형식이 올바르지 않습니다.");
+  const data = env?.data;
+  if (!data) throw new Error("응답 형식이 올바르지 않습니다.");
+
+  // 케이스 A: 기존 형식 — data가 배열이고 각 원소에 menuId 포함
+  if (Array.isArray(data)) {
+    return data.map((m: any) => {
+      const id =
+        typeof m?.menuId === "number"
+          ? m.menuId
+          : typeof m?.id === "number"
+          ? m.id
+          : NaN;
+
+      if (!Number.isFinite(id)) {
+        throw new Error("응답에 menuId가 없습니다.");
+      }
+
+      return {
+        id,
+        name: String(m?.name ?? ""),
+        description: String(m?.description ?? ""),
+        imageUrl: m?.imageUrl ?? undefined,
+        price: typeof m?.price === "number" ? m.price : undefined,
+      } as MenuSelectItem;
+    });
   }
 
-  return json.data.map((m) => ({
-    id: m.menuId,
-    name: m.name,
-    description: m.description ?? "",
-    imageUrl: m.imageUrl,
-    price: m.price,
-  }));
+  // 케이스 B: 분리형 — data = { menuIds: number[], menus: Array<...> }
+  const menuIds: any[] = Array.isArray(data?.menuIds) ? data.menuIds : [];
+  const menus: any[] = Array.isArray(data?.menus) ? data.menus : [];
+
+  if (menuIds.length && menus.length) {
+    if (menuIds.length !== menus.length) {
+      throw new Error("응답의 menuIds와 menus 길이가 일치하지 않습니다.");
+    }
+    return menus.map((m, idx) => {
+      const id = menuIds[idx];
+      if (!Number.isFinite(id)) {
+        throw new Error("응답의 menuIds에 유효하지 않은 값이 있습니다.");
+      }
+      return {
+        id,
+        name: String(m?.name ?? ""),
+        description: String(m?.description ?? ""),
+        imageUrl: m?.imageUrl ?? undefined,
+        price: typeof m?.price === "number" ? m.price : undefined,
+      } as MenuSelectItem;
+    });
+  }
+
+  // 어떤 케이스에도 맞지 않으면 오류
+  throw new Error("응답 형식이 올바르지 않습니다. (지원되지 않는 data 구조)");
 }
 
 // ==================== 포스터 asset 요청 ====================
