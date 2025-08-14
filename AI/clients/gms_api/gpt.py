@@ -25,7 +25,7 @@ luma_system_message_content = """
 You are a prompt enhancer for Luma’s Dream Machine. Your job is to turn a short, rough user idea into a single, vivid, production-ready English prompt that reads like natural language (not bullet points), while also returning a small JSON block of optional controls (style preset, duration, aspect ratio, camera motion, etc.). You must preserve the user’s intent and expand it with concrete, visual details.
 
 핵심 원칙
-1. Write in natural, descriptive English (1–3 short paragraphs, ~60–100 words).
+1. Write in natural, descriptive English (40-60 words).
 2. Be specific about subject, environment, composition, style, mood, lighting, color, camera, motion, 	and key visual elements.
 3. If the user includes character or style, keep them exactly as-is and use them.
 4. Prefer cinematic, concrete visuals over abstract adjectives. Avoid long lists.
@@ -33,7 +33,7 @@ You are a prompt enhancer for Luma’s Dream Machine. Your job is to turn a shor
 6. Use sensible defaults without asking follow-ups. Never asking follow-ups
 
 작성 가이드 (내부 체크리스트)
-1. Subject: who/what, posture, wardrobe or design cues
+1.Subject: who/what, posture, wardrobe or design cues
 2.Environment: place, era, weather, time of day, set dressing
 3.Extra: on-frame text (quoted), magazine/poster/cover framing if requested
 
@@ -50,7 +50,7 @@ Convert a short user idea and (optionally) an input image into a single-scene, a
 Emphasize what moves and how; treat the image as the visual starting point and the text as the motion description.
 
 핵심 원칙
-1. Write in natural, descriptive English (1–3 short paragraphs, ~60–100 words).
+1. Write in natural, descriptive English (40-60 words).
 2. Simplicity first → iterate: start simple, then add one element at a time.
 3. Use positive statements and Prioritize concrete actions over abstract feelings or concepts.
 4. Refer to subjects generically (“the subject,” “she/he/they”) so the model focuses on smooth motion.
@@ -65,7 +65,8 @@ Emphasize what moves and how; treat the image as the visual starting point and t
 1. Expand short inputs into a single-scene action brief covering subject, scene, and camera motion.
 2. Convert commands/dialogue → descriptive prose (“add a dog” → “a dog runs in from off-camera”).
 3. With an input image, minimize re-describing looks; focus on motion/camera/scene changes.
-4. Do not ask any follow-up questions under any circumstances; proceed with sensible defaults.
+
+Do not ask any follow-up questions under any circumstances; proceed with sensible defaults.
 '''
 
 
@@ -73,7 +74,8 @@ Emphasize what moves and how; treat the image as the visual starting point and t
 menuboard_system_message_content = """
 역할
 Expand a user’s short idea into a concise English prompt optimized for DALL·E 3 that can generate an image of a store menu board.
- Be sure to include a note, do not include any form of language or text.
+Be sure to include a note, do not include any form of language or text.
+
 핵심 원칙
 1. Write clearly and specifically in 40–100 words, using natural descriptive sentences (not lists).
 2. Do not ask the model to draw actual text; instead, instruct it to reserve layout areas where text will go.
@@ -86,7 +88,20 @@ Expand a user’s short idea into a concise English prompt optimized for DALL·E
 Output only the expanded English prompt body. No additional explanations. Be sure to include a note, do not include any form of language or text.
 """
 
+shorts_image_message_content = """
+역할
+Generate a prompt of approximately 40–60 characters.
 
+핵심 원칙
+1. Omit any ordered items that are not present.
+2. Output in sentence format without using emojis.
+3. If the prompt is too short, enrich it by adding related words associated with the term.
+4. If the prompt is too long, summarize it to around 40–60 characters before generating it.
+5. If repetitive meaningless text (e.g., “gggg” or “ㅂㅈ다ㅠㅓㅂ”) is entered, create an arbitrary sentence related to food instead.
+
+출력 형식
+Output only the expanded English prompt body. No additional explanations. 
+"""
 
 # 메인 함수 정의
 
@@ -158,6 +173,29 @@ async def generate_menuboard_prompt(user_input: str) -> str:
             {"role": "user", "content": user_input},
         ],
         max_tokens=512,
+        stream=True,
+    )
+    async for chunk in stream:
+        if chunk.choices[0].delta.content is not None:
+            res_text += chunk.choices[0].delta.content
+    return res_text
+
+
+async def short_image_prompt(user_input: str) -> str:
+    """
+    리뷰 IMAGE용 간결 프롬프트 보강.
+    - 시스템 메시지: shorts_image_message_content
+    - 모델: gpt-4o
+    - 출력: 약 40–60자의 보강된 영어 프롬프트(설명 없이 본문만)
+    """
+    res_text = ""
+    stream = await client.chat.completions.create(
+        model='gpt-4o',
+        messages=[
+            {"role": "system", "content": shorts_image_message_content},
+            {"role": "user", "content": user_input},
+        ],
+        max_tokens=256,
         stream=True,
     )
     async for chunk in stream:

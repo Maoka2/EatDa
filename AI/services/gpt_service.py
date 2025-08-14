@@ -7,6 +7,7 @@ from clients.gms_api.gpt import (
     generate_luma_prompt,
     generate_gen4_prompt,
     generate_menuboard_prompt,
+    short_image_prompt,
 )
 
 
@@ -32,6 +33,11 @@ class GPTService:
     async def enhance_prompt_for_menuboard(original_prompt: str) -> str:
         """메뉴보드 전용 프롬프트 보강"""
         return await generate_menuboard_prompt(original_prompt)
+
+    @staticmethod
+    async def enhance_prompt_for_review_image(original_prompt: str) -> str:
+        """리뷰 IMAGE 전용 프롬프트 보강 """
+        return await short_image_prompt(original_prompt)
 
 
 # 전역 인스턴스

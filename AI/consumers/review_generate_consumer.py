@@ -113,11 +113,14 @@ class ReviewGenerateConsumer:
                 return "FAIL", None
         except Exception:
             return "FAIL", None
+            
         if not google_image_service.is_available():
             return "FAIL", None
+        # 프롬프트 보강 (리뷰 IMAGE 전용 규칙)
+        enhanced = await gpt_service.enhance_prompt_for_review_image(req.prompt)
         # Google GenAI SDK는 동기 API이므로 스레드로 오프로드
         loop = asyncio.get_running_loop()
-        url = await loop.run_in_executor(None, google_image_service.generate_image_url, req.prompt, req.referenceImages)
+        url = await loop.run_in_executor(None, google_image_service.generate_image_url, enhanced, req.referenceImages)
         # data URL이면 디스크에 저장하고 저장 경로로 치환
         url = self._save_data_url_to_disk(url, req.userId)
         return ("SUCCESS" if url else "FAIL"), url
