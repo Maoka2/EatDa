@@ -1,14 +1,14 @@
 package com.domain.event.repository;
 
 import com.domain.event.entity.Event;
+import com.global.constants.Status;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
 
@@ -41,4 +41,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findActiveEvents(@Param("currentDate") LocalDate currentDate,
                                  @Param("lastEventId") Long lastEventId,
                                  Pageable pageable);
+
+    Long countByStoreIdAndStatus(Long storerId, Status status);
 }

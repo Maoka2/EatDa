@@ -12,6 +12,7 @@ import com.domain.user.entity.User;
 import com.domain.user.repository.EaterRepository;
 import com.global.constants.ErrorCode;
 import com.global.exception.ApiException;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,13 @@ public class ReviewScrapServiceImpl implements ReviewScrapService {
 
         return new ReviewScrapResult(isNewScrap, getScrapCount(reviewId));
 
+    }
+
+    @Override
+    public List<Review> getScrapReviews(final String email) {
+        User user = eaterRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        return reviewRepository.findAllScrappedByUserId(user.getId());
     }
 
     /**

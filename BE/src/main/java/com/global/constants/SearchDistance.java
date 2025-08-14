@@ -35,10 +35,10 @@ public enum SearchDistance {
 
     public static boolean isValid(int meters) {
         for (SearchDistance distance : values()) {
-            if (distance.meters != meters) {
-                return false;
+            if (distance.getMeters() == meters) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 }

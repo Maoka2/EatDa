@@ -319,6 +319,14 @@ public class ReviewServiceImpl implements ReviewService {
         }
     }
 
+    @Override
+    public List<Review> getMyReceivedReviews(final String email) {
+        User maker = makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        long storeId = maker.getStores().getFirst().getId();
+        return reviewRepository.findByStoreIdAndStatusOrderByCreatedAtDesc(storeId, Status.SUCCESS);
+    }
+
     // ===== Private Helper Methods =====
 
     /**

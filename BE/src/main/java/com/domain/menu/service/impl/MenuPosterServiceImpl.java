@@ -131,11 +131,11 @@ public class MenuPosterServiceImpl implements MenuPosterService {
     @Override
     @Transactional
     public MenuPosterFinalizeResponse finalizeMenuPoster(MenuPosterFinalizeRequest request) {
-        MenuPosterAsset asset = validateAsset(request.menuPosterAssetId());
-        menuValidator.validateForFinalization(asset);
-
         MenuPoster menuPoster = validateMenuPoster(request.menuPosterId());
         menuValidator.validatePendingStatus(menuPoster);
+
+        MenuPosterAsset asset = validateAsset(request.menuPosterAssetId());
+        menuValidator.validateForFinalization(asset);
 
         menuPoster.updateDescription(request.description());
         menuPoster.updateStatus(Status.SUCCESS);

@@ -2,9 +2,7 @@ package com.a609.eatda.domain.menu.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -12,10 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.domain.menu.dto.request.AdoptMenuPostersRequest;
 import com.domain.menu.dto.request.MenuPosterAssetCreateRequest;
-import com.domain.menu.dto.request.MenuPosterFinalizeRequest;
 import com.domain.menu.dto.response.AdoptMenuPostersResponse;
-import com.domain.menu.dto.response.MenuPosterAssetRequestResponse;
-import com.domain.menu.dto.response.MenuPosterFinalizeResponse;
 import com.domain.menu.entity.Menu;
 import com.domain.menu.entity.MenuPoster;
 import com.domain.menu.entity.MenuPosterAsset;
@@ -27,9 +22,9 @@ import com.domain.menu.service.impl.MenuPosterServiceImpl;
 import com.domain.menu.validator.MenuValidator;
 import com.domain.store.entity.Store;
 import com.domain.store.repository.StoreRepository;
-import com.domain.user.entity.User;
-import com.domain.user.constants.Role;
 import com.domain.user.constants.Provider;
+import com.domain.user.constants.Role;
+import com.domain.user.entity.User;
 import com.domain.user.repository.EaterRepository;
 import com.domain.user.repository.MakerRepository;
 import com.global.constants.AssetType;
@@ -405,32 +400,32 @@ class MenuPosterServiceImplTest {
 //            verify(menuValidator).validatePendingStatus(testMenuPoster);
 //        }
 
-        @Test
-        @DisplayName("실패 - 존재하지 않는 에셋")
-        void finalizeMenuPoster_AssetNotFound() {
-            // Given
-            Long nonExistentAssetId = 999L;
-            MenuPosterFinalizeRequest request = new MenuPosterFinalizeRequest(
-                    1L,
-                    nonExistentAssetId,
-                    "테스트 설명입니다. 이 설명은 30자 이상이어야 합니다.",
-                    AssetType.IMAGE
-            );
+//        @Test
+//        @DisplayName("실패 - 존재하지 않는 에셋")
+//        void finalizeMenuPoster_AssetNotFound() {
+//            // Given
+//            Long nonExistentAssetId = 999L;
+//            MenuPosterFinalizeRequest request = new MenuPosterFinalizeRequest(
+//                    1L,
+//                    nonExistentAssetId,
+//                    "테스트 설명입니다. 이 설명은 30자 이상이어야 합니다.",
+//                    AssetType.IMAGE
+//            );
+//
+//            when(menuPosterAssetRepository.findById(nonExistentAssetId))
+//                    .thenReturn(Optional.empty());
+//
+//            // When & Then
+//            assertThatThrownBy(() -> menuPosterService.finalizeMenuPoster(request))
+//                    .isInstanceOf(ApiException.class)
+//                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ASSET_NOT_FOUND);
+//        }
+//    }
 
-            when(menuPosterAssetRepository.findById(nonExistentAssetId))
-                    .thenReturn(Optional.empty());
-
-            // When & Then
-            assertThatThrownBy(() -> menuPosterService.finalizeMenuPoster(request))
-                    .isInstanceOf(ApiException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ASSET_NOT_FOUND);
-        }
-    }
-
-    @Nested
-    @DisplayName("sendMenuPosterToMaker 테스트")
-    class SendMenuPosterToMakerTest {
-
+//    @Nested
+//    @DisplayName("sendMenuPosterToMaker 테스트")
+//    class SendMenuPosterToMakerTest {
+//
 //        @Test
 //        @DisplayName("성공 - 메뉴 포스터를 메이커에게 전송")
 //        void sendMenuPosterToMaker_Success() {

@@ -12,6 +12,8 @@ import com.domain.review.dto.response.ReviewFeedResponse;
 import com.domain.review.dto.response.ReviewFeedResult;
 import com.domain.review.dto.response.ReviewFinalizeResponse;
 import com.domain.review.dto.response.ReviewScrapResult;
+import com.domain.review.entity.Review;
+import com.domain.review.mapper.ReviewMapper;
 import com.domain.review.service.ReviewScrapService;
 import com.domain.review.service.ReviewService;
 import com.domain.review.service.ReviewThumbnailService;
@@ -34,6 +36,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +65,8 @@ public class ReviewController {
     private final ReviewService reviewService;
     private final ReviewScrapService reviewScrapService;
     private final ReviewThumbnailService reviewThumbnailService;
+
+    private final ReviewMapper reviewMapper;
 
     @Operation(
             summary = "1단계 - 리뷰 에셋 생성 요청",
@@ -449,5 +454,17 @@ public class ReviewController {
                                                          @RequestParam("fileName") String fileName) {
         Path path = reviewThumbnailService.extractThumbnail(videoUrl, filePath, fileName);
         return ApiResponseFactory.success(SuccessCode.THUMBNAILIZATION, path);
+    }
+
+    @GetMapping("/scraps")
+    public ResponseEntity<BaseResponse> getMyScrapReviews(@AuthenticationPrincipal String email) {
+        List<Review> scraps = reviewScrapService.getScrapReviews(email);
+        return ApiResponseFactory.success(SuccessCode.REVIEW_SCRAP_LIST, reviewMapper.toScrapResponse(scraps));
+    }
+
+    @GetMapping("/received")
+    public ResponseEntity<BaseResponse> getMyReceivedReviews(@AuthenticationPrincipal String email) {
+        List<Review> reviews = reviewService.getMyReceivedReviews(email);
+        return ApiResponseFactory.success(SuccessCode.REVIEW_RECEIVED_LIST, reviewMapper.toReceivedResponse(reviews));
     }
 }

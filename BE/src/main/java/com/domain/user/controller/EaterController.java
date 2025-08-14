@@ -12,7 +12,9 @@ import com.global.dto.response.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -54,5 +56,15 @@ public class EaterController {
     public ResponseEntity<BaseResponse> checkNickname(@Validated @RequestBody final EaterCheckNicknameRequest request) {
         eaterService.validateNicknameAvailable(request);
         return ApiResponseFactory.success(SuccessCode.NICKNAME_AVAILABLE);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<BaseResponse> getProfile(@AuthenticationPrincipal String email) {
+        return ApiResponseFactory.success(SuccessCode.PROFILE_GET,
+                eaterMapper.toResponse(
+                        eaterService.countMyReviews(email),
+                        eaterService.countMyScrapReviews(email),
+                        eaterService.countMyMenuPosters(email)
+                ));
     }
 }

@@ -1,9 +1,11 @@
 package com.domain.user.service.impl;
 
+import com.domain.event.repository.EventRepository;
 import com.domain.menu.entity.Menu;
 import com.domain.menu.mapper.MenuMapper;
+import com.domain.menu.repository.MenuPosterRepository;
 import com.domain.menu.repository.MenuRepository;
-import com.global.utils.geo.H3Utils;
+import com.domain.review.repository.ReviewRepository;
 import com.domain.store.entity.Store;
 import com.domain.store.mapper.StoreMapper;
 import com.domain.store.repository.StoreRepository;
@@ -16,8 +18,10 @@ import com.domain.user.repository.MakerRepository;
 import com.domain.user.service.MakerService;
 import com.domain.user.validator.UserValidator;
 import com.global.constants.ErrorCode;
+import com.global.constants.Status;
 import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
+import com.global.utils.geo.H3Utils;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +36,10 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class MakerServiceImpl implements MakerService {
 
+    private final MenuPosterRepository menuPosterRepository;
     private final FileStorageService fileStorageService;
+    private final ReviewRepository reviewRepository;
+    private final EventRepository eventRepository;
     private final MakerRepository makerRepository;
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
@@ -51,21 +58,10 @@ public class MakerServiceImpl implements MakerService {
                               final List<MakerSignUpMenuRequest> menuRequests,
                               final MultipartFile licenseImageRequest,
                               final List<MultipartFile> menuImageRequests) {
-
-        log.info("===== [Service] registerMaker START =====");
-        log.info("BaseRequest: {}", baseRequest);
-        log.info("menuRequests size: {}", menuRequests != null ? menuRequests.size() : 0);
-        log.info("menuImageRequests size: {}", menuImageRequests != null ? menuImageRequests.size() : 0);
-
         validateSignUpRequest(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
-        log.info("Step1: Validation complete");
-
         User maker = makerMapper.toEntity(baseRequest, passwordEncoder.encode(baseRequest.password()));
-        log.info("Step2: Maker entity mapped");
 
         long h3Index7 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 7);
-        log.info("Step3: h3Index7={}", h3Index7);
-
         Store store = storeMapper.toEntity(baseRequest, maker,
                 storeImage(licenseImageRequest, "licenses/" + maker.getEmail()),
                 h3Index7,
@@ -73,26 +69,19 @@ public class MakerServiceImpl implements MakerService {
                 h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 9),
                 h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 10)
         );
-        log.info("Step4: Store entity mapped");
 
         List<Menu> menus = new ArrayList<>();
         for (int i = 0; i < menuRequests.size(); i++) {
-            log.info("Step5: Processing menu index {}", i);
             MultipartFile imageRequest = menuImageRequests.get(i);
             menus.add(menuMapper.toEntity(menuRequests.get(i), store,
                     storeImage(imageRequest, "menus/" + maker.getEmail())));
         }
-        log.info("Step6: Menu list created, size={}", menus.size());
 
         maker.addStore(store);
-        log.info("Step7: Store added to Maker");
-
         makerRepository.save(maker);
         storeRepository.save(store);
         menuRepository.saveAll(menus);
-        log.info("Step8: All entities saved");
 
-        log.info("===== [Service] registerMaker END =====");
         return maker;
     }
 
@@ -100,6 +89,21 @@ public class MakerServiceImpl implements MakerService {
     public void validateEmailAvailable(final MakerCheckEmailRequest request) {
         UserValidator.validateEmail(request.email());
         validateDuplicateEmail(request.email());
+    }
+
+    @Override
+    public Long countReceivedReviews(final String email) {
+        return reviewRepository.countByStoreIdAndStatus(getStorerId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public Long countMyEvents(final String email) {
+        return eventRepository.countByStoreIdAndStatus(getStorerId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public Long countMyMenuPosters(final String email) {
+        return menuPosterRepository.countByStoreIdAndStatus(getStorerId(email), Status.SUCCESS);
     }
 
     private String storeImage(MultipartFile imageRequest, String path) {
@@ -140,5 +144,13 @@ public class MakerServiceImpl implements MakerService {
         if (makerRepository.existsByEmail(email)) {
             throw new ApiException(ErrorCode.EMAIL_DUPLICATED, email);
         }
+    }
+
+    private Long getStorerId(String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getStores()
+                .getFirst()
+                .getId();
     }
 }

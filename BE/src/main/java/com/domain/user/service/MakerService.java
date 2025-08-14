@@ -13,4 +13,10 @@ public interface MakerService {
                        MultipartFile licenseImageRequest, List<MultipartFile> menuImageRequests);
 
     void validateEmailAvailable(MakerCheckEmailRequest request);
+
+    Long countReceivedReviews(String email);
+
+    Long countMyEvents(String email);
+
+    Long countMyMenuPosters(String email);
 }

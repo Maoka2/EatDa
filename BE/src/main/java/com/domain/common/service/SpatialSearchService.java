@@ -21,7 +21,6 @@ import com.global.utils.geo.HaversineCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -45,7 +44,6 @@ public class SpatialSearchService {
      */
     public Poi findNearestPoi(double userLat, double userLon) {
         log.debug("Finding nearest POI for user location: ({}, {})", userLat, userLon);
-
         // 1. 가까운 POI부터 찾기 위해 점진적으로 거리 확대
         for (SearchDistance fixDist : SearchDistance.values()) {
             // H3를 사용해 현재 반경 내 POI들 조회
@@ -82,7 +80,6 @@ public class SpatialSearchService {
      * @param requestedDistance 요청 거리 (300, 500, 700, 850, 1000, 2000m 중 하나)
      * @return 거리 내 Store 목록 (거리순 정렬)
      */
-    @Transactional(readOnly = true)
     public List<StoreDistanceResult> getNearbyStoresWithDistance(Long poiId, int requestedDistance) {
         log.debug("Getting stores near POI {} within {}m", poiId, requestedDistance);
 
@@ -107,7 +104,6 @@ public class SpatialSearchService {
         return results;
     }
 
-    @Transactional(readOnly = true)
     public List<StoreInfo> getNearbyStores(Long poiId, int requestedDistance) {
         log.debug("Getting stores near POI {} within {}m", poiId, requestedDistance);
 

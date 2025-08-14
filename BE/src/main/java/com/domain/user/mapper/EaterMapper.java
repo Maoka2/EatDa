@@ -1,6 +1,7 @@
 package com.domain.user.mapper;
 
 import com.domain.user.dto.request.EaterSignUpRequest;
+import com.domain.user.dto.response.EaterGetProfileResponse;
 import com.domain.user.dto.response.EaterSignUpResponse;
 import com.domain.user.entity.User;
 import org.mapstruct.Mapper;
@@ -34,4 +35,6 @@ public interface EaterMapper {
     User toEntity(EaterSignUpRequest request, String encodedPassword);
 
     EaterSignUpResponse toResponse(User user);
+
+    EaterGetProfileResponse toResponse(Long countReview, Long countScrapReview, Long countMenuPost);
 }

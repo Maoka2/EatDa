@@ -1,5 +1,8 @@
 package com.domain.user.service.impl;
 
+import com.domain.menu.repository.MenuPosterRepository;
+import com.domain.review.repository.ReviewRepository;
+import com.domain.review.repository.ReviewScrapRepository;
 import com.domain.user.dto.request.EaterCheckEmailRequest;
 import com.domain.user.dto.request.EaterCheckNicknameRequest;
 import com.domain.user.dto.request.EaterSignUpRequest;
@@ -9,6 +12,7 @@ import com.domain.user.repository.EaterRepository;
 import com.domain.user.service.EaterService;
 import com.domain.user.validator.UserValidator;
 import com.global.constants.ErrorCode;
+import com.global.constants.Status;
 import com.global.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +23,9 @@ import org.springframework.stereotype.Service;
 public class EaterServiceImpl implements EaterService {
 
     private final EaterRepository eaterRepository;
+    private final ReviewRepository reviewRepository;
+    private final ReviewScrapRepository reviewScrapRepository;
+    private final MenuPosterRepository menuPosterRepository;
 
     private final EaterMapper eaterMapper;
 
@@ -56,6 +63,21 @@ public class EaterServiceImpl implements EaterService {
     public void validateNicknameAvailable(final EaterCheckNicknameRequest request) {
         UserValidator.validateNickname(request.nickname());
         validateDuplicateNickname(request.nickname());
+    }
+
+    @Override
+    public Long countMyReviews(final String email) {
+        return reviewRepository.countByUserIdAndStatus(getEaterId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public Long countMyScrapReviews(final String email) {
+        return reviewScrapRepository.countByUserId(getEaterId(email));
+    }
+
+    @Override
+    public Long countMyMenuPosters(final String email) {
+        return menuPosterRepository.countByUserIdAndStatus(getEaterId(email), Status.SUCCESS);
     }
 
     // @formatter:off
@@ -104,5 +126,11 @@ public class EaterServiceImpl implements EaterService {
         if (eaterRepository.existsByNickname(nickname)) {
             throw new ApiException(ErrorCode.NICKNAME_DUPLICATED, nickname);
         }
+    }
+
+    private Long getEaterId(String email) {
+        return eaterRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getId();
     }
 }

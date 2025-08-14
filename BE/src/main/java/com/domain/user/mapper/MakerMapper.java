@@ -2,6 +2,7 @@ package com.domain.user.mapper;
 
 import com.domain.store.entity.Store;
 import com.domain.user.dto.request.MakerSignUpBaseRequest;
+import com.domain.user.dto.response.MakerGetProfileResponse;
 import com.domain.user.dto.response.MakerSignUpResponse;
 import com.domain.user.entity.User;
 import org.mapstruct.Mapper;
@@ -43,4 +44,6 @@ public interface MakerMapper {
     @Mapping(target = "userId", source = "maker.id")
     @Mapping(target = "storeId", source = "store.id")
     MakerSignUpResponse toResponse(User maker, Store store);
+
+    MakerGetProfileResponse toResponse(Long countReceivedReviews, Long countEvents, Long countMenuPosters);
 }

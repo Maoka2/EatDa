@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,16 +44,7 @@ public class MakerController {
             @Validated @RequestPart(value = "menus", required = false) List<MakerSignUpMenuRequest> menuRequests,
             @RequestPart(value = "license", required = false) MultipartFile licenseImageRequest,
             @RequestPart(value = "images", required = false) List<MultipartFile> menuImageRequests) {
-
-        log.info("===== [Controller] Maker signup START =====");
-        log.info("BaseRequest: {}", baseRequest);
-        log.info("MenuRequests size: {}", menuRequests != null ? menuRequests.size() : 0);
-        log.info("LicenseImage: {}", licenseImageRequest != null ? licenseImageRequest.getOriginalFilename() : "null");
-        log.info("MenuImages size: {}", menuImageRequests != null ? menuImageRequests.size() : 0);
-
         User maker = makerService.registerMaker(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
-
-        log.info("===== [Controller] Maker signup END, MakerId={} =====", maker.getId());
         return ApiResponseFactory.success(SuccessCode.MAKER_SIGNUP,
                 makerMapper.toResponse(maker, maker.getStores().getFirst()));
     }
@@ -64,5 +57,15 @@ public class MakerController {
     public ResponseEntity<BaseResponse> checkEmail(@Validated @RequestBody final MakerCheckEmailRequest request) {
         makerService.validateEmailAvailable(request);
         return ApiResponseFactory.success(SuccessCode.EMAIL_AVAILABLE);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<BaseResponse> getProfile(@AuthenticationPrincipal String email) {
+        return ApiResponseFactory.success(SuccessCode.PROFILE_GET,
+                makerMapper.toResponse(
+                        makerService.countReceivedReviews(email),
+                        makerService.countMyEvents(email),
+                        makerService.countMyMenuPosters(email)
+                ));
     }
 }
