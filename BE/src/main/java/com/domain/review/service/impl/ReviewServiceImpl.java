@@ -590,12 +590,10 @@ public class ReviewServiceImpl implements ReviewService {
         switch (type) {
             case IMAGE -> {
                 asset.updateImageUrl(url);
-                System.out.println("HERE1 " + asset.getImageUrl());
             }
             case SHORTS_RAY_2, SHORTS_GEN_4 -> {
                 // 1) SHORTS URL 저장
                 asset.updateShortsUrl(url);
-                System.out.println("HERE2 " + asset.getShortsUrl());
 
                 // 2) 썸네일 생성 대상 경로/파일명 구성: {baseDir}/data/shorts/{email}/{fileName}.jpg
                 final String email = asset.getReview().getUser().getEmail();
@@ -606,14 +604,13 @@ public class ReviewServiceImpl implements ReviewService {
                         .resolve(email);
                 System.out.println("HERE3 " + email + " " + baseDir + " " + targetDir);
                 final String fileName = deriveBaseName(url, "shorts-" + asset.getId());
-                System.out.println("HERE4 " + fileName);
                 // 3) ffmpeg로 썸네일 추출
                 final Path savedPath = reviewThumbnailService.extractThumbnail(url, targetDir.toString(), fileName);
 
                 // 4) 퍼블릭 URL로 변환해서 엔티티에 저장
                 //                final String publicUrl = fileUrlResolver.toPublicUrl(savedPath.toString());
 
-                asset.updateThumbnailPath(savedPath.toString());
+                asset.updateThumbnailPath(fileUrlResolver.toPublicUrl(savedPath.toString()));
             }
             default -> throw new ApiException(ErrorCode.REVIEW_TYPE_INVALID, asset.getId());
         }
