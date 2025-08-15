@@ -45,5 +45,6 @@ public interface MakerMapper {
     @Mapping(target = "storeId", source = "store.id")
     MakerSignUpResponse toResponse(User maker, Store store);
 
-    MakerGetProfileResponse toResponse(Long countReceivedReviews, Long countEvents, Long countMenuPosters);
+    MakerGetProfileResponse toResponse(String StoreName, Long countReceivedReviews, Long countEvents,
+                                       Long countMenuPosters);
 }

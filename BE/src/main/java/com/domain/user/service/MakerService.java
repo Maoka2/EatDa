@@ -19,4 +19,6 @@ public interface MakerService {
     Long countMyEvents(String email);
 
     Long countMyMenuPosters(String email);
+
+    String getStoreName(String email);
 }

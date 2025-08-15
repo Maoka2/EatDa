@@ -80,6 +80,13 @@ public class EaterServiceImpl implements EaterService {
         return menuPosterRepository.countByUserIdAndStatus(getEaterId(email), Status.SUCCESS);
     }
 
+    @Override
+    public String getNickname(final String email) {
+        return eaterRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getNickname();
+    }
+
     // @formatter:off
     /**
      * 회원가입 요청에 대한 유효성 검사를 수행

@@ -62,6 +62,7 @@ public class EaterController {
     public ResponseEntity<BaseResponse> getProfile(@AuthenticationPrincipal String email) {
         return ApiResponseFactory.success(SuccessCode.PROFILE_GET,
                 eaterMapper.toResponse(
+                        eaterService.getNickname(email),
                         eaterService.countMyReviews(email),
                         eaterService.countMyScrapReviews(email),
                         eaterService.countMyMenuPosters(email)
