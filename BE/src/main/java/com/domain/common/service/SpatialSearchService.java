@@ -356,9 +356,9 @@ public class SpatialSearchService {
     @Async
     protected void triggerBackgroundRefresh(Long poiId, int distance) {
         try {
-            log.debug("Starting background refresh for POI {} at {}m", poiId, distance);
+            log.info("Starting background refresh for POI {} at {}m", poiId, distance);
             refreshCache(poiId, distance);
-            log.debug("Background refresh completed for POI {} at {}m", poiId, distance);
+            log.info("Background refresh completed for POI {} at {}m", poiId, distance);
         } catch (Exception e) {
             log.error("Background refresh failed for POI {} at {}m: {}",
                     poiId, distance, e.getMessage());
