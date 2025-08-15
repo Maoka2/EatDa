@@ -1,4 +1,4 @@
-// MenuSelectStep.tsx
+// src/screens/Store/Menu/MenuSelectStep.tsx
 import React, { useState, useEffect } from "react";
 import {
   FlatList,
@@ -43,16 +43,19 @@ export default function MenuSelectStep({
   const [menuData, setMenuData] = useState<MenuData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+
   useEffect(() => {
+    let cancelled = false;
+
     const fetchMenuData = async () => {
       try {
         setLoading(true);
         setError("");
 
         const menus = await getStoreMenus(storeId, accessToken);
-        console.log("[MenuSelectStep] 받은 메뉴 데이터:", menus);
+        if (cancelled) return;
 
-        // ⭐ 메뉴 ID를 1부터 시작하도록 변환 (undefined나 0 처리)
+        // id가 없거나 0이면 UI용으로 index+1 부여(표시/토글용)
         const adjustedMenus = menus.map((menu, index) => ({
           ...menu,
           id:
@@ -61,23 +64,27 @@ export default function MenuSelectStep({
               : menu.id,
         }));
 
-        console.log("[MenuSelectStep] 조정된 메뉴 데이터:", adjustedMenus);
         setMenuData(adjustedMenus);
-      } catch (error: any) {
-        console.error("메뉴 데이터 가져오기 실패:", error);
-        setError(error.message || "메뉴를 불러오는데 실패했습니다.");
+      } catch (e: any) {
+        if (cancelled) return;
+        console.error("메뉴 데이터 가져오기 실패:", e);
+        setError(e?.message || "메뉴를 불러오는데 실패했습니다.");
         Alert.alert(
           "오류",
           "메뉴를 불러오는데 실패했습니다. 다시 시도해주세요."
         );
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     if (storeId && accessToken) {
       fetchMenuData();
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [storeId, accessToken]);
 
   if (loading) {
@@ -105,7 +112,12 @@ export default function MenuSelectStep({
 
       <FlatList
         data={menuData}
-        keyExtractor={(item) => String(item.id)}
+        // ✅ 가게별로 유니크한 키 구성(셀 재활용 충돌 방지)
+        keyExtractor={(item, idx) =>
+          `${storeId}-${item.name ?? "noname"}-${idx}`
+        }
+        // ✅ 선택 토글 시 강제 리렌더 보장
+        extraData={selected}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
