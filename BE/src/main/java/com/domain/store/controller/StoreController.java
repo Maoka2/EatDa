@@ -73,6 +73,7 @@ public class StoreController {
         log.info("Received params - lat: {}, lon: {}, dist: {}", request.latitude(), request.longitude(), distance);
 
         StoreNearbyResponse response = storeService.getNearbyStores(request, email);
+
         return ApiResponseFactory.success(SuccessCode.NEARBY_STORES_FOUND, response);
     }
 
