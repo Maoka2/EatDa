@@ -34,7 +34,7 @@ public class StoreServiceImpl implements StoreService {
 
         // 그거 기반으로
         List<StoreInfo> nearbyStores = spatialSearchService.getNearbyStores(poi.getId(), request.distance());
-        return StoreNearbyResponse.of(nearbyStores, searchRadius.getMeters(), request.latitude(), request.longitude());
+        return StoreNearbyResponse.of(nearbyStores, searchRadius.getMeters(), poi.getLatitude(), poi.getLongitude());
     }
 
     private SearchDistance validateDistance(Integer distance) {
