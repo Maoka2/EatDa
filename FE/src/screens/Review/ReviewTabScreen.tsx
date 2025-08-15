@@ -23,6 +23,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { Video, ResizeMode } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 
 import SearchBar from "../../components/SearchBar";
 import GridComponent, { ReviewItem } from "../../components/GridComponent";
@@ -50,7 +51,13 @@ interface ReviewProps {
   onMypage?: () => void;
 }
 
-// ===== API 타입 =====
+// 위치 정보 타입
+interface LocationCoords {
+  latitude: number;
+  longitude: number;
+}
+
+// API 응답 타입 정의
 interface ApiFeedReviewItem {
   reviewId: number;
   storeName: string;
@@ -124,121 +131,326 @@ interface ExtendedReviewItem extends ReviewItem {
   createdAt?: string;
 }
 
-// ===== 상수/유틸 =====
-const SHINNONHYEON_COORDS = { latitude: 37.5044, longitude: 127.0244 };
+// 기본 위치 (신논현역) - GPS 실패 시 fallback용
+const DEFAULT_COORDS = {
+  latitude: 37.5044,
+  longitude: 127.0244,
+};
+
+// API 설정
 const API_BASE_URL = "https://i13a609.p.ssafy.io/test";
 
 const getAccessToken = async (): Promise<string | null> => {
   try {
     const token = await AsyncStorage.getItem("accessToken");
+    console.log(
+      "AsyncStorage에서 가져온 토큰:",
+      token ? "토큰 존재" : "토큰 없음"
+    );
     return token;
-  } catch {
+  } catch (error) {
+    console.error("AsyncStorage에서 토큰 가져오기 실패:", error);
     return null;
   }
 };
 
-// ===== API =====
+// 위치 권한 요청 및 현재 위치 가져오기
+const getCurrentLocation = async (): Promise<LocationCoords> => {
+  try {
+    // 위치 서비스 활성화 확인
+    const enabled = await Location.hasServicesEnabledAsync();
+    if (!enabled) {
+      Alert.alert(
+        "위치 서비스 비활성화",
+        "위치 서비스를 활성화해주세요. 기본 위치(신논현역)를 사용합니다.",
+        [{ text: "확인" }]
+      );
+      return DEFAULT_COORDS;
+    }
+
+    // 위치 권한 확인
+    let { status } = await Location.getForegroundPermissionsAsync();
+
+    if (status !== "granted") {
+      // 권한 요청
+      const { status: requestStatus } =
+        await Location.requestForegroundPermissionsAsync();
+
+      if (requestStatus !== "granted") {
+        Alert.alert(
+          "위치 권한 필요",
+          "리뷰를 보려면 위치 권한이 필요합니다. 기본 위치(신논현역)를 사용합니다.",
+          [{ text: "확인" }]
+        );
+        return DEFAULT_COORDS;
+      }
+      status = requestStatus;
+    }
+
+    // 현재 위치 가져오기
+    console.log("현재 위치 가져오는 중...");
+    const location = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+      timeInterval: 10000,
+      distanceInterval: 100,
+    });
+
+    const coords = {
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+    };
+
+    console.log("현재 위치:", coords);
+    return coords;
+  } catch (error) {
+    console.error("위치 가져오기 실패:", error);
+    Alert.alert(
+      "위치 확인 실패",
+      "현재 위치를 확인할 수 없습니다. 기본 위치(신논현역)를 사용합니다.",
+      [{ text: "확인" }]
+    );
+    return DEFAULT_COORDS;
+  }
+};
+
+// API 함수들
 const fetchReviews = async (
+  coords: LocationCoords,
   distance: number = 500,
   lastReviewId?: number
 ): Promise<ApiFeedResponse> => {
-  const params = new URLSearchParams({
-    latitude: SHINNONHYEON_COORDS.latitude.toString(),
-    longitude: SHINNONHYEON_COORDS.longitude.toString(),
-    distance: distance.toString(),
-  });
-  if (lastReviewId) params.append("lastReviewId", String(lastReviewId));
+  try {
+    const params = new URLSearchParams({
+      latitude: coords.latitude.toString(),
+      longitude: coords.longitude.toString(),
+      distance: distance.toString(),
+    });
 
-  const token = await getAccessToken();
-  if (!token) throw new Error("로그인이 필요합니다. 토큰을 확인해주세요.");
+    if (lastReviewId) {
+      params.append("lastReviewId", lastReviewId.toString());
+    }
 
-  const res = await fetch(
-    `${API_BASE_URL}/api/reviews/feed?${params.toString()}`,
-    { method: "GET", headers: { Authorization: `Bearer ${token}` } }
-  );
-  if (!res.ok) {
-    if (res.status === 401)
-      throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
-    throw new Error(await res.text());
+    console.log(
+      "API 호출 URL:",
+      `${API_BASE_URL}/api/reviews/feed?${params.toString()}`
+    );
+    console.log("사용된 위치:", coords);
+
+    const token = await getAccessToken();
+
+    if (!token) {
+      console.error("인증 토큰이 없습니다. 로그인이 필요합니다.");
+      throw new Error("로그인이 필요합니다. 토큰을 확인해주세요.");
+    }
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+
+    console.log("요청 헤더:", headers);
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/reviews/feed?${params.toString()}`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    console.log("응답 상태:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API 에러 응답:", errorText);
+
+      if (response.status === 401) {
+        throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+      }
+
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    console.log("API 응답 데이터:", data);
+    return data;
+  } catch (error) {
+    console.error("API 호출 실패:", error);
+
+    if (
+      error instanceof TypeError &&
+      error.message === "Network request failed"
+    ) {
+      throw new Error("네트워크 연결 실패. 서버 상태를 확인해주세요.");
+    }
+
+    throw error;
   }
-  return res.json();
 };
 
+// 스크랩 토글 API 함수
 const toggleReviewScrap = async (
   reviewId: number
 ): Promise<ScrapToggleResponse> => {
-  const token = await getAccessToken();
-  if (!token) throw new Error("로그인이 필요합니다. 토큰을 확인해주세요.");
-  const res = await fetch(
-    `${API_BASE_URL}/api/reviews/${reviewId}/scrap/toggle`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+  try {
+    console.log(
+      "스크랩 토글 API 호출:",
+      `${API_BASE_URL}/api/reviews/${reviewId}/scrap/toggle`
+    );
+
+    const token = await getAccessToken();
+
+    if (!token) {
+      throw new Error("로그인이 필요합니다. 토큰을 확인해주세요.");
     }
-  );
-  if (!res.ok) {
-    if (res.status === 401)
-      throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
-    if (res.status === 404) throw new Error("해당 리뷰를 찾을 수 없습니다.");
-    throw new Error(await res.text());
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/reviews/${reviewId}/scrap/toggle`,
+      {
+        method: "POST",
+        headers,
+      }
+    );
+
+    console.log("스크랩 토글 응답 상태:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("스크랩 토글 API 에러:", errorText);
+
+      if (response.status === 401) {
+        throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+      }
+
+      if (response.status === 404) {
+        throw new Error("해당 리뷰를 찾을 수 없습니다.");
+      }
+
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    console.log("스크랩 토글 응답 데이터:", data);
+    return data;
+  } catch (error) {
+    console.error("스크랩 토글 실패:", error);
+
+    if (
+      error instanceof TypeError &&
+      error.message === "Network request failed"
+    ) {
+      throw new Error("네트워크 연결 실패. 서버 상태를 확인해주세요.");
+    }
+
+    throw error;
   }
-  return res.json();
 };
 
 const fetchReviewDetail = async (
   reviewId: number
 ): Promise<ApiDetailResponse> => {
-  const token = await getAccessToken();
-  if (!token) throw new Error("로그인이 필요합니다. 토큰을 확인해주세요.");
-  const res = await fetch(`${API_BASE_URL}/api/reviews/${reviewId}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    if (res.status === 401)
-      throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
-    throw new Error(await res.text());
+  try {
+    console.log(
+      "상세 조회 API 호출:",
+      `${API_BASE_URL}/api/reviews/${reviewId}`
+    );
+
+    const token = await getAccessToken();
+
+    if (!token) {
+      throw new Error("로그인이 필요합니다. 토큰을 확인해주세요.");
+    }
+
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+
+    const response = await fetch(`${API_BASE_URL}/api/reviews/${reviewId}`, {
+      method: "GET",
+      headers,
+    });
+
+    console.log("상세 조회 응답 상태:", response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("상세 조회 API 에러:", errorText);
+
+      if (response.status === 401) {
+        throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+      }
+
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    console.log("상세 조회 응답 데이터:", data);
+    return data;
+  } catch (error) {
+    console.error("리뷰 상세 조회 실패:", error);
+
+    if (
+      error instanceof TypeError &&
+      error.message === "Network request failed"
+    ) {
+      throw new Error("네트워크 연결 실패. 서버 상태를 확인해주세요.");
+    }
+
+    throw error;
   }
-  return res.json();
 };
 
-// ===== 변환 =====
+// API 데이터를 ReviewItem으로 변환
 const convertFeedItemToReviewItem = (
   apiItem: ApiFeedReviewItem
 ): ExtendedReviewItem => {
   const isImage = apiItem.imageUrl !== null;
+
   return {
     id: String(apiItem.reviewId),
     title: apiItem.storeName,
     description: apiItem.description,
     type: isImage ? "image" : "video",
-    uri: isImage ? apiItem.imageUrl! : apiItem.shortsUrl!,
-    thumbnail: isImage ? apiItem.imageUrl! : apiItem.thumbnailUrl!,
-    likes: 0,
-    views: 0,
+    uri: isImage ? apiItem.imageUrl! : apiItem.shortsUrl!, // 상세뷰용: 이미지면 imageUrl, 비디오면 shortsUrl
+    thumbnail: isImage ? apiItem.imageUrl! : apiItem.thumbnailUrl!, // 그리드뷰용: 이미지면 imageUrl, 비디오면 thumbnailUrl
+    likes: 0, // 피드에서는 제공되지 않음
+    views: 0, // 피드에서는 제공되지 않음
     menuNames: apiItem.menuNames,
   };
 };
 
 const convertDetailToReviewItem = (
-  d: ApiDetailResponse["data"]
+  apiDetail: ApiDetailResponse["data"]
 ): ExtendedReviewItem => {
-  const isImage = d.imageUrl !== null;
+  const isImage = apiDetail.imageUrl !== null;
+
   return {
-    id: String(d.reviewId),
-    title: d.store.storeName,
-    description: d.description,
+    id: apiDetail.reviewId.toString(),
+    title: apiDetail.store.storeName,
+    description: apiDetail.description,
     type: isImage ? "image" : "video",
-    uri: isImage ? d.imageUrl! : d.shortsUrl!,
-    thumbnail: isImage ? d.imageUrl! : d.thumbnailUrl!,
-    likes: 0,
-    views: 0,
-    menuNames: d.menuNames,
-    store: d.store,
-    user: d.user,
-    scrapCount: d.scrapCount,
-    isScrapped: d.isScrapped,
-    createdAt: d.createdAt,
+    uri: isImage ? apiDetail.imageUrl! : apiDetail.shortsUrl!, // 상세뷰용: 이미지면 imageUrl, 비디오면 shortsUrl
+    thumbnail: isImage ? apiDetail.imageUrl! : apiDetail.thumbnailUrl!, // 그리드뷰용: 이미지면 imageUrl, 비디오면 thumbnailUrl
+    likes: 0, // API에서 제공되지 않음
+    views: 0, // API에서 제공되지 않음
+    menuNames: apiDetail.menuNames,
+    store: apiDetail.store,
+    user: apiDetail.user,
+    scrapCount: apiDetail.scrapCount,
+    isScrapped: apiDetail.isScrapped,
+    createdAt: apiDetail.createdAt,
   };
 };
 
@@ -265,9 +477,16 @@ export default function Reviews(props?: ReviewProps) {
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ExtendedReviewItem | null>(
     null
   );
+
+  // 위치 관련 상태
+  const [currentLocation, setCurrentLocation] =
+    useState<LocationCoords>(DEFAULT_COORDS);
+  const [isLocationLoading, setIsLocationLoading] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // API 관련 상태
   const [reviewData, setReviewData] = useState<ExtendedReviewItem[]>([]);
@@ -292,16 +511,81 @@ export default function Reviews(props?: ReviewProps) {
   // 북마크
   const [isBookMarked, setIsBookMarked] = useState(false);
 
-  // 가게 버튼 클릭 UI
+  // 위치 권한 재요청 함수
+  const requestLocationAgain = async () => {
+    setIsLocationLoading(true);
+    setLocationError(null);
+
+    try {
+      const location = await getCurrentLocation();
+      setCurrentLocation(location);
+
+      // 위치가 변경되면 데이터 다시 로드
+      loadInitialReviews(location);
+    } catch (error) {
+      console.error("위치 재요청 실패:", error);
+      setLocationError("위치 정보를 가져올 수 없습니다.");
+    } finally {
+      setIsLocationLoading(false);
+    }
+  };
+
+
+
+  // 가게 가기 버튼
   const [isGoToStoreClicked, setIsGoToStoreClicked] = useState(false);
 
-  // ===== 초기 데이터 로드 =====
+  // 컴포넌트 마운트 시 위치 정보 가져오기
   useEffect(() => {
-    loadInitialReviews();
-  }, [selectedDistance]);
+    const initializeLocation = async () => {
+      try {
+        const location = await getCurrentLocation();
+        setCurrentLocation(location);
+        setLocationError(null);
+      } catch (error) {
+        console.error("위치 초기화 실패:", error);
+        setLocationError("위치 정보를 가져올 수 없습니다.");
+        // 기본 위치로 설정 (이미 DEFAULT_COORDS로 초기화됨)
+      } finally {
+        setIsLocationLoading(false);
+      }
+    };
 
-  const loadInitialReviews = async () => {
+    initializeLocation();
+  }, []);
+
+  // 위치 정보가 준비되면 리뷰 로드
+  useEffect(() => {
+    if (!isLocationLoading && currentLocation) {
+      loadInitialReviews(currentLocation);
+    }
+  }, [isLocationLoading, currentLocation, selectedDistance]);
+
+  // 비디오 재생 관리
+  useEffect(() => {
+    Object.keys(vdoRefs.current).forEach((key) => {
+      const idx = parseInt(key, 10);
+      const video = vdoRefs.current[idx];
+      if (!video) return;
+      if (idx === currentIndex) {
+        video.playAsync();
+      } else {
+        video.pauseAsync();
+      }
+    });
+  }, [currentIndex]);
+
+  // 선택된 아이템의 북마크 상태 동기화
+  useEffect(() => {
+    if (selectedItem && selectedItem.isScrapped !== undefined) {
+      setIsBookMarked(selectedItem.isScrapped);
+    }
+  }, [selectedItem]);
+
+  const loadInitialReviews = async (coords?: LocationCoords) => {
+    const locationToUse = coords || currentLocation;
     setIsLoading(true);
+
     try {
       const token = await getAccessToken();
       if (!token) {
@@ -310,14 +594,18 @@ export default function Reviews(props?: ReviewProps) {
         ]);
         return;
       }
-      const response = await fetchReviews(selectedDistance);
-      const converted = response.data.reviews.map(convertFeedItemToReviewItem);
 
-      setReviewData(converted);
+      const response = await fetchReviews(locationToUse, selectedDistance);
+      const convertedReviews = response.data.reviews.map(
+        convertFeedItemToReviewItem
+      );
+
+      setReviewData(convertedReviews);
       setHasNextPage(response.data.hasNext);
       setNearbyReviewsFound(response.data.nearbyReviewsFound);
 
-      if (converted.length > 0) {
+      // 마지막 리뷰 ID 설정
+      if (convertedReviews.length > 0) {
         setLastReviewId(
           response.data.reviews[response.data.reviews.length - 1].reviewId
         );
@@ -329,18 +617,19 @@ export default function Reviews(props?: ReviewProps) {
           `반경 ${selectedDistance}m 내에 리뷰가 없어 전체 리뷰를 보여드립니다.`
         );
       }
-    } catch (e: any) {
+    } catch (error: any) {
       if (
-        e.message?.includes("로그인이 필요") ||
-        e.message?.includes("인증이 만료")
+        error.message.includes("로그인이 필요") ||
+        error.message.includes("인증이 만료")
       ) {
-        Alert.alert("인증 오류", e.message, [
+        Alert.alert("인증 오류", error.message, [
           { text: "로그인", onPress: () => navigation.navigate("Login") },
           { text: "취소" },
         ]);
       } else {
         Alert.alert("오류", "리뷰를 불러오는데 실패했습니다.");
       }
+      console.error("리뷰 로드 실패:", error);
     } finally {
       setIsLoading(false);
     }
@@ -350,27 +639,37 @@ export default function Reviews(props?: ReviewProps) {
     if (!hasNextPage || isLoadingMore || !lastReviewId) return;
     setIsLoadingMore(true);
     try {
-      const response = await fetchReviews(selectedDistance, lastReviewId);
-      const converted = response.data.reviews.map(convertFeedItemToReviewItem);
-      setReviewData((prev) => [...prev, ...converted]);
+      const response = await fetchReviews(
+        currentLocation,
+        selectedDistance,
+        lastReviewId
+      );
+      const convertedReviews = response.data.reviews.map(
+        convertFeedItemToReviewItem
+      );
+
+      setReviewData((prev) => [...prev, ...convertedReviews]);
       setHasNextPage(response.data.hasNext);
-      if (converted.length > 0) {
+
+      // 마지막 리뷰 ID 업데이트
+      if (convertedReviews.length > 0) {
         setLastReviewId(
           response.data.reviews[response.data.reviews.length - 1].reviewId
         );
       }
-    } catch (e: any) {
+    } catch (error: any) {
       if (
-        e.message?.includes("로그인이 필요") ||
-        e.message?.includes("인증이 만료")
+        error.message.includes("로그인이 필요") ||
+        error.message.includes("인증이 만료")
       ) {
-        Alert.alert("인증 오류", e.message, [
+        Alert.alert("인증 오류", error.message, [
           { text: "로그인", onPress: () => navigation.navigate("Login") },
           { text: "취소" },
         ]);
       } else {
         Alert.alert("오류", "추가 리뷰를 불러오는데 실패했습니다.");
       }
+      console.error("추가 리뷰 로드 실패:", error);
     } finally {
       setIsLoadingMore(false);
     }
@@ -381,22 +680,29 @@ export default function Reviews(props?: ReviewProps) {
     try {
       const response = await fetchReviewDetail(parseInt(reviewId, 10));
       const detailedItem = convertDetailToReviewItem(response.data);
+
+      // 선택된 아이템을 상세 정보로 업데이트
       setSelectedItem(detailedItem);
+
+      // 리뷰 데이터에서도 해당 아이템 업데이트
       setReviewData((prev) =>
-        prev.map((it) => (it.id === reviewId ? { ...it, ...detailedItem } : it))
+        prev.map((item) =>
+          item.id === reviewId ? { ...item, ...detailedItem } : item
+        )
       );
-    } catch (e: any) {
+    } catch (error: any) {
       if (
-        e.message?.includes("로그인이 필요") ||
-        e.message?.includes("인증이 만료")
+        error.message.includes("로그인이 필요") ||
+        error.message.includes("인증이 만료")
       ) {
-        Alert.alert("인증 오류", e.message, [
+        Alert.alert("인증 오류", error.message, [
           { text: "로그인", onPress: () => navigation.navigate("Login") },
           { text: "취소" },
         ]);
       } else {
         Alert.alert("오류", "리뷰 상세 정보를 불러오는데 실패했습니다.");
       }
+      console.error("리뷰 상세 로드 실패:", error);
     } finally {
       setIsLoadingDetail(false);
     }
@@ -528,6 +834,24 @@ export default function Reviews(props?: ReviewProps) {
   if (currentPage === "mypage") {
     navigation.navigate("MypageScreen");
     return null;
+  }
+
+  // 위치 로딩 중
+  if (isLocationLoading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#0066cc" />
+        <Text style={styles.loadingText}>현재 위치를 확인하는 중...</Text>
+        {locationError && (
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={requestLocationAgain}
+          >
+            <Text style={styles.retryButtonText}>다시 시도</Text>
+          </TouchableOpacity>
+        )}
+      </SafeAreaView>
+    );
   }
 
   if (isLoading) {
@@ -766,10 +1090,25 @@ export default function Reviews(props?: ReviewProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  centered: { justifyContent: "center", alignItems: "center" },
-  headerContainer: { flexDirection: "row", paddingTop: 40 },
-  closeBtn: { position: "absolute", top: 0, right: 0, padding: 15, zIndex: 5 },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerContainer: {
+    flexDirection: "row",
+    paddingTop: 40,
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    padding: 15,
+    zIndex: 5,
+  },
   textOverlay: {
     position: "absolute",
     left: 20,
@@ -808,23 +1147,42 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  statusText: { color: "#856404", fontSize: 12, textAlign: "center" },
-  footerLoader: { padding: 20, alignItems: "center" },
-  loadingText: { marginTop: 8, color: "#666", fontSize: 14 },
+  statusText: {
+    color: "#856404",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  footerLoader: {
+    padding: 20,
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 8,
+    color: "#666",
+    fontSize: 14,
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
-  emptyText: { fontSize: 16, color: "#666", marginBottom: 16 },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 16,
+  },
   refreshButton: {
     backgroundColor: "#0066cc",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
-  refreshButtonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  refreshButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
   loadingOverlay: {
     position: "absolute",
     top: 0,
@@ -836,5 +1194,49 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 10,
   },
-  loadingOverlayText: { color: "#fff", marginTop: 8, fontSize: 14 },
+  loadingOverlayText: {
+    color: "#fff",
+    marginTop: 8,
+    fontSize: 14,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#f8f9fa",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e9ecef",
+  },
+  locationText: {
+    fontSize: 12,
+    color: "#6c757d",
+    flex: 1,
+  },
+  locationRetryButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "#fff",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#dee2e6",
+  },
+  locationRetryText: {
+    fontSize: 11,
+    color: "#495057",
+    fontWeight: "500",
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: "#0066cc",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
 });

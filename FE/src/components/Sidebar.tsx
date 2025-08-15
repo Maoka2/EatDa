@@ -128,6 +128,24 @@ export default function Sidebar({
             </Text>
           </TouchableOpacity>
 
+          {/* 주변 가게 */}
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              activePage === "StoreClusterring" && styles.active,
+            ]}
+            onPress={() => handleNavigation("StoreClusteringScreen")}
+          >
+            <Text
+              style={[
+                styles.menuText,
+                activePage === "StoreClusteringScreen" && styles.activeText,
+              ]}
+            >
+              주변 가게
+            </Text>
+          </TouchableOpacity>
+
           {/* 이벤트 게시판 */}
           <TouchableOpacity
             style={[

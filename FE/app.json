@@ -15,7 +15,11 @@
     },
     "assetBundlePatterns": ["assets/**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "근처 가게를 찾기 위해 위치 정보가 필요합니다.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "근처 가게를 찾기 위해 위치 정보가 필요합니다."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,13 +27,27 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.sehee.eatda"
+      "package": "com.sehee.eatda",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-font", "expo-video"],
+    "plugins": [
+      "expo-font", 
+      "expo-video",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "근처 가게를 찾기 위해 위치 정보가 필요합니다."
+        }
+      ]
+    ],
     "extra": {
+      "kakaoApiKey": "e7a0c8d5134218353ee9c9fa8a7b2634",
       "eas": {
         "projectId": "dbc7317c-c30e-4a26-97b6-18bea7e9e35c"
       }

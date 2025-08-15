@@ -37,7 +37,9 @@ export default function StoreScreen() {
   const isEater = isLoggedIn && userRole === "EATER";
 
   const [accessToken, setAccessToken] = useState<string | null>(null);
-
+  const [bottomActiveScreen, setBottomActiveScreen] = useState<string | null>(
+    null
+  );
   const [activeTab, setActiveTab] = useState("menu");
 
   useEffect(() => {
@@ -67,23 +69,31 @@ export default function StoreScreen() {
     { key: "review", label: "리뷰" },
   ];
 
-  useEffect(() => {
-    AsyncStorage.getItem("accessToken").then((token) => {
-      setAccessToken(token);
-    });
-  }, []);
+  // 하단 버튼 핸들러
+  const handleBottomButtonPress = (screen: string) => {
+    setBottomActiveScreen(screen);
+  };
 
-  // ✅ 하단 버튼 핸들링: BottomButton에서 넘어온 키를 스위치로 처리
-  const handleBottomPress = (screen: string) => {
-    switch (screen) {
-      case "review":
-        navigation.navigate("ReviewWriteScreen");
-        break;
-      case "map":
-        navigation.navigate("MapScreen"); // 필요시 store 좌표 넘기면 더 좋음
-        // navigation.navigate("MapScreen", { storeId, storeName, latitude, longitude });
-        break;
-      case "menu":
+    const handleMypage = () => {
+    console.log("마이페이지로 이동");
+    // navigation.navigate('MyPageScreen'); // 실제 마이페이지 화면으로 변경
+  };
+
+  const handleCloseBottomScreen = () => {
+    setBottomActiveScreen(null);
+  };
+
+  // useEffect로 네비게이션 처리 (렌더링 중이 아닌 사이드 이펙트로 처리)
+useEffect(() => {
+    if (bottomActiveScreen) {
+      switch (bottomActiveScreen) {
+        case "review":
+          navigation.navigate("ReviewWriteScreen");
+          break;
+        case "map":
+          navigation.navigate("MapScreen", {}); // 빈 객체 전달
+          break;
+              case "menu":
         navigation.navigate("MenuCustomScreen", {
           storeId,
           storeName,
@@ -91,14 +101,20 @@ export default function StoreScreen() {
         });
         break;
       default:
-        break;
+          break;
+      }
+      // 상태 초기화
+      setBottomActiveScreen(null);	
     }
-  };
+  });
 
   return (
     <SafeAreaView style={{ backgroundColor: "#F7F8F9", flex: 1 }}>
       <View style={styles.headerContainer}>
-        <HamburgerButton userRole="eater" onMypage={() => {}} />
+        <HamburgerButton
+          userRole="eater"
+          onMypage={handleMypage}
+        />
         <HeaderLogo />
       </View>
 
@@ -117,7 +133,7 @@ export default function StoreScreen() {
         {activeTab === "review" && <StoreReviewScreen />}
       </View>
 
-      {isEater && <BottomButton onPress={handleBottomPress} />}
+      {isEater && <BottomButton onPress={handleBottomButtonPress} />}
     </SafeAreaView>
   );
 }

@@ -1,30 +1,28 @@
 import React, { useState } from "react";
 import { View, TouchableOpacity, Image, StyleSheet, Text } from "react-native";
-import { Video } from "expo-av";
-import { SvgProps } from "react-native-svg";
 
+// GridComponent.tsx 타입 정의 수정
 export interface ReviewItem {
   id: string;
   type: "image" | "video";
-  uri: string;
+  uri: string; // 실제 미디어 URL
   thumbnail?: string; // 비디오 썸네일
   title: string;
   description: string;
   likes: number;
   views: number;
-  // 새로 추가된 필드들
   menuNames?: string[];
 }
 
-// 이벤트아이템 추가
+// 이벤트 아이템 타입 수정
 export interface eventItem {
   id: string;
   eventName: string;
-  storeName:string;
-  description: string;
-  uri: string;
+  description: string; // eventDescription → description로 통일
+  uri: { uri: string } | number; // 이미지 소스 타입
   start_date: Date;
   end_date: Date;
+  storeName: string; // 누락된 필드 추가
 }
 
 interface GridProps {
@@ -45,12 +43,12 @@ export default function GridComponent({
   const LastRow = index >= totalLength - (totalLength % 3 || 3);
   const [imageError, setImageError] = useState(false);
 
-  // 리뷰아이템인지, 이벤트아이템인지 구분
+  // 이미지 소스 결정
   let imgSource: { uri: string } | number;
+  
   if ("type" in item) {
-    // 그리드에서는 항상 thumbnail 사용 (이미지면 imageUrl, 비디오면 thumbnailUrl)
+    // ReviewItem인 경우
     imgSource = { uri: item.thumbnail || item.uri };
-    
     console.log(`GridComponent - 리뷰 ${item.id}:`, {
       type: item.type,
       thumbnail: item.thumbnail,
@@ -58,7 +56,12 @@ export default function GridComponent({
       displayUri: item.thumbnail || item.uri
     });
   } else {
-    imgSource = {uri : item.uri}
+    // eventItem인 경우
+    imgSource = item.uri;
+    console.log(`GridComponent - 이벤트 ${item.id}:`, {
+      uri: item.uri,
+      storeName: item.storeName
+    });
   }
 
   return (
@@ -80,12 +83,11 @@ export default function GridComponent({
             style={{ width: "100%", height: "100%" }}
             resizeMode="cover"
             onError={(error) => {
-              console.error(`이미지 로드 실패 - 리뷰 ${("type" in item) ? item.id : 'event'}:`, error);
+              console.error(`이미지 로드 실패 - ${("type" in item) ? "리뷰" : "이벤트"} ${item.id}:`, error);
               setImageError(true);
             }}
           />
         ) : (
-          // 이미지 로드 실패 시 대체 화면
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>이미지를 불러올 수 없습니다</Text>
           </View>

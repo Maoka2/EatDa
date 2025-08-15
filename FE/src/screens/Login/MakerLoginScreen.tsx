@@ -47,9 +47,9 @@ export default function MakerLoginScreen(props?: Props) {
     navigation.navigate("MakerRegisterScreen");
   };
 
-  const handleLoginSuccess = () => {
-    navigation.navigate("StoreScreen"); // 메이커용 메인 화면
-  };
+const handleLoginSuccess = () => {
+  navigation.navigate("StoreScreen", {}); // 빈 객체 전달 (storeId는 optional이므로)
+};
 
   const handleLoginFailure = (message: string) => {
     console.error("Maker login failed:", message);

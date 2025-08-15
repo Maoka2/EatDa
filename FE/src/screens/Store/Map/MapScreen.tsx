@@ -11,10 +11,7 @@ import {
   ViewStyle,
   TextStyle,
 } from "react-native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { AuthStackParamList } from "../../../navigation/AuthNavigator"; // 경로 수정 필요
 
-import HamburgerButton from "../../../components/Hamburger";
 import HeaderLogo from "../../../components/HeaderLogo";
 import TabSwitcher from "../../../components/TabSwitcher";
 import GoingImg from "../../../../assets/goingImage.svg";
@@ -25,9 +22,10 @@ import BottomButton from "../../../components/BottomButton";
 import NoDataScreen from "../../../components/NoDataScreen";
 import { FindWayData, PublicRoute } from "../../../data/findWayData";
 import PathFind from "../../../components/pathFind";
+import { useNavigation } from "@react-navigation/native";
 
 interface StoreMapScreenProps {
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export default function MapScreen({ onClose }: StoreMapScreenProps) {
@@ -38,7 +36,7 @@ export default function MapScreen({ onClose }: StoreMapScreenProps) {
   const [to, setTo] = useState("");
   const [activeTab, setActiveTab] = useState("bus");
   const [findWayData, setFindWayData] = useState<PublicRoute[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const navigation = useNavigation();
 
   const filteredData = findWayData.filter((item) => {
     if (activeTab === "bus") return item.subPaths.some((sub) => sub.type === 2);
@@ -64,10 +62,6 @@ export default function MapScreen({ onClose }: StoreMapScreenProps) {
           { marginHorizontal: horizontalMargin, marginTop: height * 0.057 },
         ]}
       >
-        {/* <HamburgerButton
-          userRole="eater"
-         onMypage={}
-        ></HamburgerButton> */}
         <HeaderLogo></HeaderLogo>
       </View>
 

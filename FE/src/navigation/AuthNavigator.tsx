@@ -30,6 +30,7 @@ import MypageScreen from "../screens/Mypage/MypageScreen";
 
 // Review 관련
 import ReviewWriteScreen from "../screens/Store/Review/ReviewWriteScreen";
+import StoreClusteringScreen from "../screens/StoreClustering/StoreClusteringScreen";
 
 export type AuthStackParamList = {
   Login: undefined;
@@ -43,19 +44,20 @@ export type AuthStackParamList = {
 
   // 메인 앱 화면들
   ReviewTabScreen: undefined;
+  StoreClusteringScreen: undefined; // 추가
+  StoreClustering: undefined; // 현재 사용 중인 이름
   ActiveEventScreen: undefined;
   EventMakingScreen: undefined;
 
-  MapScreen: undefined;
+  MapScreen: { onClose?: () => void }; // MapScreen props 추가
 
-  // ✅ StoreScreen은 storeId를 반드시 받는다
   StoreScreen: {
     storeId: number;
     storeName?: string;
     address?: string;
     latitude?: number;
     longitude?: number;
-  };
+  }; // StoreScreen props 추가
   StoreEventScreen: undefined;
   StoreMenuScreen: undefined;
   StoreReviewScreen: undefined;
@@ -77,7 +79,7 @@ export type AuthStackParamList = {
   MenuSelectStep: undefined;
   OCRStep: undefined;
   ReviewWriteScreen: undefined;
-  MenuPosterWriteStep: { menuPosterId: number, assetId: number, };
+  MenuPosterWriteStep: { menuPosterId: number; assetId: number };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -89,52 +91,49 @@ export default function AuthNavigator() {
       screenOptions={{ headerShown: false }}
     >
       {/* 로그인 관련 */}
-      <Stack.Screen name="Login" component={LoginScreen}></Stack.Screen>
+      <Stack.Screen name="Login" component={LoginScreen as any} />
       <Stack.Screen
         name="EaterLoginScreen"
-        component={EaterLoginScreen}
-      ></Stack.Screen>
+        component={EaterLoginScreen as any}
+      />
       <Stack.Screen
         name="MakerLoginScreen"
-        component={MakerLoginScreen}
-      ></Stack.Screen>
+        component={MakerLoginScreen as any}
+      />
 
       {/* 회원가입 관련 */}
       <Stack.Screen
         name="RoleSelectionScreen"
-        component={RoleSelectionScreen}
-      ></Stack.Screen>
-      <Stack.Screen
-        name="RegisterScreen"
-        component={RegisterScreen}
-      ></Stack.Screen>
+        component={RoleSelectionScreen as any}
+      />
+      <Stack.Screen name="RegisterScreen" component={RegisterScreen as any} />
       <Stack.Screen
         name="EaterRegisterScreen"
-        component={EaterRegisterScreen}
-      ></Stack.Screen>
+        component={EaterRegisterScreen as any}
+      />
       <Stack.Screen
         name="MakerRegisterScreen"
-        component={MakerRegisterScreen}
-      ></Stack.Screen>
+        component={MakerRegisterScreen as any}
+      />
 
       {/* 메인 앱 화면들 */}
+      <Stack.Screen name="ReviewTabScreen" component={ReviewTabScreen as any} />
       <Stack.Screen
-        name="ReviewTabScreen"
-        component={ReviewTabScreen}
-      ></Stack.Screen>
+        name="StoreClusteringScreen"
+        component={StoreClusteringScreen as any}
+      />
       <Stack.Screen
         name="ActiveEventScreen"
-        component={ActiveEventScreen}
-      ></Stack.Screen>
+        component={ActiveEventScreen as any}
+      />
       <Stack.Screen
         name="EventMakingScreen"
-        component={EventMakingScreen}
-      ></Stack.Screen>
-
-      <Stack.Screen name="MapScreen" component={MapScreen}></Stack.Screen>
+        component={EventMakingScreen as any}
+      />
 
       {/* 마이페이지 관련 */}
       <Stack.Screen name="MypageScreen" component={MypageScreen}></Stack.Screen>
+      <Stack.Screen name="MypageScreen" component={MypageScreen as any} />
 
       {/* 스토어 관련 */}
       <Stack.Screen name="StoreScreen" component={StoreScreen}></Stack.Screen>
@@ -153,8 +152,8 @@ export default function AuthNavigator() {
       {/* 리뷰 작성 관련 */}
       <Stack.Screen
         name="ReviewWriteScreen"
-        component={ReviewWriteScreen}
-      ></Stack.Screen>
+        component={ReviewWriteScreen as any}
+      />
     </Stack.Navigator>
   );
 }
