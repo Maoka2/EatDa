@@ -1,15 +1,8 @@
 // src/screens/Store/StoreScreen.tsx
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  ViewStyle,
-  TextStyle,
-} from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 
@@ -21,54 +14,54 @@ import BottomButton from "../../components/BottomButton";
 import StoreMenuScreen from "./StoreMenuScreen";
 import StoreEventScreen from "./StoreEventScreen";
 import StoreReviewScreen from "./StoreReviewScreen";
-import ReviewWriteScreen from "./Review/ReviewWriteScreen";
-import MapScreen from "./Map/MapScreen";
-// import MapScreen from "./Map/MapScreen";
-import MenuCustomScreen from "./Menu/MenuCustomScreen";
-
-// 분기처리용
 import { useAuth } from "../../contexts/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
   "StoreScreen"
 >;
+type StoreRouteProp = RouteProp<AuthStackParamList, "StoreScreen">;
 
-interface StoreProps {
-  onGoBack?: () => void;
-}
-
-export default function StoreScreen(props?: StoreProps) {
+export default function StoreScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<StoreRouteProp>();
+  const storeId = route?.params?.storeId;
+  const storeName = route?.params?.storeName;
+  const address = route?.params?.address;
+  const latitude = route?.params?.latitude;
+  const longitude = route?.params?.longitude;
 
-  // 분기처리용
   const { isLoggedIn, userRole } = useAuth();
-  const isMaker = isLoggedIn && userRole === "MAKER";
   const isEater = isLoggedIn && userRole === "EATER";
 
-  // 내장 네비게이션 함수들
-  const handleGoBack = () => {
-    navigation.goBack();
-  };
-
-  const handleLogout = () => {
-    navigation.navigate("Login");
-  };
-
-  const handleMypage = () => {
-    console.log("마이페이지로 이동");
-    // navigation.navigate('MyPageScreen'); // 실제 마이페이지 화면으로 변경
-  };
-
-  // props가 있으면 props 함수 사용, 없으면 내장 함수 사용
-  const goBack = props?.onGoBack || handleGoBack;
-
-  // 탭스위쳐 관리
-  const [activeTab, setActiveTab] = useState("menu");
-  // 하단 버튼 화면 관리
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [bottomActiveScreen, setBottomActiveScreen] = useState<string | null>(
     null
   );
+  const [activeTab, setActiveTab] = useState("menu");
+
+  useEffect(() => {
+    if (!storeId || storeId <= 0) {
+      console.warn("[StoreScreen] invalid storeId:", storeId);
+    }
+  }, [storeId]);
+
+  if (!storeId || storeId <= 0) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#F7F8F9",
+        }}
+      >
+        <Text style={{ color: "#666" }}>유효한 가게 ID가 없습니다.</Text>
+      </SafeAreaView>
+    );
+  }
 
   const tabs = [
     { key: "menu", label: "메뉴" },
@@ -81,11 +74,17 @@ export default function StoreScreen(props?: StoreProps) {
     setBottomActiveScreen(screen);
   };
 
+    const handleMypage = () => {
+    console.log("마이페이지로 이동");
+    // navigation.navigate('MyPageScreen'); // 실제 마이페이지 화면으로 변경
+  };
+
   const handleCloseBottomScreen = () => {
     setBottomActiveScreen(null);
   };
 
-  useEffect(() => {
+  // useEffect로 네비게이션 처리 (렌더링 중이 아닌 사이드 이펙트로 처리)
+useEffect(() => {
     if (bottomActiveScreen) {
       switch (bottomActiveScreen) {
         case "review":
@@ -94,71 +93,58 @@ export default function StoreScreen(props?: StoreProps) {
         case "map":
           navigation.navigate("MapScreen", {}); // 빈 객체 전달
           break;
-        case "menu":
-          navigation.navigate("MenuCustomScreen");
+              case "menu":
+        navigation.navigate("MenuCustomScreen", {
+          storeId,
+          storeName,
+          address,
+        });
+        break;
+      default:
           break;
       }
       // 상태 초기화
-      setBottomActiveScreen(null);
+      setBottomActiveScreen(null);	
     }
-  }, [bottomActiveScreen, navigation]);
+  });
 
   return (
-    <SafeAreaView style={[{ backgroundColor: "#F7F8F9", flex: 1 }]}>
-      {/* 헤더 */}
+    <SafeAreaView style={{ backgroundColor: "#F7F8F9", flex: 1 }}>
       <View style={styles.headerContainer}>
-        <HamburgerButton userRole="eater" onMypage={handleMypage} />
+        <HamburgerButton
+          userRole="eater"
+          onMypage={handleMypage}
+        />
         <HeaderLogo />
       </View>
 
-      {/* 가게정보 파트 */}
       <View style={styles.storeInfo}>
-        <Text style={styles.storeName}>햄찌네 피자</Text>
+        <Text style={styles.storeName}>{storeName || "가게 이름"}</Text>
         <Text style={styles.storeAddress}>
-          📍서울특별시 강남구 테헤란로 212
+          {address ? `📍${address}` : "📍주소 정보 없음"}
         </Text>
       </View>
 
-      {/* 탭스위치 */}
-      <TabSwitcher
-        tabs={tabs}
-        activeKey={activeTab}
-        onChange={(key) => {
-          setActiveTab(key);
-        }}
-      />
+      <TabSwitcher tabs={tabs} activeKey={activeTab} onChange={setActiveTab} />
 
       <View style={{ flex: 1 }}>
-        {/* 활성화 탭에 따라 화면 가져오기 */}
-        {activeTab === "menu" && <StoreMenuScreen />}
+        {activeTab === "menu" && accessToken &&  (<StoreMenuScreen storeId={storeId} accessToken={accessToken}/>)}
         {activeTab === "event" && <StoreEventScreen />}
         {activeTab === "review" && <StoreReviewScreen />}
       </View>
 
-      {/* 하단 버튼 3개 */}
       {isEater && <BottomButton onPress={handleBottomButtonPress} />}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    flexDirection: "row",
-    paddingTop: 40,
-  },
+  headerContainer: { flexDirection: "row", paddingTop: 40 },
   storeInfo: {
     flexDirection: "row",
     paddingHorizontal: 20,
     marginVertical: 10,
-  } as ViewStyle,
-  storeName: {
-    fontSize: 20,
-    fontWeight: "500",
-    marginRight: 12,
-  } as TextStyle,
-  storeAddress: {
-    marginTop: 9,
-    fontSize: 12,
-    letterSpacing: -0.3,
-  } as TextStyle,
+  },
+  storeName: { fontSize: 20, fontWeight: "500", marginRight: 12 },
+  storeAddress: { marginTop: 9, fontSize: 12, letterSpacing: -0.3 },
 });

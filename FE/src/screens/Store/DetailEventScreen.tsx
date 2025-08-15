@@ -79,7 +79,7 @@ export default function ({
 
         <View style={styles.ImageContainer}>
           <Image
-            source={event.uri}
+            source={{ uri: event.uri }}
             style={[
               styles.eventImage,
               { width: width * 0.8, height: height * 0.4 },

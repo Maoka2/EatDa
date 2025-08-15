@@ -1,5 +1,5 @@
-// 2. MenuSelectStep.tsx
-import React from "react";
+// MenuSelectStep.tsx
+import React, { useState, useEffect } from "react";
 import {
   FlatList,
   TouchableOpacity,
@@ -8,15 +8,27 @@ import {
   StyleSheet,
   View,
   useWindowDimensions,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { menuData } from "../../../data/menuData";
+import { getStoreMenus } from "./services/api";
+
+interface MenuData {
+  id: number;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  price?: number;
+}
 
 interface MenuSelectStepProps {
-  selected: string[];
-  onToggle: (id: string) => void;
+  selected: number[];
+  onToggle: (id: number) => void;
   onBack: () => void;
   onNext: () => void;
+  storeId: number;
+  accessToken: string;
 }
 
 export default function MenuSelectStep({
@@ -24,8 +36,58 @@ export default function MenuSelectStep({
   onToggle,
   onBack,
   onNext,
+  storeId,
+  accessToken,
 }: MenuSelectStepProps) {
   const { width } = useWindowDimensions();
+  const [menuData, setMenuData] = useState<MenuData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
+  useEffect(() => {
+    const fetchMenuData = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const menus = await getStoreMenus(storeId, accessToken);
+        console.log("[MenuSelectStep] 받은 메뉴 데이터:", menus);
+
+        // ⭐ 메뉴 ID를 1부터 시작하도록 변환 (undefined나 0 처리)
+        const adjustedMenus = menus.map((menu, index) => ({
+          ...menu,
+          id:
+            menu.id === undefined || menu.id === null || menu.id === 0
+              ? index + 1
+              : menu.id,
+        }));
+
+        console.log("[MenuSelectStep] 조정된 메뉴 데이터:", adjustedMenus);
+        setMenuData(adjustedMenus);
+      } catch (error: any) {
+        console.error("메뉴 데이터 가져오기 실패:", error);
+        setError(error.message || "메뉴를 불러오는데 실패했습니다.");
+        Alert.alert(
+          "오류",
+          "메뉴를 불러오는데 실패했습니다. 다시 시도해주세요."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (storeId && accessToken) {
+      fetchMenuData();
+    }
+  }, [storeId, accessToken]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#FF69B4" />
+        <Text style={{ marginTop: 10 }}>메뉴를 불러오는 중...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -43,7 +105,7 @@ export default function MenuSelectStep({
 
       <FlatList
         data={menuData}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
@@ -56,14 +118,16 @@ export default function MenuSelectStep({
             >
               <Image
                 source={{
-                  uri: item.uri ?? "https://via.placeholder.com/80?text=No+Img",
+                  uri:
+                    item.imageUrl ??
+                    "https://via.placeholder.com/80?text=No+Img",
                 }}
                 style={styles.menuImage}
               />
               <View style={styles.menuText}>
-                <Text style={styles.menuName}>{item.menuName}</Text>
+                <Text style={styles.menuName}>{item.name}</Text>
                 <Text style={styles.menuDesc} numberOfLines={2}>
-                  {item.menuDescription}
+                  {item.description}
                 </Text>
               </View>
               <View
@@ -80,7 +144,7 @@ export default function MenuSelectStep({
       <View style={styles.absoluteBottom}>
         <TouchableOpacity
           style={[styles.button, !selected.length && styles.buttonDisabled]}
-          onPress={selected.length > 0 ? onNext : () => {}}
+          onPress={selected.length > 0 ? onNext : undefined}
           disabled={!selected.length}
           activeOpacity={selected.length > 0 ? 0.7 : 1}
         >
@@ -92,16 +156,8 @@ export default function MenuSelectStep({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  backButton: {
-    position: "absolute",
-    top: 40,
-    left: 16,
-    zIndex: 10,
-  },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  backButton: { position: "absolute", top: 40, left: 16, zIndex: 10 },
   header: {
     paddingTop: 60,
     paddingBottom: 24,
@@ -115,11 +171,7 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 14,
-    color: "#666666",
-    textAlign: "center",
-  },
+  subtitle: { fontSize: 14, color: "#666666", textAlign: "center" },
   list: {
     paddingHorizontal: 20,
     paddingBottom: 120,
@@ -146,28 +198,15 @@ const styles = StyleSheet.create({
     shadowColor: "#FF69B4",
     shadowOpacity: 0.15,
   },
-  menuImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-    marginRight: 16,
-  },
-  menuText: {
-    flex: 1,
-    paddingRight: 12,
-  },
+  menuImage: { width: 64, height: 64, borderRadius: 12, marginRight: 16 },
+  menuText: { flex: 1, paddingRight: 12 },
   menuName: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1A1A1A",
     marginBottom: 4,
   },
-  menuDesc: {
-    fontSize: 13,
-    color: "#666666",
-    lineHeight: 18,
-    marginTop: 2,
-  },
+  menuDesc: { fontSize: 13, color: "#666666", lineHeight: 18, marginTop: 2 },
   checkWrap: {
     width: 24,
     height: 24,
@@ -178,15 +217,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  checkWrapSelected: {
-    backgroundColor: "#FF69B4",
-    borderColor: "#FF69B4",
-  },
-  check: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
+  checkWrapSelected: { backgroundColor: "#FF69B4", borderColor: "#FF69B4" },
+  check: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
   absoluteBottom: {
     position: "absolute",
     left: 0,
@@ -216,9 +248,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  buttonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 });

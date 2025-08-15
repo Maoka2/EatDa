@@ -1,219 +1,120 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  Image,
   FlatList,
-  ViewStyle,
-  TextStyle,
-  TouchableOpacity,
-  Modal,
-  TouchableWithoutFeedback,
-  useWindowDimensions,
+  Image,
+  ActivityIndicator,
+  StyleSheet,
+  Alert,
 } from "react-native";
-
-import { menuData } from "../../data/menuData";
+import { getStoreMenus, MenuData } from "./Menu/services/api";
 import NoDataScreen from "../../components/NoDataScreen";
+type Props = { storeId: number; accessToken: string }; //
 
-// 메뉴 스타일 이미지
-import MenuStyleDummy1 from "../../data/menuStyleDummy/menuStyleDummy1.svg";
-import MenuStyleDummy2 from "../../data/menuStyleDummy/menuStyleDummy2.svg";
-import MenuStyleDummy3 from "../../data/menuStyleDummy/menuStyleDummy3.svg";
-import MenuStyleDummy4 from "../../data/menuStyleDummy/menuStyleDummy4.svg";
-import MenuStyleDummy5 from "../../data/menuStyleDummy/menuStyleDummy5.svg";
+export default function StoreMenuScreen({ storeId, accessToken }: Props) {
+  const [menuData, setMenuData] = useState<MenuData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [fetchedOnce, setFetchedOnce] = useState(false);
+  const [error, setError] = useState<string>("");
 
-// 닫기 버튼 아이콘
-import CloseBtn from "../../../assets/closeBtn.svg";
+  // 실제 메뉴 데이터 가져오기
+    useEffect(() => {
+      const fetchMenuData = async () => {
+        try {
+          setLoading(true);
+          setError("");
+          
+          const menus = await getStoreMenus(storeId, accessToken);
+          console.log("[MenuSelectStep] 받은 메뉴 데이터:", menus);
+          
+          // ⭐ 메뉴 ID를 1부터 시작하도록 변환 (undefined나 0 처리)
+          const adjustedMenus = menus.map((menu, index) => ({
+            ...menu,
+            id: (menu.id === undefined || menu.id === null || menu.id === 0) ? index + 1 : menu.id
+          }));
+          
+          console.log("[MenuSelectStep] 조정된 메뉴 데이터:", adjustedMenus);
+          setMenuData(adjustedMenus);
+          
+        } catch (error: any) {
+          console.error("메뉴 데이터 가져오기 실패:", error);
+          setError(error.message || "메뉴를 불러오는데 실패했습니다.");
+          Alert.alert("오류", "메뉴를 불러오는데 실패했습니다. 다시 시도해주세요.");
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      if (storeId && accessToken) {
+        fetchMenuData();
+      }
+    }, [storeId, accessToken]);
 
-export default function StoreMenuScreen() {
-  const { width, height } = useWindowDimensions();
-  const isEmpty = !menuData || menuData.length === 0;
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const list = await getStoreMenus(storeId, accessToken);
+      setMenuData(Array.isArray(list) ? list : []);
+    } catch (e) {
+      console.warn("[StoreMenu] refresh failed:", e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [storeId, accessToken]);
 
-  const [selectedStyleKey, setSelectedStyleKey] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-
-  if (isEmpty) {
+  if (fetchedOnce && !loading && menuData.length === 0) {
     return <NoDataScreen />;
   }
 
   return (
     <View style={{ flex: 1 }}>
-      {/* 메뉴 리스트 */}
-      <FlatList
-        data={menuData}
-        renderItem={({ item }) => (
-          <View style={styles.shadowWrapper}>
-            <View style={styles.menuContainer}>
-              {item.uri && (
-                <Image source={{ uri: item.uri }} style={styles.menuImage} />
+      {loading && !fetchedOnce ? (
+        <ActivityIndicator style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={menuData}
+          keyExtractor={(m, idx) => `${storeId}-${m.name}-${idx}`} //
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          contentContainerStyle={{ paddingVertical: 8 }}
+          renderItem={({ item }) => (
+            <View style={styles.row}>
+              {item.imageUrl ? (
+                <Image source={{ uri: item.imageUrl }} style={styles.thumb} />
+              ) : (
+                <View style={[styles.thumb, styles.thumbPlaceholder]} />
               )}
-              <View style={styles.textWrapper}>
-                <Text style={styles.menuName}>{item.menuName}</Text>
-                <Text style={styles.menuDescription} numberOfLines={2}>
-                  {item.menuDescription}
-                </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{item.name}</Text>
+                {typeof item.price === "number" ? (
+                  <Text style={styles.price}>
+                    {item.price.toLocaleString()}원
+                  </Text>
+                ) : null}
+                {item.description ? (
+                  <Text style={styles.desc}>{item.description}</Text>
+                ) : null}
               </View>
             </View>
-          </View>
-        )}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingVertical: 10 }}
-      />
-
-      {/* 메뉴판 스타일 선택 버튼 */}
-      <View style={styles.menuStyleContainer}>
-        <TouchableOpacity
-          style={styles.menuStyleBtn}
-          onPress={() => {
-            setSelectedStyleKey("1");
-            setShowModal(true);
-          }}
-        >
-          <MenuStyleDummy1 />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.menuStyleBtn}
-          onPress={() => {
-            setSelectedStyleKey("2");
-            setShowModal(true);
-          }}
-        >
-          <MenuStyleDummy2 />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.menuStyleBtn}
-          onPress={() => {
-            setSelectedStyleKey("3");
-            setShowModal(true);
-          }}
-        >
-          <MenuStyleDummy3 />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.menuStyleBtn}
-          onPress={() => {
-            setSelectedStyleKey("4");
-            setShowModal(true);
-          }}
-        >
-          <MenuStyleDummy4 />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.menuStyleBtn}
-          onPress={() => {
-            setSelectedStyleKey("5");
-            setShowModal(true);
-          }}
-        >
-          <MenuStyleDummy5 />
-        </TouchableOpacity>
-      </View>
-
-      {/* 스타일 모달 */}
-      <Modal
-        animationType="fade"
-        transparent
-        visible={showModal}
-        onRequestClose={() => setShowModal(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={styles.modalContent}>
-                <TouchableOpacity
-                  style={styles.modalCloseButton}
-                  onPress={() => setShowModal(false)}
-                >
-                  <CloseBtn />
-                </TouchableOpacity>
-
-                {selectedStyleKey === "1" && (
-                  <MenuStyleDummy1 width={width * 0.8} height={height * 0.6} />
-                )}
-                {selectedStyleKey === "2" && (
-                  <MenuStyleDummy2 width={width * 0.8} height={height * 0.6} />
-                )}
-                {selectedStyleKey === "3" && (
-                  <MenuStyleDummy3 width={width * 0.8} height={height * 0.6} />
-                )}
-                {selectedStyleKey === "4" && (
-                  <MenuStyleDummy4 width={width * 0.8} height={height * 0.6} />
-                )}
-                {selectedStyleKey === "5" && (
-                  <MenuStyleDummy5 width={width * 0.8} height={height * 0.6} />
-                )}
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+          )}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  menuStyleContainer: {
+  row: {
     flexDirection: "row",
+    paddingHorizontal: 16,
     paddingVertical: 10,
-  } as ViewStyle,
-  menuStyleBtn: {
-    flex: 1,
     alignItems: "center",
-  } as ViewStyle,
-  shadowWrapper: {
-    backgroundColor: "#f7f8f9",
-    borderRadius: 12,
-    marginHorizontal: 12,
-    marginVertical: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 3,
-  } as ViewStyle,
-  menuContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: "#f7f8f9",
-  } as ViewStyle,
-  menuImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 12,
   },
-  textWrapper: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  menuName: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  } as TextStyle,
-  menuDescription: {
-    fontSize: 13,
-    color: "#757575",
-  } as TextStyle,
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  } as ViewStyle,
-  modalContent: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 16,
-    alignItems: "center",
-  } as ViewStyle,
-  modalCloseButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 10,
-  } as ViewStyle,
+  thumb: { width: 64, height: 64, borderRadius: 8, marginRight: 12 },
+  thumbPlaceholder: { backgroundColor: "#eee" },
+  name: { fontSize: 16, fontWeight: "600" },
+  price: { marginTop: 2 },
+  desc: { marginTop: 4, color: "#666" },
 });

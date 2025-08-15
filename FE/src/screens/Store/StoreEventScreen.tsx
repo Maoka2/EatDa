@@ -20,7 +20,7 @@ const adapt = (a: MyEventApiItem): eventItem => ({
   id: String(a.eventId),
   eventName: a.title,
   description: a.description ?? "",
-  uri: { uri: a.postUrl },
+  uri: a.postUrl,
   start_date: new Date(a.startAt),
   end_date: new Date(a.endAt),
   storeName: a.storeName ?? "",

@@ -1,3 +1,4 @@
+// src/navigation/AuthNavigator.tsx
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
@@ -19,7 +20,11 @@ import EventMakingScreen from "../screens/EventMaking/EventMakingScreen";
 import StoreScreen from "../screens/Store/StoreScreen";
 
 import MapScreen from "../screens/Store/Map/MapScreen";
+
+// 메뉴 관련
 import MenuCustomScreen from "../screens/Store/Menu/MenuCustomScreen";
+import GenerateStep from "../screens/Store/Menu/GenerateStep";
+import MenuPosterWriteStep from "../screens/Store/Menu/WriteStep";
 
 import MypageScreen from "../screens/Mypage/MypageScreen";
 
@@ -32,10 +37,7 @@ export type AuthStackParamList = {
   EaterLoginScreen: undefined;
   MakerLoginScreen: undefined;
 
-  RegisterScreen: {
-    role?: "eater" | "maker";
-  };
-
+  RegisterScreen: { role?: "eater" | "maker" };
   EaterRegisterScreen: undefined;
   MakerRegisterScreen: undefined;
   RoleSelectionScreen: undefined;
@@ -48,23 +50,36 @@ export type AuthStackParamList = {
   EventMakingScreen: undefined;
 
   MapScreen: { onClose?: () => void }; // MapScreen props 추가
-  
-  StoreScreen: { storeId?: number }; // StoreScreen props 추가
+
+  StoreScreen: {
+    storeId: number;
+    storeName?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  }; // StoreScreen props 추가
   StoreEventScreen: undefined;
   StoreMenuScreen: undefined;
   StoreReviewScreen: undefined;
   DetailEventScreen: undefined;
 
-  MenuCustomScreen: undefined;
+  MenuCustomScreen: {
+    storeId: number;
+    storeName?: string;
+    address?: string;
+  };
 
   MypageScreen: undefined;
 
   CompleteModal: undefined;
-  GenerateStep: undefined;
+  GenerateStep: {
+    storeId: number;
+    selectedMenuIds: number[];
+  };
   MenuSelectStep: undefined;
   OCRStep: undefined;
   ReviewWriteScreen: undefined;
-  WriteStep: undefined;
+  MenuPosterWriteStep: { menuPosterId: number; assetId: number };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -77,35 +92,68 @@ export default function AuthNavigator() {
     >
       {/* 로그인 관련 */}
       <Stack.Screen name="Login" component={LoginScreen as any} />
-      <Stack.Screen name="EaterLoginScreen" component={EaterLoginScreen as any} />
-      <Stack.Screen name="MakerLoginScreen" component={MakerLoginScreen as any} />
+      <Stack.Screen
+        name="EaterLoginScreen"
+        component={EaterLoginScreen as any}
+      />
+      <Stack.Screen
+        name="MakerLoginScreen"
+        component={MakerLoginScreen as any}
+      />
 
       {/* 회원가입 관련 */}
-      <Stack.Screen name="RoleSelectionScreen" component={RoleSelectionScreen as any} />
+      <Stack.Screen
+        name="RoleSelectionScreen"
+        component={RoleSelectionScreen as any}
+      />
       <Stack.Screen name="RegisterScreen" component={RegisterScreen as any} />
-      <Stack.Screen name="EaterRegisterScreen" component={EaterRegisterScreen as any} />
-      <Stack.Screen name="MakerRegisterScreen" component={MakerRegisterScreen as any} />
+      <Stack.Screen
+        name="EaterRegisterScreen"
+        component={EaterRegisterScreen as any}
+      />
+      <Stack.Screen
+        name="MakerRegisterScreen"
+        component={MakerRegisterScreen as any}
+      />
 
       {/* 메인 앱 화면들 */}
       <Stack.Screen name="ReviewTabScreen" component={ReviewTabScreen as any} />
-      <Stack.Screen name="StoreClusteringScreen" component={StoreClusteringScreen as any} />
-      <Stack.Screen name="ActiveEventScreen" component={ActiveEventScreen as any} />
-      <Stack.Screen name="EventMakingScreen" component={EventMakingScreen as any} />
-      
+      <Stack.Screen
+        name="StoreClusteringScreen"
+        component={StoreClusteringScreen as any}
+      />
+      <Stack.Screen
+        name="ActiveEventScreen"
+        component={ActiveEventScreen as any}
+      />
+      <Stack.Screen
+        name="EventMakingScreen"
+        component={EventMakingScreen as any}
+      />
+
       {/* 마이페이지 관련 */}
+      <Stack.Screen name="MypageScreen" component={MypageScreen}></Stack.Screen>
       <Stack.Screen name="MypageScreen" component={MypageScreen as any} />
 
       {/* 스토어 관련 */}
-      <Stack.Screen name="StoreScreen" component={StoreScreen as any} />
-      
-      {/* 맵 관련 */}
-      <Stack.Screen name="MapScreen" component={MapScreen as any} />
+      <Stack.Screen name="StoreScreen" component={StoreScreen}></Stack.Screen>
 
       {/* 메뉴 관련 */}
-      <Stack.Screen name="MenuCustomScreen" component={MenuCustomScreen as any} />
+      <Stack.Screen
+        name="MenuCustomScreen"
+        component={MenuCustomScreen}
+      ></Stack.Screen>
+      <Stack.Screen name="GenerateStep" component={GenerateStep} />
+      <Stack.Screen
+        name="MenuPosterWriteStep"
+        component={MenuPosterWriteStep}
+      />
 
       {/* 리뷰 작성 관련 */}
-      <Stack.Screen name="ReviewWriteScreen" component={ReviewWriteScreen as any} />
+      <Stack.Screen
+        name="ReviewWriteScreen"
+        component={ReviewWriteScreen as any}
+      />
     </Stack.Navigator>
   );
 }
