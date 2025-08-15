@@ -79,7 +79,7 @@ public class CacheMetadataService {
 
         // fresh에서 stale 상태로 변한 메타데이터 생성
         CacheMetadata staleMetadata = CacheMetadata.builder()
-                .lastUpdated(metadata.lastUpdated())
+                .lastUpdated(LocalDateTime.now())
                 .isStale(true)
                 .staleReason(reason)
                 .scheduledRefresh(LocalDateTime.now().plusMinutes(5))
