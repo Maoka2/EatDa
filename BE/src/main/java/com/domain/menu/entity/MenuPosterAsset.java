@@ -24,7 +24,8 @@ public class MenuPosterAsset extends BaseAssetEntity {
     private MenuPoster menuPoster;
 
     @Builder
-    public MenuPosterAsset(final MenuPoster menuPoster, final AssetType type, final String path, final String prompt, final Status status) {
+    public MenuPosterAsset(final MenuPoster menuPoster, final AssetType type, final String path, final String prompt,
+                           final Status status) {
         this.menuPoster = menuPoster;
         this.type = type;
         this.path = path;
@@ -32,16 +33,13 @@ public class MenuPosterAsset extends BaseAssetEntity {
         this.status = status != null ? status : Status.PENDING;
     }
 
-    public static MenuPosterAsset createPending(final MenuPoster menuPoster, final AssetType type, final String prompt) {
+    public static MenuPosterAsset createPending(final MenuPoster menuPoster, final AssetType type,
+                                                final String prompt) {
         return MenuPosterAsset.builder()
                 .menuPoster(menuPoster)
                 .type(type)
                 .prompt(prompt)
                 .status(Status.PENDING)
                 .build();
-    }
-
-    public void registerMenuPoster(MenuPoster menuPoster) {
-        this.menuPoster = menuPoster;
     }
 }
