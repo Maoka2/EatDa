@@ -168,9 +168,9 @@ public class ReviewServiceImpl implements ReviewService {
                     throw new ApiException(ErrorCode.REVIEW_ASSET_URL_REQUIRED, reviewAssetId);
                 }
                 log.info("Downloading shorts video from URL: {}", shortsUrl);
-                String downloadedVideoPath = fileStorageService.storeVideoFromUrl(asset.getShortsUrl(), DATA_DIR,
-                        SHORTS_DIR);
-                asset.updateShortsUrl(downloadedVideoPath);
+                //                String downloadedVideoPath = fileStorageService.storeVideoFromUrl(asset.getShortsUrl(), DATA_DIR,
+                //                        SHORTS_DIR);
+                //                asset.updateShortsUrl(downloadedVideoPath);
             }
             default -> throw new ApiException(ErrorCode.REVIEW_TYPE_INVALID, reviewAssetId);
         }
@@ -584,10 +584,13 @@ public class ReviewServiceImpl implements ReviewService {
                 asset.updateImageUrl(url);
             }
             case SHORTS_RAY_2, SHORTS_GEN_4 -> {
-                System.out.println("HHHH " + url);
-                System.out.println("HHHH " + fileUrlResolver.toPublicUrl(url));
-                // 1) SHORTS URL 저장(Public)
-                asset.updateShortsUrl(fileUrlResolver.toPublicUrl(url));
+                // 1) SHORTS URL 저장
+                log.info("AI URL: {}", url);
+                String downloadedVideoPath = fileStorageService.storeVideoFromUrl(url, DATA_DIR,
+                        SHORTS_DIR);
+                log.info("Downloaded video path: {}", downloadedVideoPath);
+                asset.updateShortsUrl(fileUrlResolver.toPublicUrl(downloadedVideoPath));
+                log.info("Downloaded publicUrl {}", asset.getShortsUrl());
 
                 // 2) 썸네일 생성 대상 경로/파일명 구성: {baseDir}/data/shorts/{email}/{fileName}.jpg
                 final String email = asset.getReview().getUser().getEmail();
