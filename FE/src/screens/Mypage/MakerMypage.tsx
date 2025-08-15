@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
 import { SPACING } from "../../constants/theme";
 import StatsCard from "../../components/StatsCard";
@@ -8,6 +8,8 @@ import MypageProfile from "../../components/MypageProfile";
 import { reviewData } from "../../data/reviewData";
 import MakerMypageDetail from "./MakerMypageDetail";
 const maker_background = require("../../../assets/maker_background.png");
+
+import { getMyMakerStats } from "./services/api";
 
 // 통계 카드용 아이콘들 (임시로 기존 아이콘 사용, 나중에 적절한 아이콘으로 교체)
 import ReviewIcon from "../../../assets/makermypage-review.svg";
@@ -29,21 +31,41 @@ export default function MakerMyPage({
   const [showDetail, setShowDetail] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("storeReviews");
 
-  // Maker 전용 데이터 개수 계산 (TabKey 순서로 정리)
-  const tabData = {
-    storeReviews: {
-      data: reviewData.slice(6, 12),
-      label: "가게 리뷰 보기",
-    },
-    storeEvents: {
-      data: reviewData.slice(12, 15),
-      label: "가게 이벤트 보기",
-    },
-    receivedMenuBoard: {
-      data: [],
-      label: "받은 메뉴판",
-    },
-  };
+  const [reviewCount, setReviewCount] = useState(0); // 가게 리뷰 수
+  const [eventCount, setEventCount] = useState(0); // 진행/등록 이벤트 수(스크랩 대용 슬롯)
+  const [menuPosterCount, setMenuPosterCount] = useState(0); // 받은 메뉴판 수
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchStats() {
+      try {
+        setStatsLoading(true);
+        setStatsError(null);
+        console.log("[MAKER-STATS][UI] fetch:start");
+        const stats = await getMyMakerStats();
+        if (!mounted) return;
+        // 서버 응답 키는 extractMakerStatsFromAny에서 유연 파싱됨
+        setReviewCount(Number(stats.reviewCount || 0));
+        setEventCount(Number(stats.eventCount || 0)); // 서버 확정 전 임시 슬롯: 이벤트/스크랩성 지표 연결
+        setMenuPosterCount(Number(stats.menuPosterCount || 0));
+        console.log("[MAKER-STATS][UI] fetch:success", stats);
+      } catch (e: any) {
+        if (!mounted) return;
+        console.error("[MAKER-STATS][UI] fetch:error", e);
+        setStatsError(e?.message || "요약 정보를 불러오지 못했습니다.");
+      } finally {
+        if (!mounted) return;
+        setStatsLoading(false);
+        console.log("[MAKER-STATS][UI] fetch:finally");
+      }
+    }
+    fetchStats();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Maker 전용 설정
   const backgroundImage = maker_background;
@@ -75,48 +97,47 @@ export default function MakerMyPage({
   return (
     <View style={styles.container}>
       <ScrollView style={styles.content}>
-        {/* 프로필 섹션 (노란색 배경) */}
+        {/* 프로필 섹션 */}
         <View style={styles.profileSection}>
-          <Image source={backgroundImage} style={styles.backgroundImage} />
+          <Image source={maker_background} style={styles.backgroundImage} />
 
           <View style={styles.profileContent}>
             <MypageProfile userRole="maker" nickname="Sei" />
           </View>
 
-          {/* 통계 카드들 - 타입으로 라벨 결정 */}
+          {/* 통계 카드들 */}
           <View style={styles.statsContainer}>
-            <StatsCard type="리뷰" count={tabData.storeReviews.data.length} />
-            <StatsCard type="스크랩" count={tabData.storeEvents.data.length} />
-            <StatsCard
-              type="메뉴판"
-              count={tabData.receivedMenuBoard.data.length}
-            />
+            <StatsCard type="리뷰" count={reviewCount} />
+            <StatsCard type="이벤트" count={eventCount} />
+            <StatsCard type="메뉴판" count={menuPosterCount} />
           </View>
+
+          
         </View>
 
-        {/* 카테고리 섹션 - TabKey에 따른 내용 */}
+        {/* 카테고리 섹션 */}
         <View style={styles.categorySection}>
           <CategoryCard
             icon={ReviewIcon}
-            title={tabData.storeReviews.label}
-            count={tabData.storeReviews.data.length}
+            title="가게 리뷰 보기"
+            count={reviewCount}
             onPress={() => handleCategoryPress("storeReviews")}
           />
           <CategoryCard
             icon={EventIcon}
-            title={tabData.storeEvents.label}
-            count={tabData.storeEvents.data.length}
+            title="가게 이벤트 보기"
+            count={eventCount}
             onPress={() => handleCategoryPress("storeEvents")}
           />
           <CategoryCard
             icon={MenuIcon}
-            title={tabData.receivedMenuBoard.label}
-            count={tabData.receivedMenuBoard.data.length}
+            title="받은 메뉴판"
+            count={menuPosterCount}
             onPress={() => handleCategoryPress("receivedMenuBoard")}
           />
         </View>
 
-        {/* 최근 활동 섹션 */}
+        {/* 최근 활동 섹션 (임시 고정 텍스트 유지) */}
         <View style={styles.activitySection}>
           <Text style={styles.sectionTitle}>최근 활동</Text>
 

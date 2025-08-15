@@ -3,8 +3,9 @@ import { Text, StyleSheet, View, useWindowDimensions } from "react-native";
 import { SPACING } from "../constants/theme";
 
 interface StatsCardProps {
-  type: "리뷰" | "스크랩" | "메뉴판"; // 타입 (리뷰, 스크랩, 메뉴판)
+  type: "리뷰" | "스크랩" | "메뉴판" | "이벤트"; // 타입 (리뷰, 스크랩, 메뉴판)
   count: number; // 개수
+  loading?: boolean;
 }
 
 export default function StatsCard({ type, count }: StatsCardProps) {

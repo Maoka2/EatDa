@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState , useEffect} from "react";
 import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
 import { SPACING } from "../../constants/theme";
 import StatsCard from "../../components/StatsCard";
@@ -12,6 +12,8 @@ const eater_background = require("../../../assets/eater_background.png");
 import ReviewIcon from "../../../assets/eatermypage-review.svg";
 import EventIcon from "../../../assets/eatermypage-scrap.svg";
 import MenuIcon from "../../../assets/eatermypage-menuboard.svg";
+
+import { getMyUserStats } from "./services/api";
 
 // EaterMypageDetail과 동일한 TabKey 사용
 type TabKey = "myReviews" | "scrappedReviews" | "myMenuBoard";
@@ -29,20 +31,40 @@ export default function EaterMypage({
   const [activeTab, setActiveTab] = useState<TabKey>("myReviews");
 
   // Eater 전용 데이터 개수 계산 (TabKey 순서로 정리)
-  const tabData = {
-    myReviews: {
-      data: reviewData.slice(0, 6),
-      label: "내가 남긴 리뷰",
-    },
-    scrappedReviews: {
-      data: reviewData.slice(6, 10),
-      label: "스크랩 한 리뷰",
-    },
-    myMenuBoard: {
-      data: [],
-      label: "내가 만든 메뉴판",
-    },
-  };
+  const [reviewCount, setReviewCount] = useState(0);
+  const [scrapCount, setScrapCount] = useState(0);
+  const [menuPosterCount, setMenuPosterCount] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchStats() {
+      try {
+        setStatsLoading(true);
+        setStatsError(null);
+        console.log("[USER-STATS][UI] fetch:start");
+        const stats = await getMyUserStats();
+        if (!mounted) return;
+        setReviewCount(Number(stats.reviewCount || 0));
+        setScrapCount(Number(stats.scrapCount || 0));
+        setMenuPosterCount(Number(stats.menuPosterCount || 0));
+        console.log("[USER-STATS][UI] fetch:success", stats);
+      } catch (e: any) {
+        if (!mounted) return;
+        console.error("[USER-STATS][UI] fetch:error", e);
+        setStatsError(e?.message || "요약 정보를 불러오지 못했습니다.");
+      } finally {
+        if (!mounted) return;
+        setStatsLoading(false);
+        console.log("[USER-STATS][UI] fetch:finally");
+      }
+    }
+    fetchStats();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Eater 전용 설정
   const backgroundImage = eater_background;
@@ -84,33 +106,33 @@ export default function EaterMypage({
 
           {/* 통계 카드들 - 타입으로 라벨 결정 */}
           <View style={styles.statsContainer}>
-            <StatsCard type="리뷰" count={tabData.myReviews.data.length} />
+            <StatsCard type="리뷰" count={reviewCount} loading={statsLoading} />
+            <StatsCard type="스크랩" count={scrapCount} loading={statsLoading} />
             <StatsCard
-              type="스크랩"
-              count={tabData.scrappedReviews.data.length}
+              type="메뉴판"
+              count={menuPosterCount}
+              loading={statsLoading}
             />
-            <StatsCard type="메뉴판" count={tabData.myMenuBoard.data.length} />
           </View>
         </View>
-
         {/* 카테고리 섹션 - TabKey에 따른 내용 */}
         <View style={styles.categorySection}>
           <CategoryCard
             icon={ReviewIcon}
-            title={tabData.myReviews.label}
-            count={tabData.myReviews.data.length}
+            title="내가 남긴 리뷰"
+            count={reviewCount}
             onPress={() => handleCategoryPress("myReviews")}
           />
           <CategoryCard
             icon={EventIcon}
-            title={tabData.scrappedReviews.label}
-            count={tabData.scrappedReviews.data.length}
+            title="스크랩 한 리뷰"
+            count={scrapCount}
             onPress={() => handleCategoryPress("scrappedReviews")}
           />
           <CategoryCard
             icon={MenuIcon}
-            title={tabData.myMenuBoard.label}
-            count={tabData.myMenuBoard.data.length}
+            title="내가 만든 메뉴판"
+            count={menuPosterCount}
             onPress={() => handleCategoryPress("myMenuBoard")}
           />
         </View>

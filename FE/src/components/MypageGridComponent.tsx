@@ -9,8 +9,8 @@ export interface ReviewItem {
   thumbnail?: string; // 비디오 썸네일
   title: string;
   description: string;
-  likes: number;
-  views: number;
+  likes?: number;
+  views?: number;
   // onNavigate: () =>    // 추후에 가게페이지로 이동 시 사용하면 될 것 같음.
 }
 
