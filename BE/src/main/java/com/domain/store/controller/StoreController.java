@@ -11,6 +11,7 @@ import com.domain.user.repository.EaterRepository;
 import com.global.constants.SuccessCode;
 import com.global.dto.response.ApiResponseFactory;
 import com.global.dto.response.BaseResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
