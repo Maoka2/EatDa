@@ -739,7 +739,6 @@ export const waitForAssetReady = async (
 
 export interface FinalizeMenuPosterRequest {
   menuPosterId: number;
-  menuPosterAssetId: number;
   description: string;
   type: string;
 }
