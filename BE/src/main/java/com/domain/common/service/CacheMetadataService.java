@@ -110,13 +110,11 @@ public class CacheMetadataService {
                 poiId, distance, metadata.isStale(),
                 metadata.staleReason(), metadata.lastUpdated());
 
-        if (!metadata.isStale()) {
-            log.debug("POI {} at {}m is fresh (not stale)", poiId, distance);
-            return false;
-        }
-
         Duration staleDuration = Duration.between(metadata.lastUpdated(), LocalDateTime.now());
-        return staleDuration.toMinutes() > 60;
+        boolean result = staleDuration.toMinutes() > 60;
+        log.info("60분이 지났는가? = {}", result);
+
+        return result;
     }
 
     private String generateKey(Long poiId, int distance) {
