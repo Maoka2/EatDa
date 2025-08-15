@@ -25,6 +25,9 @@ import {
   getMyReviews,
   mapMyReviewsToReviewItems,
   deleteMyReview,
+  // ↓ 추가 임포트
+  getMyMenuPosters,
+  mapMenuPostersToGridItems,
 } from "./services/api";
 
 const EmptyIcon = require("../../../assets/blue-box-with-red-button-that-says-x-it 1.png");
@@ -59,6 +62,7 @@ export default function EaterMypage({
   const screenHeight = Dimensions.get("window").height;
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
 
+  // 내 리뷰
   const [myReviews, setMyReviews] = useState<ReviewItem[]>([]);
   const [loadingMyReviews, setLoadingMyReviews] = useState(false);
   const [myReviewsError, setMyReviewsError] = useState<string | null>(null);
@@ -68,11 +72,11 @@ export default function EaterMypage({
 
     setLoadingMyReviews(true);
     setMyReviewsError(null);
-    console.log("[MYREVIEWS][UI] fetch:start", { pageSize: 30 }); // ★ 로그 추가
+    console.log("[MYREVIEWS][UI] fetch:start", { pageSize: 30 });
 
     getMyReviews({ pageSize: 30 })
       .then((list) => {
-        console.log("[MYREVIEWS][UI] fetch:success raw =", list); // ★ 로그 추가
+        console.log("[MYREVIEWS][UI] fetch:success raw =", list);
         if (!Array.isArray(list)) {
           setMyReviews([]);
           return;
@@ -81,16 +85,16 @@ export default function EaterMypage({
         setMyReviews(mapped);
       })
       .catch((err) => {
-        console.error("[MYREVIEWS][UI] fetch:error", err); // ★ 로그 추가
+        console.error("[MYREVIEWS][UI] fetch:error", err);
         setMyReviewsError(err?.message ?? "내 리뷰를 불러오지 못했습니다");
       })
       .finally(() => {
         setLoadingMyReviews(false);
-        console.log("[MYREVIEWS][UI] fetch:finally"); // ★ 로그 추가
+        console.log("[MYREVIEWS][UI] fetch:finally");
       });
   }, [activeTab]);
 
-  // 스크랩한 리뷰 관련
+  // 스크랩 리뷰
   const [scraps, setScraps] = useState<ReviewItem[]>([]);
   const [loadingScraps, setLoadingScraps] = useState(false);
   const [scrapsError, setScrapsError] = useState<string | null>(null);
@@ -128,36 +132,51 @@ export default function EaterMypage({
       });
   }, [activeTab]);
 
-  // 내가 작성한 리뷰 삭제
+  // 내가 만든 메뉴판
+  const [myMenuBoards, setMyMenuBoards] = useState<ReviewItem[]>([]);
+  const [loadingMyMenuBoards, setLoadingMyMenuBoards] = useState(false);
+  const [myMenuBoardsError, setMyMenuBoardsError] = useState<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (activeTab !== "myMenuBoard") return;
+    setLoadingMyMenuBoards(true);
+    setMyMenuBoardsError(null);
+
+    getMyMenuPosters()
+      .then((posters) => {
+        const items = mapMenuPostersToGridItems(
+          posters,
+          "내가 만든 메뉴판"
+        ) as unknown as ReviewItem[];
+        setMyMenuBoards(items);
+      })
+      .catch((e) => {
+        setMyMenuBoardsError(e?.message || "메뉴판 목록을 불러오지 못했습니다");
+      })
+      .finally(() => setLoadingMyMenuBoards(false));
+  }, [activeTab]);
+
+  // 리뷰 삭제
   const [deleting, setDeleting] = useState(false);
 
   function confirmDeleteCurrent() {
     if (!selectedItem) return;
     if (activeTab !== "myReviews") {
-      // 스크랩 탭/메뉴판 탭에서는 삭제 비활성
+      // 리뷰 탭이 아닐 때는 삭제 미노출(버튼은 아래에서 숨김)
       return;
     }
-    Alert.alert(
-      "리뷰 삭제",
-      "정말 이 리뷰를 삭제하시겠습니까?",
-      [
-        { text: "취소", style: "cancel" },
-        {
-          text: "삭제",
-          style: "destructive",
-          onPress: doDeleteCurrent,
-        },
-      ],
-      { cancelable: true }
-    );
+    Alert.alert("리뷰 삭제", "정말 이 리뷰를 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      { text: "삭제", style: "destructive", onPress: doDeleteCurrent },
+    ]);
   }
 
   async function doDeleteCurrent() {
     if (!selectedItem) return;
     if (deleting) return;
 
-    // ReviewItem.id가 문자열인 경우(reviewId가 문자열로 매핑됨)
-    // 숫자로 변환 실패 시 안전하게 무시
     const reviewId = Number.parseInt(selectedItem.id, 10);
     if (!Number.isFinite(reviewId) || reviewId <= 0) {
       Alert.alert("삭제 실패", "유효한 리뷰 ID를 확인할 수 없습니다.");
@@ -170,16 +189,13 @@ export default function EaterMypage({
       await deleteMyReview(reviewId);
       console.log("[UI][DELETE] ok", { reviewId });
 
-      // detailList / myReviews 모두에서 제거
       setDetailList((prev) => prev.filter((i) => i.id !== String(reviewId)));
       setMyReviews((prev) => prev.filter((i) => i.id !== String(reviewId)));
 
-      // 다음 아이템으로 이동하거나 닫기
       const idxBefore = detailList.findIndex((i) => i.id === String(reviewId));
       const after = detailList.filter((i) => i.id !== String(reviewId));
 
       if (after.length === 0) {
-        // 더 이상 볼 아이템 없으면 상세 닫기
         setSelectedItem(null);
         setHeaderVisible?.(true);
         return;
@@ -189,7 +205,6 @@ export default function EaterMypage({
       const nextItem = after[nextIndex];
       setSelectedItem(nextItem);
 
-      // 스크롤 위치도 맞춰줌
       requestAnimationFrame(() => {
         flatListRef.current?.scrollToIndex({
           index: nextIndex,
@@ -205,7 +220,6 @@ export default function EaterMypage({
   }
 
   const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null);
-  // --- [FIX 1] 상세 보기에 사용할 데이터 목록을 저장할 state 추가 ---
   const [detailList, setDetailList] = useState<ReviewItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<ReviewItem>>(null);
@@ -221,10 +235,9 @@ export default function EaterMypage({
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  // --- [FIX 2] handleOpenDetail이 어떤 목록에서 왔는지 알 수 있도록 수정 ---
   const handleOpenDetail = (item: ReviewItem, sourceList: ReviewItem[]) => {
     setSelectedItem(item);
-    setDetailList(sourceList); // 전달받은 목록으로 detailList 설정
+    setDetailList(sourceList);
     setHeaderVisible?.(false);
     scaleAnim.setValue(0.8);
     Animated.spring(scaleAnim, {
@@ -249,7 +262,6 @@ export default function EaterMypage({
           <FlatList
             key="detail"
             ref={flatListRef}
-            // --- [FIX 3] data 소스를 myReviews에서 detailList로 변경 ---
             data={detailList}
             keyExtractor={(item) => item.id}
             renderItem={({ item, index }) => (
@@ -282,24 +294,28 @@ export default function EaterMypage({
                 >
                   <CloseBtn />
                 </TouchableOpacity>
+
                 <View style={[styles.textOverlay, { bottom: height * 0.1 }]}>
                   <Text style={styles.titleText}>#{item.title}</Text>
                   <Text style={styles.descText}>{item.description}</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.dustbox}
-                  onPress={deleting ? undefined : confirmDeleteCurrent}
-                  disabled={deleting}
-                >
-                  <DustBox width={50} height={50} />
-                </TouchableOpacity>
+
+                {/* 리뷰 탭에서만 삭제 아이콘 노출 */}
+                {activeTab === "myReviews" && (
+                  <TouchableOpacity
+                    style={styles.dustbox}
+                    onPress={deleting ? undefined : confirmDeleteCurrent}
+                    disabled={deleting}
+                  >
+                    <DustBox width={50} height={50} />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
             pagingEnabled
             decelerationRate="fast"
             snapToInterval={screenHeight}
             snapToAlignment="start"
-            // --- [FIX 3] 여기도 detailList를 사용하도록 변경 ---
             initialScrollIndex={Math.max(
               0,
               detailList.findIndex((i) => i.id === selectedItem.id)
@@ -339,7 +355,6 @@ export default function EaterMypage({
                       size={gridSize}
                       index={index}
                       totalLength={myReviews.length}
-                      // --- [FIX 4] 클릭 시 myReviews 목록을 전달 ---
                       onPress={() => handleOpenDetail(item, myReviews)}
                     />
                   ))}
@@ -350,6 +365,7 @@ export default function EaterMypage({
                   icon={EmptyIcon}
                 />
               ))}
+
             {activeTab === "scrappedReviews" &&
               (loadingScraps ? (
                 <EmptyState message="스크랩 리뷰 로딩중..." icon={EmptyIcon} />
@@ -364,7 +380,6 @@ export default function EaterMypage({
                       size={gridSize}
                       index={index}
                       totalLength={scraps.length}
-                      // --- [FIX 4] 클릭 시 scraps 목록을 전달 ---
                       onPress={() => handleOpenDetail(item, scraps)}
                     />
                   ))}
@@ -375,12 +390,31 @@ export default function EaterMypage({
                   icon={EmptyIcon}
                 />
               ))}
-            {activeTab === "myMenuBoard" && (
-              <EmptyState
-                message="내가 만든 메뉴판이 없습니다"
-                icon={EmptyIcon}
-              />
-            )}
+
+            {activeTab === "myMenuBoard" &&
+              (loadingMyMenuBoards ? (
+                <EmptyState message="메뉴판 불러오는 중..." icon={EmptyIcon} />
+              ) : myMenuBoardsError ? (
+                <EmptyState message={myMenuBoardsError} icon={EmptyIcon} />
+              ) : myMenuBoards.length > 0 ? (
+                <View style={styles.gridContainer}>
+                  {myMenuBoards.map((item, index) => (
+                    <MypageGridComponent
+                      key={item.id}
+                      item={item}
+                      size={gridSize}
+                      index={index}
+                      totalLength={myMenuBoards.length}
+                      onPress={() => handleOpenDetail(item, myMenuBoards)}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <EmptyState
+                  message="내가 만든 메뉴판이 없습니다"
+                  icon={EmptyIcon}
+                />
+              ))}
           </View>
         </ScrollView>
       )}
@@ -415,8 +449,8 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xl * 4,
   },
   emptyIcon: {
-    width: "20%", // 부모 기준 비율
-    aspectRatio: 1, // 정사각형
+    width: "20%",
+    aspectRatio: 1,
     marginBottom: SPACING.lg,
   },
   emptyText: {
@@ -450,7 +484,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: SPACING.xs,
   },
-
   dustbox: {
     position: "absolute",
     bottom: 85,

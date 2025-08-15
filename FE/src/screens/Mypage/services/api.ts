@@ -608,3 +608,89 @@ export function mapMyReviewsToReviewItems(
     })
     .filter(Boolean) as ReviewItemForGrid[];
 }
+
+// 내가 만든 메뉴판 조회
+export interface MyMenuPoster {
+  id: number;
+  imageUrl: string;
+}
+
+function extractMyMenuPostersFromAny(json: any): MyMenuPoster[] {
+  // Swagger 샘플 형태:
+  // { code, message, status, data: [ { id, imageUrl }, ... ], timestamp }
+  const data = json?.data ?? json;
+  const list = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.items)
+    ? data.items
+    : Array.isArray(data?.posters)
+    ? data.posters
+    : [];
+
+  return list
+    .map((it: any) => ({
+      id: Number(it?.id ?? it?.menuPosterId ?? it?.posterId),
+      imageUrl: String(it?.imageUrl ?? it?.url ?? it?.path ?? ""),
+    }))
+    .filter((p: MyMenuPoster) => Number.isFinite(p.id) && !!p.imageUrl);
+}
+
+/** 내가 만든(선물한) 메뉴판 목록 */
+export async function getMyMenuPosters(): Promise<MyMenuPoster[]> {
+  const { accessToken } = await getTokens();
+  if (!accessToken)
+    throw new Error("인증 정보가 없습니다. 다시 로그인해주세요.");
+
+  const url = `${BASE_API_URL}/menu-posters/my`;
+
+  console.log(`[MY-POSTERS][REQ] GET ${url}`);
+  console.log(
+    `[MY-POSTERS][REQ] Authorization: Bearer ****(len=${accessToken.length})`
+  );
+
+  const started = Date.now();
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const status = res.status;
+  const raw = await res.text();
+
+  let json: any = null;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    // JSON 아닐 때도 에러 메시지로 사용
+  }
+
+  if (!res.ok) {
+    const msg =
+      (json && (json.message || json.error)) || raw || `HTTP ${status}`;
+    console.error("[MY-POSTERS][ERR]", { status, raw });
+    throw new Error(msg);
+  }
+
+  const elapsed = Date.now() - started;
+  console.log(`[MY-POSTERS][RES] ${status} in ${elapsed}ms`);
+  console.log("[MY-POSTERS][RAW-JSON]", JSON.stringify(json, null, 2));
+
+  return extractMyMenuPostersFromAny(json);
+}
+
+export function mapMenuPostersToGridItems(
+  posters: MyMenuPoster[],
+  titleFallback = "내 메뉴판"
+): ReviewGridItem[] {
+  return posters.map((p) => ({
+    id: String(p.id),
+    type: "image",
+    uri: p.imageUrl,
+    title: titleFallback,
+    description: "", // 필요 시 설명/태그 추가 가능
+    thumbnail: null,
+  }));
+}
