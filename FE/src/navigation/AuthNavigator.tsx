@@ -132,7 +132,6 @@ export default function AuthNavigator() {
       />
 
       {/* 마이페이지 관련 */}
-      <Stack.Screen name="MypageScreen" component={MypageScreen}></Stack.Screen>
       <Stack.Screen name="MypageScreen" component={MypageScreen as any} />
 
       {/* 스토어 관련 */}
