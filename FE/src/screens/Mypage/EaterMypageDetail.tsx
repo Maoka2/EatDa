@@ -25,7 +25,6 @@ import {
   getMyReviews,
   mapMyReviewsToReviewItems,
   deleteMyReview,
-  // ↓ 추가 임포트
   getMyMenuPosters,
   mapMenuPostersToGridItems,
 } from "./services/api";
@@ -162,11 +161,7 @@ export default function EaterMypage({
   const [deleting, setDeleting] = useState(false);
 
   function confirmDeleteCurrent() {
-    if (!selectedItem) return;
-    if (activeTab !== "myReviews") {
-      // 리뷰 탭이 아닐 때는 삭제 미노출(버튼은 아래에서 숨김)
-      return;
-    }
+    if (!selectedItem || activeTab !== "myReviews") return;
     Alert.alert("리뷰 삭제", "정말 이 리뷰를 삭제하시겠습니까?", [
       { text: "취소", style: "cancel" },
       { text: "삭제", style: "destructive", onPress: doDeleteCurrent },
@@ -174,8 +169,7 @@ export default function EaterMypage({
   }
 
   async function doDeleteCurrent() {
-    if (!selectedItem) return;
-    if (deleting) return;
+    if (!selectedItem || deleting) return;
 
     const reviewId = Number.parseInt(selectedItem.id, 10);
     if (!Number.isFinite(reviewId) || reviewId <= 0) {
@@ -186,31 +180,18 @@ export default function EaterMypage({
     try {
       setDeleting(true);
       console.log("[UI][DELETE] start", { reviewId });
+
       await deleteMyReview(reviewId);
+
       console.log("[UI][DELETE] ok", { reviewId });
 
-      setDetailList((prev) => prev.filter((i) => i.id !== String(reviewId)));
+      // 목록에서 제거
       setMyReviews((prev) => prev.filter((i) => i.id !== String(reviewId)));
+      setDetailList((prev) => prev.filter((i) => i.id !== String(reviewId)));
 
-      const idxBefore = detailList.findIndex((i) => i.id === String(reviewId));
-      const after = detailList.filter((i) => i.id !== String(reviewId));
-
-      if (after.length === 0) {
-        setSelectedItem(null);
-        setHeaderVisible?.(true);
-        return;
-      }
-
-      const nextIndex = Math.min(idxBefore, after.length - 1);
-      const nextItem = after[nextIndex];
-      setSelectedItem(nextItem);
-
-      requestAnimationFrame(() => {
-        flatListRef.current?.scrollToIndex({
-          index: nextIndex,
-          animated: true,
-        });
-      });
+      // ✅ 요구사항: 항상 상세 닫고 마이페이지(그리드)로 복귀
+      setSelectedItem(null);
+      setHeaderVisible?.(true);
     } catch (e: any) {
       console.error("[UI][DELETE] error", e);
       Alert.alert("삭제 실패", e?.message || "삭제 중 오류가 발생했습니다.");

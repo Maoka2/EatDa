@@ -672,3 +672,110 @@ export function mapReceivedPostersToGridItems(
       thumbnail: null,
     }));
 }
+
+// 내가 작성한 리뷰 삭제
+// 리뷰 삭제(Eater 본인이 작성한 자신의 리뷰를 삭제)
+
+export type DeleteReviewResult = ApiEnvelope<null>;
+
+function _isValidPositiveInt(n: unknown) {
+  if (typeof n !== "number") return false;
+  if (!Number.isFinite(n)) return false;
+  if (n <= 0) return false;
+  return true;
+}
+
+export async function deleteMyReview(
+  reviewId: number
+): Promise<DeleteReviewResult> {
+  if (!_isValidPositiveInt(reviewId)) {
+    throw new Error("유효한 reviewId가 아닙니다.");
+  }
+
+  const { accessToken } = await getTokens();
+  if (!accessToken) {
+    throw new Error("인증 정보가 없습니다. 다시 로그인해주세요.");
+  }
+
+  const url = `${BASE_API_URL}/reviews/${encodeURIComponent(String(reviewId))}`;
+
+  // ── 요청 로그
+  console.log(`[REVIEW-DEL][REQ] DELETE ${url}`);
+  console.log(
+    `[REVIEW-DEL][REQ] Authorization: Bearer ****(len=${accessToken.length})`
+  );
+
+  const started = Date.now();
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const status = res.status;
+  const raw = await res.text();
+
+  let json: any = null;
+  try {
+    // 204인 경우 본문이 없으므로 JSON 파싱에서 에러가 날 수 있음
+    if (raw && raw.trim().length > 0) {
+      json = JSON.parse(raw);
+    }
+  } catch {
+    // JSON 아님 → 아래 공통 에러 처리로 진행
+  }
+
+  // ── 상태별 처리
+  if (!res.ok) {
+    // 명세 매핑: 401/403/404
+    if (status === 401) {
+      throw new Error("로그인이 필요합니다.");
+    }
+    if (status === 403) {
+      throw new Error("접근 권한이 없습니다.");
+    }
+    if (status === 404) {
+      throw new Error("해당 리뷰를 찾을 수 없습니다.");
+    }
+
+    // 기타 서버 오류
+    const msg =
+      (json && (json.message || json.error)) ||
+      (raw && raw.trim().length > 0 ? raw : `HTTP ${status}`);
+    console.error("[REVIEW-DEL][ERR]", { status, raw });
+    throw new Error(msg);
+  }
+
+  const elapsed = Date.now() - started;
+
+  // 정상 케이스
+  // 1) 사양대로 200 + ApiEnvelope<null> 본문
+  if (status === 200 && json) {
+    console.log(`[REVIEW-DEL][RES] ${status} in ${elapsed}ms`);
+    return json as DeleteReviewResult;
+  }
+
+  // 2) 혹시 204(No Content)로 내려오는 백엔드도 호환
+  //    클라이언트에서 명세 형태로 결과를 합성해서 리턴
+  if (status === 204) {
+    console.log(`[REVIEW-DEL][RES] ${status} in ${elapsed}ms (no content)`);
+    return {
+      code: "REVIEW_DELETED",
+      message: "리뷰가 성공적으로 삭제되었습니다.",
+      status: 200, // 명세의 성공 status를 따름
+      data: null,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // 그 외 2xx지만 예상치 못한 형태
+  console.warn("[REVIEW-DEL][WARN] Unexpected success shape", { status, raw });
+  return {
+    code: "REVIEW_DELETED",
+    message: "리뷰가 성공적으로 삭제되었습니다.",
+    status: status,
+    data: null,
+    timestamp: new Date().toISOString(),
+  };
+}
