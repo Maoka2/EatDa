@@ -196,7 +196,7 @@ class ReviewGenerateConsumer:
             reference_images=req.referenceImages,
             model_name="gen4_turbo",
             ratio="720:1280",
-            duration_seconds=5,
+            duration_seconds=10,
         )
         wait = await runway_service.wait_for_generation_completion(gen["id"])
         ok = wait["state"] == "completed" and bool(wait.get("asset_url"))

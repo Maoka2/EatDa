@@ -64,7 +64,7 @@ class LumaService:
             "prompt": enhanced_prompt,
             "model": model_name,
             "aspect_ratio": "9:16",
-            "duration": "5s",
+            "duration": "9s",
         }
 
         if keyframes:  # 참고 이미지가 있어 keyframes 생성 시에는 loop를 제거

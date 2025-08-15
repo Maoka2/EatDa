@@ -54,7 +54,7 @@ class RunwayService:
         reference_images: List[str],
         model_name: str = "gen4_turbo",
         ratio: str = "720:1280",
-        duration_seconds: int = 5,
+        duration_seconds: int = 10,
     ) -> Dict[str, Any]:
         """
         Runway image-to-video로 영상을 생성합니다.

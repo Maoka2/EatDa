@@ -43,7 +43,7 @@ async def run_runway():
         prompt_image="https://storage.googleapis.com/be_my_logo/am_i_being_a_king.jpg",
         prompt_text=detailed_gen4_prompt,
         ratio='720:1280',
-        duration = 5
+        duration = 10
     )
 
     # 상태 확인 루프(polling)
