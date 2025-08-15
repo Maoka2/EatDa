@@ -3,6 +3,7 @@ package com.domain.store.controller;
 import com.domain.store.dto.request.StoreNearbyRequest;
 import com.domain.store.dto.response.StoreNearbyResponse;
 import com.domain.store.entity.Store;
+import com.domain.store.mapper.StoreMapper;
 import com.domain.store.repository.StoreRepository;
 import com.domain.store.service.StoreService;
 import com.domain.user.entity.User;
@@ -10,14 +11,17 @@ import com.domain.user.repository.EaterRepository;
 import com.global.constants.SuccessCode;
 import com.global.dto.response.ApiResponseFactory;
 import com.global.dto.response.BaseResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -28,6 +32,8 @@ public class StoreController {
     private final StoreRepository storeRepository;
     private final EaterRepository eaterRepository;
     private final StoreService storeService;
+
+    private final StoreMapper storeMapper;
 
     // JWT의 principal(email) 기반으로 사용자 조회 후 Store 생성 (테스트용, EATER, MAKER 다 가능하게 했음)
     @PreAuthorize("hasAnyAuthority('EATER','MAKER')")
@@ -69,5 +75,11 @@ public class StoreController {
         StoreNearbyRequest request = new StoreNearbyRequest(latitude, longitude, distance);
         StoreNearbyResponse response = storeService.getNearbyStores(request, email);
         return ApiResponseFactory.success(SuccessCode.NEARBY_STORES_FOUND, response);
+    }
+
+    @GetMapping
+    public ResponseEntity<BaseResponse> getStore(@RequestParam Long storeId) {
+        return ApiResponseFactory.success(SuccessCode.STORE_GET,
+                storeMapper.toResponse(storeService.getStore(storeId)));
     }
 }

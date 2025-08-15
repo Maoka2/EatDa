@@ -23,8 +23,9 @@ public enum SuccessCode {
     MAKER_SIGNUP_STEP3("MAKER_SIGNUP_STEP3", "사장님 회원가입이 완료되었습니다.", HttpStatus.OK.value()),
 
     MAKER_SIGNUP("MAKERS_SIGNUP", "사장님 회원가입이 완료되었습니다.", HttpStatus.OK.value()),
-
     PROFILE_GET("PROFILE_GET", "회원 조회를 성공했습니다.", HttpStatus.OK.value()),
+
+    STORE_GET("STORE_GET", "가게 조회를 성공했습니다.", HttpStatus.OK.value()),
 
     // 로그인 / 권한
     SIGN_IN_SUCCESS("SIGN_IN_SUCCESS", "로그인에 성공했습니다.", HttpStatus.OK.value()),

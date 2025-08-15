@@ -5,16 +5,17 @@ import com.domain.common.service.SpatialSearchService;
 import com.domain.store.dto.request.StoreNearbyRequest;
 import com.domain.store.dto.response.StoreInfo;
 import com.domain.store.dto.response.StoreNearbyResponse;
+import com.domain.store.entity.Store;
+import com.domain.store.repository.StoreRepository;
 import com.domain.store.service.StoreService;
 import com.global.constants.ErrorCode;
 import com.global.constants.SearchDistance;
 import com.global.exception.ApiException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -23,6 +24,7 @@ import java.util.List;
 public class StoreServiceImpl implements StoreService {
 
     private final SpatialSearchService spatialSearchService;
+    private final StoreRepository storeRepository;
 
     @Override
     public StoreNearbyResponse getNearbyStores(StoreNearbyRequest request, String email) {
@@ -35,6 +37,12 @@ public class StoreServiceImpl implements StoreService {
         // 그거 기반으로
         List<StoreInfo> nearbyStores = spatialSearchService.getNearbyStores(poi.getId(), request.distance());
         return StoreNearbyResponse.of(nearbyStores, searchRadius.getMeters(), request.latitude(), request.longitude());
+    }
+
+    @Override
+    public Store getStore(final Long storeId) {
+        return storeRepository.findById(storeId)
+                .orElseThrow(() -> new ApiException(ErrorCode.STORE_NOT_FOUND));
     }
 
     private SearchDistance validateDistance(Integer distance) {
