@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class CacheMetricsService {
             double missRate,
             double staleRate,
             LocalDateTime timestamp
-    ) {
+    ) implements Serializable {
         public static CacheMetrics calculate(long hits, long misses, long staleServed) {
             long total = hits + misses;
             double hitRate = total > 0 ? (double) hits / total * 100 : 0;
