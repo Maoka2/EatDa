@@ -285,6 +285,8 @@ export default function EaterMypage({
                     isMuted
                   />
                 )}
+
+                {/* 닫기 버튼은 그대로 유지 */}
                 <TouchableOpacity
                   style={styles.closeBtn}
                   onPress={() => {
@@ -295,12 +297,16 @@ export default function EaterMypage({
                   <CloseBtn />
                 </TouchableOpacity>
 
-                <View style={[styles.textOverlay, { bottom: height * 0.1 }]}>
-                  <Text style={styles.titleText}>#{item.title}</Text>
-                  <Text style={styles.descText}>{item.description}</Text>
-                </View>
+                {/* ✅ 리뷰/스크랩 탭에서만 텍스트 오버레이 보이기
+        메뉴판 탭(myMenuBoard)에서는 이미지 단독 렌더링 */}
+                {activeTab !== "myMenuBoard" && (
+                  <View style={[styles.textOverlay, { bottom: height * 0.1 }]}>
+                    <Text style={styles.titleText}>#{item.title}</Text>
+                    <Text style={styles.descText}>{item.description}</Text>
+                  </View>
+                )}
 
-                {/* 리뷰 탭에서만 삭제 아이콘 노출 */}
+                {/* ✅ 리뷰 탭에서만 삭제 아이콘 노출 */}
                 {activeTab === "myReviews" && (
                   <TouchableOpacity
                     style={styles.dustbox}
