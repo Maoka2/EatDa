@@ -9,8 +9,8 @@ export interface ReviewItem {
   thumbnail?: string; // 비디오 썸네일
   title: string;
   description: string;
-  likes: number;
-  views: number;
+  likes?: number;
+  views?: number;
   menuNames?: string[];
 }
 
