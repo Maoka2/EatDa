@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 public class MultiLevelCacheService {
 
     private final CacheService l2Cache;
+    private final CacheMetricsService cacheMetricsService;
+    private final CacheMetadataService cacheMetadataService;
 
     // L1 캐시 (Caffeine - 로컬 메모리)
     private final Cache<String, List<StoreDistanceResult>> l1Cache = Caffeine.newBuilder()
@@ -41,6 +43,7 @@ public class MultiLevelCacheService {
         List<StoreDistanceResult> l1Result = l1Cache.getIfPresent(key);
         if (l1Result != null) {
             log.info("L1 cache hit for {}", key);
+            cacheMetricsService.recordHit(poiId, false);
             return l1Result;
         }
 
@@ -48,12 +51,15 @@ public class MultiLevelCacheService {
             List<StoreDistanceResult> l2Result = l2Cache.getCache(poiId, distance);
 
             l1Cache.put(key, l2Result);
+            boolean isStale = cacheMetadataService.isStale(poiId, distance);
+            cacheMetricsService.recordHit(poiId, isStale);
             log.info("L2 cache hit for {}, promoted to L1", key);
 
             return l2Result;
         }
 
         log.info("Cache miss for {}", key);
+        cacheMetricsService.recordMiss(poiId);
         return null;
     }
 
