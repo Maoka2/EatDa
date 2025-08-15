@@ -94,6 +94,7 @@ public class SpatialSearchService {
         if (cacheService.hasCache(poiId, requestedDistance)) {
             boolean isHotspot = poiAccessTrackingService.isHotspot(poiId);
             boolean isStale = cacheMetadataService.isStale(poiId, requestedDistance);
+            log.info("XX POI is id={}, isHotSpot={}, isStale={}", poiId, isHotspot, isStale);
 
             // 핫스팟 + 스테일 캐시라면: 핫스팟은 캐시 히트율을 우선으로 보장하기 때문에 스테일 캐시라도 사용자에게 즉시 제공 + 백그라운드 갱신
             if (isHotspot && isStale) {
