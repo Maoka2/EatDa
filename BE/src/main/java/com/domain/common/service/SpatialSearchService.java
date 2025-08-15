@@ -33,7 +33,7 @@ public class SpatialSearchService {
     private final StoreRepository storeRepository;
     private final HaversineCalculator haversineCalculator;
     private final CacheMetadataService cacheMetadataService;
-    private final MultiLevelCacheService multiLevelCache;  // 변경!
+    private final MultiLevelCacheService multiLevelCache; // 변경
     private final PoiAccessTrackingService poiAccessTrackingService;
 
     // ===== Public APIs =====
