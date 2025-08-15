@@ -36,5 +36,5 @@ public interface EaterMapper {
 
     EaterSignUpResponse toResponse(User user);
 
-    EaterGetProfileResponse toResponse(Long countReview, Long countScrapReview, Long countMenuPost);
+    EaterGetProfileResponse toResponse(String nickname, Long countReview, Long countScrapReview, Long countMenuPost);
 }

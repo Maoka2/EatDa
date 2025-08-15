@@ -18,4 +18,6 @@ public interface EaterService {
     Long countMyScrapReviews(String email);
 
     Long countMyMenuPosters(String email);
+
+    String getNickname(String email);
 }

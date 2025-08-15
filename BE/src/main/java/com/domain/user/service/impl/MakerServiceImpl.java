@@ -106,6 +106,15 @@ public class MakerServiceImpl implements MakerService {
         return menuPosterRepository.countByStoreIdAndStatus(getStorerId(email), Status.SUCCESS);
     }
 
+    @Override
+    public String getStoreName(final String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getStores()
+                .getFirst()
+                .getName();
+    }
+
     private String storeImage(MultipartFile imageRequest, String path) {
         return fileStorageService.storeImage(imageRequest, path, imageRequest.getOriginalFilename());
     }
