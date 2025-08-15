@@ -86,32 +86,37 @@ public class SpatialSearchService {
     public List<StoreDistanceResult> getNearbyStoresWithDistance(Long poiId, int requestedDistance) {
         log.debug("Getting stores near POI {} within {}m", poiId, requestedDistance);
 
-        // 1. 요청 거리 검증 (거리 밴드만 허용)
         validDistance(requestedDistance);
+        // 각 POI의 시간당 조회 횟수 추적 - 핫스팟이면 자동 승격, 최근 접근 시간 갱신
         poiAccessTrackingService.recordAccess(poiId);
 
-        // 2. 캐시 확인
+        // 캐시 존재 여부 확인
         if (cacheService.hasCache(poiId, requestedDistance)) {
             boolean isHotspot = poiAccessTrackingService.isHotspot(poiId);
             boolean isStale = cacheMetadataService.isStale(poiId, requestedDistance);
 
+            // 핫스팟 + 스테일 캐시라면: 핫스팟은 캐시 히트율을 우선으로 보장하기 때문에 스테일 캐시라도 사용자에게 즉시 제공 + 백그라운드 갱신
             if (isHotspot && isStale) {
+                // 기존 캐시가 너무 오래됐으면(30분)
                 if (cacheMetadataService.isTooStale(poiId, requestedDistance)) {
                     log.info("Hotspot POI {} cache too stale, refreshing immediately", poiId);
+                    // DB에 접근해서 데이터 조회후 redis 갱신
                     return refreshCache(poiId, requestedDistance);
                 } else {
+                    // 비동기 캐시 갱신 요청(사용자 대기 시간 없음)
                     triggerBackgroundRefresh(poiId, requestedDistance);
                     log.debug("Returning stale cache for hotspot POI {}, background refresh triggered", poiId);
                     return cacheService.getCache(poiId, requestedDistance);
                 }
             } else if (!isStale) {
+                // 핫스팟 + 프레시 캐시면 바로 캐시 사용
                 log.debug("Cache hit (fresh) for POI {} at {}m", poiId, requestedDistance);
                 return cacheService.getCache(poiId, requestedDistance);
             } else {
+                // 핫스팟이 아니면, DB에 접근해서 데이터 조회후 redis 갱신
                 log.debug("Normal POI {} cache is stale, refreshing", poiId);
                 return refreshCache(poiId, requestedDistance);
             }
-
         }
 
         log.debug("Cache miss for POI {} at {}m, fetching from DB", poiId, requestedDistance);

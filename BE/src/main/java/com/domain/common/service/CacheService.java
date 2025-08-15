@@ -105,7 +105,9 @@ public class CacheService {
         }
     }
 
+    // 연결된 스레드 풀에서 실행
     @Async
+    // 가게 생성과 캐시 관리 서비스 분리
     @EventListener
     @Transactional(readOnly = true)
     public void handleStoreCreated(StoreCreatedEvent event) {
@@ -113,7 +115,7 @@ public class CacheService {
                 event.storeId(), event.latitude(), event.longitude());
 
         try {
-            // 1. 영향받는 POI들 찾기
+            // 영향받는 POI들 찾기
             List<Poi> affectedPois = findAffectedPois(
                     event.latitude(),
                     event.longitude()
@@ -124,7 +126,7 @@ public class CacheService {
 
             for (Poi poi : affectedPois) {
                 if (poiAccessTrackingService.isHotspot(poi.getId())) {
-                    // 핫스팟: stale 마킹만, reason은 어떤 역할?
+                    // 핫스팟은 자주 사용하므로 가용상을 보장하기 위해 stale 마킹만 함
                     markCacheAsStale(poi.getId(), "new_store_added");
                     staleMarkings++;
                     log.debug("Marked hotspot POI {} as stale", poi.getId());

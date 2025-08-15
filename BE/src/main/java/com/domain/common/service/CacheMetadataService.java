@@ -18,17 +18,19 @@ public class CacheMetadataService {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
+    // metadata - poi:cache:metadata:123:500 (poi123에 500m 캐시의 메타데이터 저장)
     private static final String METADATA_KEY_PREFIX = "poi:cache:metadata:";
     private static final Duration METADATA_TTL = Duration.ofDays(7);
 
     @Builder
     public record CacheMetadata(
-            LocalDateTime lastUpdated,
-            boolean isStale,
-            String staleReason,
-            LocalDateTime scheduledRefresh,
-            int version
+            LocalDateTime lastUpdated, // lastUpdated: 캐시 최종 갱신 시간 (ISO 8601 형식)
+            boolean isStale, // isStale: 캐시 유효성 상태 (true=만료됨, false=유효함)
+            String staleReason, // staleReason: 만료 사유 (옵션)
+            LocalDateTime scheduledRefresh, // scheduledRefresh: 예정된 재갱신 시간
+            int version // 캐시 버전
     ) {
+        // fresh : 서버에게 최신의 데이터를 받은 상태
         public static CacheMetadata fresh() {
             return CacheMetadata.builder()
                     .lastUpdated(LocalDateTime.now())
@@ -37,6 +39,7 @@ public class CacheMetadataService {
                     .build();
         }
 
+        // stale : 저장한 데이터가 더이상 최신이 아님을 뜻하는 상태
         public static CacheMetadata stale(String reason) {
             return CacheMetadata.builder()
                     .lastUpdated(LocalDateTime.now())
@@ -50,8 +53,11 @@ public class CacheMetadataService {
 
     public void saveMetadata(Long poiId, int distance, CacheMetadata metadata) {
         String key = generateKey(poiId, distance);
+        // 자바 객체를 redis hash 맵으로 변환
         Map<String, Object> map = convertToMap(metadata);
+        // 메타데이터를 Redis Hash로 저장
         redisTemplate.opsForHash().putAll(key, map);
+        // 자동 만료 정책 적용
         redisTemplate.expire(key, METADATA_TTL);
 
         log.debug("Saved cache metadata for POI {} at {}m", poiId, distance);
@@ -67,9 +73,11 @@ public class CacheMetadataService {
     }
 
     public void markAsStale(Long poiId, int distance, String reason) {
+        // 기존 메타데이터 조회
         CacheMetadata metadata = getMetadata(poiId, distance);
         if (metadata == null) return;
 
+        // fresh에서 stale 상태로 변한 메타데이터 생성
         CacheMetadata staleMetadata = CacheMetadata.builder()
                 .lastUpdated(metadata.lastUpdated())
                 .isStale(true)
@@ -78,6 +86,7 @@ public class CacheMetadataService {
                 .version(metadata.version())
                 .build();
 
+        // 갱신된 메타 데이터 저장
         saveMetadata(poiId, distance, staleMetadata);
         log.info("Marked cache as stale for POI {} at {}m: {}", poiId, distance, reason);
     }
@@ -88,7 +97,7 @@ public class CacheMetadataService {
     }
 
     /**
-     * 캐시가 너무 오래되었는지 확인 (10분 이상)
+     * 캐시가 너무 오래되었는지 확인 (30분 이상)
      */
     public boolean isTooStale(Long poiId, int distance) {
         CacheMetadata metadata = getMetadata(poiId, distance);
@@ -97,7 +106,7 @@ public class CacheMetadataService {
         }
 
         Duration staleDuration = Duration.between(metadata.lastUpdated(), LocalDateTime.now());
-        return staleDuration.toMinutes() > 60;
+        return staleDuration.toMinutes() > 30;
     }
 
     private String generateKey(Long poiId, int distance) {
