@@ -1,4 +1,3 @@
-// src/screens/Store/Menu/GenerateStep.tsx
 import React, { useState, useEffect } from "react";
 import {
   ScrollView,
@@ -79,7 +78,6 @@ export default function GenerateStep() {
     try {
       setLoading(true);
 
-      // 1) 업로드 파일 정규화
       const files = await Promise.all(
         localImages
           .map((uri, idx) => (uri ? { uri, idx } : null))
@@ -94,13 +92,11 @@ export default function GenerateStep() {
         return;
       }
 
-      // 2) FormData 구성 (키 이름 주의: images)
       const formData = new FormData();
       formData.append("storeId", String(storeId));
       formData.append("type", "IMAGE");
       selectedMenuIds.forEach((id) => formData.append("menuIds", String(id)));
       formData.append("prompt", prompt);
-
       files.forEach((f: any, i: number) => {
         formData.append("image", {
           uri: f.uri,
@@ -109,7 +105,6 @@ export default function GenerateStep() {
         } as any);
       });
 
-      // 3) 생성 요청 (업로드용량 로그는 api.ts가 찍음)
       console.log("[GenerateStep] REQUEST", {
         storeId,
         selectedMenuIds,
@@ -118,29 +113,34 @@ export default function GenerateStep() {
       });
 
       const res: any = await requestMenuPosterAsset(formData, {
-        // 내가 준 최신 api.ts 기준으로 업로드 크기 로그 지원
         filesForLog: files,
       });
 
-      // 4) 응답 파싱: menuPosterId + assetId
-      const menuPosterId: number | undefined =
-        res?.menuPosterId ??
-        res?.raw?.data?.menuPosterId ??
-        res?.raw?.menuPosterId;
+      console.log("[GenerateStep] FULL RESPONSE", JSON.stringify(res, null, 2));
 
-      console.log("[GenerateStep] RESPONSE", {
-        menuPosterId,
-        rawHasData: !!res?.raw,
-      });
+      // ★ 핵심: 생성 응답에서 assetId(=menuPosterAssetId 추론값)를 우선 확보
+      const assetId: number | undefined =
+        res?.menuPosterAssetId ??
+        res?.assetId ??
+        res?.raw?.data?.menuPosterAssetId ??
+        res?.raw?.data?.assetId ??
+        res?.raw?.data?.menuPosterId;
 
-      if (typeof menuPosterId !== "number") {
-        Alert.alert("오류", "menuPosterId를 찾지 못했습니다.");
+      if (typeof assetId !== "number") {
+        Alert.alert("오류", "assetId를 찾지 못했습니다.");
         return;
       }
-      
 
-      // 5) 다음 화면으로: 반드시 assetId와 함께
-      navigation.navigate("MenuPosterWriteStep", { menuPosterId });
+      // 실제 menuPosterId가 별도로 온다면 같이 전달(없으면 undefined 그대로)
+      const posterId: number | undefined =
+        res?.menuPosterId ??
+        res?.raw?.data?.realMenuPosterId ??
+        res?.raw?.data?.menuPosterIdReal;
+
+      navigation.navigate("MenuPosterWriteStep", {
+        assetId,
+        menuPosterId: posterId,
+      });
     } catch (err: any) {
       console.error("[GenerateStep] Asset Request Error:", err);
       Alert.alert(

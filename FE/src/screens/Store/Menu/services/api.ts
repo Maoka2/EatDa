@@ -1,8 +1,5 @@
-// src/screens/Store/MenuPoster/services/api.ts
 import { getTokens } from "../../../Login/services/tokenStorage";
 import * as FileSystem from "expo-file-system";
-
-// const BASE_URL = "https://i13a609.p.ssafy.io/test";
 
 const BASE_HOST = "https://i13a609.p.ssafy.io";
 const BASE_PREFIX = "/test";
@@ -113,9 +110,8 @@ async function getUriSizeSafe(uri: string): Promise<number | null> {
 type FetchWithLogsOptions = {
   label: string;
   reqId?: string;
-  expectJson?: boolean; // 응답 JSON 기대
-  note?: AnyObj; // 추가 메타
-  // FormData 업로드 시 파일 사이즈를 로깅하고 싶으면 넘겨라
+  expectJson?: boolean;
+  note?: AnyObj;
   filesForLog?: Array<{ uri: string; name?: string; type?: string }>;
 };
 
@@ -123,7 +119,6 @@ async function maybeBuildUploadSizesNote(
   body: any,
   filesForLog?: Array<{ uri: string; name?: string; type?: string }>
 ) {
-  // 1순위: 명시적으로 넘어온 filesForLog
   let items: Array<{
     uri?: string;
     name?: string;
@@ -138,7 +133,6 @@ async function maybeBuildUploadSizesNote(
       })
     );
   } else if (body instanceof FormData) {
-    // 2순위: RN FormData의 비공식 _parts 스캔 (가능할 때만)
     const parts = (body as any)?._parts;
     if (Array.isArray(parts)) {
       const imgRows = parts.filter(
@@ -153,7 +147,6 @@ async function maybeBuildUploadSizesNote(
           const size = await getUriSizeSafe(v.uri);
           items.push({ uri: v.uri, name: v.name, type: v.type, size });
         } else if (v && typeof (v as any).size === "number") {
-          // Blob/File 케이스
           items.push({ name: v.name, type: v.type, size: (v as any).size });
         }
       }
@@ -199,7 +192,6 @@ async function fetchWithLogs(
     headers: maskAuth(init?.headers),
   };
 
-  // 업로드 파일 사이즈 메타(가능하면 계산)
   const uploadSizes = await maybeBuildUploadSizesNote(init?.body, filesForLog);
 
   metaLog(`[HTTP:${label}] REQUEST`, {
@@ -326,13 +318,15 @@ export type MenuPosterRequest = {
 };
 
 export type MenuPosterResponse = {
-  menuPosterId: number;
+  menuPosterId?: number;
+  menuPosterAssetId?: number;
+  raw?: any;
 };
 
 export const requestMenuPosterAsset = async (
   formData: FormData,
   opts?: { filesForLog?: Array<{ uri: string; name?: string; type?: string }> }
-) => {
+): Promise<MenuPosterResponse> => {
   const { accessToken } = await getTokens();
   if (!accessToken) throw new Error("인증이 필요합니다.");
 
@@ -349,7 +343,6 @@ export const requestMenuPosterAsset = async (
       label: "REQ_MENU_POSTER_ASSET",
       expectJson: true,
       note: {
-        // ▼ Swagger가 image(단수) 키를 기대하므로 문구도 image[]로 정정
         bodyType: "FormData (image[], storeId, type, menuIds[], prompt)",
       },
       filesForLog: opts?.filesForLog,
@@ -375,32 +368,32 @@ export const requestMenuPosterAsset = async (
 
   const dataObj = json?.data ?? json;
 
-  const menuPosterId =
-    typeof dataObj?.menuPosterId === "number"
-      ? dataObj.menuPosterId
-      : typeof dataObj?.id === "number"
-      ? dataObj.id
-      : NaN;
+  // ★★★ 핵심: BE가 menuPosterId 이름으로 assetId를 보내는 현실까지 포함해 추론
+  const assetIdGuessed =
+    (typeof dataObj?.menuPosterAssetId === "number" &&
+      dataObj.menuPosterAssetId) ||
+    (typeof dataObj?.assetId === "number" && dataObj.assetId) ||
+    (typeof dataObj?.menuPosterId === "number" && dataObj.menuPosterId) ||
+    undefined;
 
-  const menuPosterAssetId =
-    typeof dataObj?.menuPosterAssetId === "number"
-      ? dataObj.menuPosterAssetId
-      : typeof dataObj?.assetId === "number"
-      ? dataObj.assetId
-      : undefined;
+  const posterIdGuessed =
+    (typeof dataObj?.realMenuPosterId === "number" &&
+      dataObj.realMenuPosterId) ||
+    (typeof dataObj?.menuPosterIdReal === "number" &&
+      dataObj.menuPosterIdReal) ||
+    undefined;
 
   metaLog("[REQ_MENU_POSTER_ASSET RESULT]", {
-    menuPosterId,
-    menuPosterAssetId,
+    menuPosterId: posterIdGuessed,
+    menuPosterAssetId: assetIdGuessed,
     ts: nowIso(),
   });
 
-  if (!Number.isFinite(menuPosterId)) {
-    console.warn("[requestMenuPosterAsset] unexpected response shape:", json);
-    return { raw: json };
-  }
-
-  return { menuPosterId, menuPosterAssetId, raw: json };
+  return {
+    menuPosterId: posterIdGuessed,
+    menuPosterAssetId: assetIdGuessed,
+    raw: json,
+  };
 };
 
 export async function peekMenuPosterAssetId(
@@ -411,7 +404,6 @@ export async function peekMenuPosterAssetId(
   if (!Number.isFinite(menuPosterId))
     throw new Error("유효한 menuPosterId가 필요합니다.");
 
-  // 필요 시 아래 URL을 실제 스펙에 맞게 조정하세요.
   const url = `${BASE_API_URL}/menu-posters/${menuPosterId}`;
 
   const { res, text } = await fetchWithLogs(
@@ -425,9 +417,29 @@ export async function peekMenuPosterAssetId(
   );
 
   const { json } = safeJsonParse<any>(text);
+
   if (!res.ok) {
-    throw new Error((json && json.message) || text || `HTTP ${res.status}`);
+    const parsed = safeJsonParse<any>(text).json;
+    const msg =
+      (parsed && (parsed.message || parsed.error)) ||
+      text ||
+      `HTTP ${res.status}`;
+
+    if (res.status === 401 || res.status === 403) {
+      const err: any = new Error(msg);
+      err.status = res.status;
+      err.url = url;
+      throw err;
+    }
+
+    console.info("[PEEK_ASSET_ID NON_OK]", {
+      status: res.status,
+      url,
+      snippet: snip(text),
+    });
+    return null;
   }
+
   const d = (json && (json.data ?? json)) || {};
 
   const candidates = [
@@ -503,11 +515,12 @@ export async function waitForAssetIdByMenuPoster(
         menuPosterId,
         attempt,
         elapsedMs: elapsed,
+        status: e?.status,
         error: e?.message || String(e),
         nextPollInMs: intervalMs,
         ts: nowIso(),
       });
-      // 에러가 떠도 일정 시간 재시도
+      if (e?.status === 401 || e?.status === 403) throw e;
     }
 
     if (elapsed >= maxWaitMs) {
@@ -520,7 +533,7 @@ export async function waitForAssetIdByMenuPoster(
 // ==================== 포스터 생성 상태 조회 (자원: assetId) ====================
 
 export interface MenuPosterResultResponse {
-  type: string; // IMAGE 등
+  type: string;
   assetUrl?: string;
   menuPosterAssetId?: number;
 }
@@ -537,10 +550,7 @@ export async function getMenuPosterResult(
 
   const { res, text } = await fetchWithLogs(
     url,
-    {
-      method: "GET",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
+    { method: "GET", headers: { Authorization: `Bearer ${accessToken}` } },
     { label: "GET_ASSET_RESULT", expectJson: false, note: { assetId } }
   );
 
@@ -549,7 +559,6 @@ export async function getMenuPosterResult(
   if (!res.ok) {
     const { json } = safeJsonParse<any>(text);
     const errMsg = json?.message || text || `HTTP ${res.status}`;
-
     specLog("[POSTER_RESULT ERROR]", {
       code:
         json?.code ||
@@ -562,6 +571,7 @@ export async function getMenuPosterResult(
     throw new Error(errMsg);
   }
 
+  // text/plain인 경우: 바로 URL 문자열일 수 있음
   const trimmed = (text || "").trim();
   if (!contentType.includes("application/json")) {
     if (trimmed) {
@@ -583,24 +593,38 @@ export async function getMenuPosterResult(
     return null;
   }
 
-  // 혹시 JSON이면 유연 처리
+  // JSON인 경우: data.path / data.assetUrl / data.url 등 폭넓게 수용
   const { json } = safeJsonParse<any>(text);
-  const maybeUrl =
-    json?.data && typeof json.data === "string"
-      ? json.data
-      : json?.data?.assetUrl || json?.assetUrl || json?.url;
-  const maybeType = json?.data?.type || json?.type;
+  const d = json?.data;
 
-  if (maybeUrl) {
+  const pickUrl =
+    (typeof d === "string" && d) ||
+    d?.assetUrl ||
+    d?.url ||
+    d?.path || // ★ 서버가 주는 키
+    json?.assetUrl ||
+    json?.url ||
+    json?.path ||
+    undefined;
+
+  const makeAbsolute = (u?: string) =>
+    u && /^https?:\/\//i.test(u) ? u : u ? `${BASE_HOST}${u}` : undefined;
+
+  const finalUrl = makeAbsolute(
+    typeof pickUrl === "string" ? pickUrl : undefined
+  );
+  const maybeType = (d && d.type) || json?.type;
+
+  if (finalUrl) {
     metaLog("[GET_ASSET_RESULT READY(json)]", {
       assetId,
-      url: maybeUrl,
+      url: finalUrl,
       type: maybeType,
       status: res.status,
       contentType,
       ts: nowIso(),
     });
-    return { assetUrl: String(maybeUrl), type: maybeType };
+    return { assetUrl: finalUrl, type: maybeType };
   }
 
   metaLog("[GET_ASSET_RESULT PENDING(json)]", {
@@ -612,7 +636,6 @@ export async function getMenuPosterResult(
   return null;
 }
 
-// 폴링 (assetId 기준)
 export const waitForAssetReady = async (
   assetId: number,
   {
@@ -688,7 +711,6 @@ export const waitForAssetReady = async (
         nextPollInMs: intervalMs,
         ts: nowIso(),
       });
-      // 계속 대기
     }
 
     if (elapsed >= maxWaitMs) {
@@ -801,7 +823,7 @@ export async function sendMenuPoster(
 
 export interface AdoptMenuPostersRequest {
   storeId: number;
-  menuPosterIds: number[]; // 최대 5개, 중복 불가
+  menuPosterIds: number[];
 }
 
 export interface AdoptMenuPostersData {
@@ -862,7 +884,6 @@ export async function adoptMenuPosters(
     return dataObj;
   }
 
-  // fallback
   return {
     storeId,
     adoptedMenuPosterIds: menuPosterIds,
@@ -927,10 +948,6 @@ export interface UpdateAdoptedSortOrderResponseData {
   updatedPosterIds: number[];
 }
 
-/**
- * 채택된 메뉴판의 노출 순서를 수정합니다.
- * PUT /api/menu-posters/adopted/sort-order
- */
 export async function updateAdoptedMenuPosterSortOrder(
   payload: UpdateAdoptedSortOrderRequest
 ): Promise<ApiResponse<UpdateAdoptedSortOrderResponseData>> {

@@ -1,4 +1,3 @@
-// src/screens/Store/Menu/WriteStep.tsx
 import React, { useEffect, useState } from "react";
 import {
   SafeAreaView,
@@ -22,12 +21,11 @@ import {
   waitForAssetIdByMenuPoster,
 } from "./services/api";
 
-// NOTE: 프로젝트 경로에 맞춰 필요 시 조정
 const LOADING_JSON = require("../../../../assets/AI-loading.json");
 
 type RouteParams = {
-  menuPosterId: number;
-  assetId?: number; // 라우트 파라미터는 옵셔널
+  menuPosterId?: number;
+  assetId?: number;
   storeName?: string;
 };
 
@@ -42,7 +40,6 @@ export default function WriteStep() {
 
   const { width } = useWindowDimensions();
 
-  // 내부 상태
   const [assetId, setAssetId] = useState<number | null>(
     assetIdFromRoute ?? null
   );
@@ -55,12 +52,17 @@ export default function WriteStep() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // 1단계: assetId가 없으면 menuPosterId로 먼저 얻어온다
   useEffect(() => {
     let cancelled = false;
 
     async function ensureAssetId() {
-      if (typeof assetId === "number") return; // 이미 있으면 스킵
+      if (typeof assetId === "number") return;
+
+      if (typeof menuPosterId !== "number") {
+        setErrorMsg("assetId가 없고 menuPosterId도 없어 대기할 수 없습니다.");
+        setIsGenerating(false);
+        return;
+      }
 
       setErrorMsg(null);
       setIsGenerating(true);
@@ -85,17 +87,15 @@ export default function WriteStep() {
     return () => {
       cancelled = true;
     };
-  }, [menuPosterId]);
+  }, [menuPosterId, assetId]);
 
-  // 2단계: assetId가 준비되면 그걸로 결과 폴링
   useEffect(() => {
-    const id = assetId; // ← 지역 상수로 캐싱
-    if (id == null) return; // ← 여기서 좁혀짐 (id: number)
+    const id = assetId;
+    if (id == null) return;
 
     let cancelled = false;
 
     async function pollResult(aid: number) {
-      // ← 파라미터로 받기
       setIsGenerating(true);
       setAiDone(false);
       setGeneratedImageUrl(null);
@@ -131,13 +131,13 @@ export default function WriteStep() {
       }
     }
 
-    pollResult(id); // ← 좁혀진 number만 전달
+    pollResult(id);
     return () => {
       cancelled = true;
     };
   }, [assetId, menuPosterId]);
 
-  const canComplete = aiDone && text.trim().length > 30 && !!generatedImageUrl;
+  const canComplete = aiDone && text.trim().length >= 30 && !!generatedImageUrl;
 
   const handleComplete = async () => {
     if (!canComplete || typeof assetId !== "number") {
@@ -149,17 +149,25 @@ export default function WriteStep() {
       return;
     }
 
+    // 핵심: menuPosterId가 없으면 assetId를 menuPosterId로 사용
+    const posterIdForFinalize =
+      typeof menuPosterId === "number" ? menuPosterId : assetId;
+
+    if (typeof posterIdForFinalize !== "number") {
+      Alert.alert("오류", "menuPosterId를 확인할 수 없습니다.");
+      return;
+    }
+
     try {
       setSaving(true);
       console.log("[WriteStep][FINALIZE] request", {
-        menuPosterId,
+        menuPosterId: posterIdForFinalize,
         assetId,
         descLen: text.trim().length,
       });
 
       await finalizeMenuPoster({
-        menuPosterId,
-        menuPosterAssetId: assetId,
+        menuPosterId: posterIdForFinalize, // ← fallback 적용됨
         description: text.trim(),
         type: "IMAGE",
       });
@@ -176,12 +184,15 @@ export default function WriteStep() {
   };
 
   const handleRetry = () => {
-    navigation.replace("MenuPosterWriteStep", { menuPosterId, storeName });
+    navigation.replace("MenuPosterWriteStep", {
+      menuPosterId,
+      storeName,
+      assetId: assetIdFromRoute,
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 상단 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -284,7 +295,7 @@ export default function WriteStep() {
                 ? typeof assetId === "number"
                   ? "AI 포스터 생성 중..."
                   : "대기 중..."
-                : text.trim().length <= 30
+                : text.trim().length < 30
                 ? "설명을 30자 이상 작성해주세요"
                 : "작성 완료"}
             </Text>
@@ -295,7 +306,6 @@ export default function WriteStep() {
   );
 }
 
-// --- 스타일 (그대로) ---
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
   header: {

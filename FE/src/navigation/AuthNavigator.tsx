@@ -44,12 +44,12 @@ export type AuthStackParamList = {
 
   // 메인 앱 화면들
   ReviewTabScreen: undefined;
-  StoreClusteringScreen: undefined; // 추가
-  StoreClustering: undefined; // 현재 사용 중인 이름
+  StoreClusteringScreen: undefined;
+  StoreClustering: undefined;
   ActiveEventScreen: undefined;
   EventMakingScreen: undefined;
 
-  MapScreen: { onClose?: () => void }; // MapScreen props 추가
+  MapScreen: { onClose?: () => void };
 
   StoreScreen: {
     storeId: number;
@@ -57,7 +57,7 @@ export type AuthStackParamList = {
     address?: string;
     latitude?: number;
     longitude?: number;
-  }; // StoreScreen props 추가
+  };
   StoreEventScreen: undefined;
   StoreMenuScreen: undefined;
   StoreReviewScreen: undefined;
@@ -79,7 +79,13 @@ export type AuthStackParamList = {
   MenuSelectStep: undefined;
   OCRStep: undefined;
   ReviewWriteScreen: undefined;
-  MenuPosterWriteStep: { menuPosterId: number; assetId: number };
+
+  // ✅ 여기 수정: assetId는 필수, menuPosterId와 storeName은 선택
+  MenuPosterWriteStep: {
+    assetId: number;
+    menuPosterId?: number;
+    storeName?: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -135,13 +141,10 @@ export default function AuthNavigator() {
       <Stack.Screen name="MypageScreen" component={MypageScreen as any} />
 
       {/* 스토어 관련 */}
-      <Stack.Screen name="StoreScreen" component={StoreScreen}></Stack.Screen>
+      <Stack.Screen name="StoreScreen" component={StoreScreen} />
 
       {/* 메뉴 관련 */}
-      <Stack.Screen
-        name="MenuCustomScreen"
-        component={MenuCustomScreen}
-      ></Stack.Screen>
+      <Stack.Screen name="MenuCustomScreen" component={MenuCustomScreen} />
       <Stack.Screen name="GenerateStep" component={GenerateStep} />
       <Stack.Screen
         name="MenuPosterWriteStep"
