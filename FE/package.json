@@ -37,7 +37,8 @@
     "react-native-svg-transformer": "^1.5.1",
     "react-native-worklets": "^0.4.1",
     "expo-file-system": "~18.1.11",
-    "expo-media-library": "~17.1.7"
+    "expo-media-library": "~17.1.7",
+    "expo-location": "~18.1.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
