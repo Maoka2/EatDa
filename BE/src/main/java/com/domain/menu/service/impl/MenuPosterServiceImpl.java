@@ -109,8 +109,6 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         log.info("Success 처리 중: assetId={}", asset.getId());
         asset.processCallback(status, request.assetUrl());
         log.info("Success 완료 중: assetId={}", asset.getId());
-        updateMenuPosterAsset(asset);
-        log.info("DB 반영: assetId={}", asset.getId());
     }
 
     @Override
@@ -134,12 +132,11 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         MenuPoster menuPoster = validateMenuPoster(request.menuPosterId());
         menuValidator.validatePendingStatus(menuPoster);
 
-        MenuPosterAsset asset = validateAsset(request.menuPosterAssetId());
+        MenuPosterAsset asset = menuPoster.getMenuPosterAsset();
         menuValidator.validateForFinalization(asset);
 
         menuPoster.updateDescription(request.description());
         menuPoster.updateStatus(Status.SUCCESS);
-        asset.registerMenuPoster(menuPoster);
 
         return MenuPosterFinalizeResponse.from(menuPoster);
     }
