@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,29 +12,28 @@ import {
   FlatList,
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
-import { COLORS, SPACING, RADIUS } from "../../constants/theme";
+import { COLORS, SPACING } from "../../constants/theme";
 import MypageGridComponent, {
   ReviewItem,
 } from "../../components/MypageGridComponent";
 import TabNavigation from "../../components/TabNavigation";
-import { reviewData } from "../../data/reviewData";
 import CloseBtn from "../../../assets/closeBtn.svg";
 import DustBox from "../../../assets/dustbox.svg";
+import { getScrappedReviews } from "./services/api";
+import { getMyReviews, mapMyReviewsToReviewItems } from "./services/api";
 
-// 빈 상태 아이콘 import
 const EmptyIcon = require("../../../assets/blue-box-with-red-button-that-says-x-it 1.png");
 
 interface EaterMypageProps {
   userRole: "eater";
   onLogout: () => void;
-  initialTab?: TabKey; // 초기 탭 설정
-  onBack?: () => void; // 뒤로가기 핸들러
+  initialTab?: TabKey;
+  onBack?: () => void;
   setHeaderVisible?: (visible: boolean) => void;
 }
 
 type TabKey = "myReviews" | "scrappedReviews" | "myMenuBoard";
 
-// 빈 상태 컴포넌트
 const EmptyState = ({ message, icon }: { message: string; icon?: any }) => (
   <View style={styles.emptyContent}>
     {icon && (
@@ -55,32 +54,96 @@ export default function EaterMypage({
   const screenHeight = Dimensions.get("window").height;
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
 
-  //상세보기 관리
-  const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null);
+  const [myReviews, setMyReviews] = useState<ReviewItem[]>([]);
+  const [loadingMyReviews, setLoadingMyReviews] = useState(false);
+  const [myReviewsError, setMyReviewsError] = useState<string | null>(null);
 
-  //상세보기 스크롤 및 비디오 관리
+  useEffect(() => {
+    if (activeTab !== "myReviews") return;
+
+    setLoadingMyReviews(true);
+    setMyReviewsError(null);
+    console.log("[MYREVIEWS][UI] fetch:start", { pageSize: 30 }); // ★ 로그 추가
+
+    getMyReviews({ pageSize: 30 })
+      .then((list) => {
+        console.log("[MYREVIEWS][UI] fetch:success raw =", list); // ★ 로그 추가
+        if (!Array.isArray(list)) {
+          setMyReviews([]);
+          return;
+        }
+        const mapped = mapMyReviewsToReviewItems(list) as ReviewItem[];
+        setMyReviews(mapped);
+      })
+      .catch((err) => {
+        console.error("[MYREVIEWS][UI] fetch:error", err); // ★ 로그 추가
+        setMyReviewsError(err?.message ?? "내 리뷰를 불러오지 못했습니다");
+      })
+      .finally(() => {
+        setLoadingMyReviews(false);
+        console.log("[MYREVIEWS][UI] fetch:finally"); // ★ 로그 추가
+      });
+  }, [activeTab]);
+
+  const [scraps, setScraps] = useState<ReviewItem[]>([]);
+  const [loadingScraps, setLoadingScraps] = useState(false);
+  const [scrapsError, setScrapsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeTab !== "scrappedReviews") return;
+    setLoadingScraps(true);
+    setScrapsError(null);
+    getScrappedReviews({ size: 30 })
+      .then((list) => {
+        if (!Array.isArray(list)) {
+          setScraps([]);
+          return;
+        }
+        const mapped: ReviewItem[] = list
+          .map((r, idx): ReviewItem | null => {
+            const uri = r.shortsUrl || r.imageUrl || "";
+            if (!uri) return null;
+            return {
+              id: `${uri}#${idx}`,
+              type: r.shortsUrl ? "video" : "image",
+              uri,
+              title: r.storeName || "스크랩 리뷰",
+              description: r.description ?? "",
+            };
+          })
+          .filter(Boolean) as ReviewItem[];
+        setScraps(mapped);
+      })
+      .catch((err) => {
+        setScrapsError(err?.message ?? "스크랩한 리뷰를 불러오지 못했습니다");
+      })
+      .finally(() => {
+        setLoadingScraps(false);
+      });
+  }, [activeTab]);
+
+  const [selectedItem, setSelectedItem] = useState<ReviewItem | null>(null);
+  // --- [FIX 1] 상세 보기에 사용할 데이터 목록을 저장할 state 추가 ---
+  const [detailList, setDetailList] = useState<ReviewItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<ReviewItem>>(null);
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
 
   useEffect(() => {
-    Object.keys(vdoRefs.current).forEach((key) => {
-      const idx = parseInt(key, 10);
-      const video = vdoRefs.current[idx];
-      if (!video) return;
-      if (idx === currentIndex) {
-        video.playAsync();
-      } else {
-        video.pauseAsync();
-      }
-    });
+    Object.values(vdoRefs.current).forEach((video) => video?.pauseAsync());
+    const currentVideo = vdoRefs.current[currentIndex];
+    if (currentVideo) {
+      currentVideo.playAsync();
+    }
   }, [currentIndex]);
 
-  // 확대 애니메이션 (전체 그리드 레이아웃 -> 단일 그리드)
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const handleOpenDetail = (item: ReviewItem) => {
+
+  // --- [FIX 2] handleOpenDetail이 어떤 목록에서 왔는지 알 수 있도록 수정 ---
+  const handleOpenDetail = (item: ReviewItem, sourceList: ReviewItem[]) => {
     setSelectedItem(item);
-    setHeaderVisible?.(false); // 헤더 숨기기
+    setDetailList(sourceList); // 전달받은 목록으로 detailList 설정
+    setHeaderVisible?.(false);
     scaleAnim.setValue(0.8);
     Animated.spring(scaleAnim, {
       toValue: 1,
@@ -90,31 +153,22 @@ export default function EaterMypage({
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length > 0) {
-      const newIdx = viewableItems[0].index;
-      setCurrentIndex(newIdx);
+      setCurrentIndex(viewableItems[0].index ?? 0);
     }
   }).current;
 
-  const viewConfig = useRef({
-    viewAreaCoveragePercentThreshold: 80,
-  }).current;
-
-  // 데이터
-  const myReviewsData = reviewData.slice(0, 6);
-  const scrappedReviewsData = reviewData.slice(6, 10);
-
-  // 그리드 사이즈 계산 - 넓힘
-  const gridSize = (width - SPACING.md * 2 - 16) / 2; // 2열 그리드, 간격 8px씩 총 16px 고려
+  const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 80 }).current;
+  const gridSize = (width - SPACING.md * 2 - 16) / 2;
 
   return (
     <View style={styles.container}>
-      {/* 상세보기 모드 */}
       {selectedItem ? (
         <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
           <FlatList
             key="detail"
             ref={flatListRef}
-            data={myReviewsData}
+            // --- [FIX 3] data 소스를 myReviews에서 detailList로 변경 ---
+            data={detailList}
             keyExtractor={(item) => item.id}
             renderItem={({ item, index }) => (
               <View style={{ height: screenHeight }}>
@@ -126,9 +180,7 @@ export default function EaterMypage({
                   />
                 ) : (
                   <Video
-                    ref={(ref: Video | null) => {
-                      vdoRefs.current[index] = ref;
-                    }}
+                    ref={(ref) => (vdoRefs.current[index] = ref)}
                     source={{ uri: item.uri }}
                     style={StyleSheet.absoluteFillObject}
                     resizeMode={ResizeMode.COVER}
@@ -137,36 +189,32 @@ export default function EaterMypage({
                     isMuted
                   />
                 )}
-
-                {/* 닫기 버튼 */}
                 <TouchableOpacity
                   style={styles.closeBtn}
                   onPress={() => {
                     setSelectedItem(null);
-                    setHeaderVisible?.(true); // 헤더 다시 보이기
+                    setHeaderVisible?.(true);
                   }}
                 >
                   <CloseBtn />
                 </TouchableOpacity>
-
-                {/* 하단 텍스트 리뷰 오버레이 */}
-                <View style={[styles.textOverlay, { bottom: height * 0.1}]}>
+                <View style={[styles.textOverlay, { bottom: height * 0.1 }]}>
                   <Text style={styles.titleText}>#{item.title}</Text>
                   <Text style={styles.descText}>{item.description}</Text>
                 </View>
-
-                  <TouchableOpacity style={styles.dustbox}>
-                    <DustBox width={50} height={50}></DustBox>
-                  </TouchableOpacity>
+                <TouchableOpacity style={styles.dustbox}>
+                  <DustBox width={50} height={50} />
+                </TouchableOpacity>
               </View>
             )}
             pagingEnabled
             decelerationRate="fast"
             snapToInterval={screenHeight}
             snapToAlignment="start"
+            // --- [FIX 3] 여기도 detailList를 사용하도록 변경 ---
             initialScrollIndex={Math.max(
               0,
-              myReviewsData.findIndex((i) => i.id === selectedItem.id)
+              detailList.findIndex((i) => i.id === selectedItem.id)
             )}
             getItemLayout={(data, index) => ({
               length: screenHeight,
@@ -182,30 +230,29 @@ export default function EaterMypage({
           />
         </Animated.View>
       ) : (
-        // 일반 모드
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* 탭 메뉴 */}
           <TabNavigation
             userType="eater"
             activeTab={activeTab}
             onTabPress={(tabKey) => setActiveTab(tabKey as TabKey)}
           />
-
-          {/* 탭 콘텐츠 */}
           <View style={styles.tabContent}>
             {activeTab === "myReviews" &&
-              (myReviewsData.length > 0 ? (
+              (loadingMyReviews ? (
+                <EmptyState message="내 리뷰 불러오는 중..." icon={EmptyIcon} />
+              ) : myReviewsError ? (
+                <EmptyState message={myReviewsError} icon={EmptyIcon} />
+              ) : myReviews.length > 0 ? (
                 <View style={styles.gridContainer}>
-                  {myReviewsData.map((item, index) => (
+                  {myReviews.map((item, index) => (
                     <MypageGridComponent
                       key={item.id}
                       item={item}
                       size={gridSize}
                       index={index}
-                      totalLength={myReviewsData.length}
-                      onPress={() => {
-                        handleOpenDetail(item);
-                      }}
+                      totalLength={myReviews.length}
+                      // --- [FIX 4] 클릭 시 myReviews 목록을 전달 ---
+                      onPress={() => handleOpenDetail(item, myReviews)}
                     />
                   ))}
                 </View>
@@ -215,21 +262,22 @@ export default function EaterMypage({
                   icon={EmptyIcon}
                 />
               ))}
-
-            {/* 스크랩한 리뷰 */}
             {activeTab === "scrappedReviews" &&
-              (scrappedReviewsData.length > 0 ? (
+              (loadingScraps ? (
+                <EmptyState message="스크랩 리뷰 로딩중..." icon={EmptyIcon} />
+              ) : scrapsError ? (
+                <EmptyState message={scrapsError} icon={EmptyIcon} />
+              ) : scraps.length > 0 ? (
                 <View style={styles.gridContainer}>
-                  {scrappedReviewsData.map((item, index) => (
+                  {scraps.map((item, index) => (
                     <MypageGridComponent
                       key={item.id}
                       item={item}
                       size={gridSize}
                       index={index}
-                      totalLength={scrappedReviewsData.length}
-                      onPress={() => {
-                        handleOpenDetail(item);
-                      }}
+                      totalLength={scraps.length}
+                      // --- [FIX 4] 클릭 시 scraps 목록을 전달 ---
+                      onPress={() => handleOpenDetail(item, scraps)}
                     />
                   ))}
                 </View>
@@ -239,7 +287,6 @@ export default function EaterMypage({
                   icon={EmptyIcon}
                 />
               ))}
-
             {activeTab === "myMenuBoard" && (
               <EmptyState
                 message="내가 만든 메뉴판이 없습니다"
@@ -315,11 +362,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: SPACING.xs,
   },
-  
-  dustbox:{
-    position:"absolute",
+
+  dustbox: {
+    position: "absolute",
     bottom: 85,
-    right:20,
-    opacity:0.5,
-  }
+    right: 20,
+    opacity: 0.5,
+  },
 });
