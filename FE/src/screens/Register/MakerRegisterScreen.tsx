@@ -398,7 +398,6 @@ export default function MakerRegisterScreen({ navigation }: Props) {
         return;
       }
 
-      // 📌 선택형(카메라/갤러리)은 단일 버튼 모달로 대체 불가 → 기존 Alert 유지
       Alert.alert("메뉴판 스캔", "메뉴판을 어떻게 업로드하시겠습니까?", [
         {
           text: "카메라로 촬영",
