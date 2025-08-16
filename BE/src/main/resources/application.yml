@@ -13,12 +13,16 @@ spring:
   batch:
     job:
       enabled: false
+    jdbc:
+      initialize-schema: never
 
 logging:
   level:
-    root: WARN
+    root: INFO
     com.global: INFO
     com.domain: INFO
+    org.springframework.batch: INFO
+    org.springframework.jdbc: INFO
     # --- Hibernate SQL 관련 모두 OFF ---
     org.hibernate.SQL: OFF
     org.hibernate.orm.jdbc.bind: OFF

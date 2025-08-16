@@ -9,10 +9,6 @@ spring:
       ddl-auto: validate
     show-sql: false
 
-  batch:
-    jdbc:
-      initialize-schema: never
-
 logging:
   level:
     com.domain..controller: INFO
