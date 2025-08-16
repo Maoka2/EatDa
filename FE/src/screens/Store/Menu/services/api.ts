@@ -980,3 +980,54 @@ export async function updateAdoptedMenuPosterSortOrder(
   if (error || !json) throw new Error("응답 형식이 올바르지 않습니다.");
   return json;
 }
+
+export interface AdoptedPosterLite {
+  menuPosterId: number;
+  imageUrl: string;
+}
+
+/** GET /api/menu-posters/{storeId}/adopted */
+export async function getAdoptedMenuPostersByStore(
+  storeId: number
+): Promise<AdoptedPosterLite[]> {
+  if (!Number.isFinite(storeId))
+    throw new Error("유효한 storeId가 필요합니다.");
+
+  const { accessToken } = await getTokens();
+
+  const url = `${BASE_API_URL}/menu-posters/${encodeURIComponent(
+    String(storeId)
+  )}/adopted`;
+
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+  const { res, text } = await fetchWithLogs(
+    url,
+    { method: "GET", headers },
+    { label: "GET_ADOPTED_POSTERS", note: { storeId } }
+  );
+
+  const { json } = safeJsonParse<any>(text);
+  if (!res.ok) {
+    throw new Error(json?.message || text || `HTTP ${res.status}`);
+  }
+
+  // 응답이 data 배열이든 루트 배열이든 유연하게 수용
+  const arr: any[] = Array.isArray(json?.data)
+    ? json.data
+    : Array.isArray(json)
+    ? json
+    : [];
+
+  const toAbs = (u?: string) =>
+    u && /^https?:\/\//i.test(u) ? u : u ? `${BASE_HOST}${u}` : "";
+
+  return arr
+    .map((p) => ({
+      menuPosterId: Number(p?.menuPosterId ?? p?.id ?? p?.posterId),
+      imageUrl: toAbs(p?.imageUrl ?? p?.path ?? p?.assetUrl ?? p?.url),
+    }))
+    .filter((x) => Number.isFinite(x.menuPosterId) && !!x.imageUrl)
+    .slice(0, 5);
+}
