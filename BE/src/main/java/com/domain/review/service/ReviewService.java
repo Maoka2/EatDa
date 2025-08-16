@@ -47,4 +47,6 @@ public interface ReviewService {
     void removeReview(Long reviewId, String eaterEmail);
 
     List<Review> getMyReceivedReviews(String email);
+
+    List<Review> getReviews(Long storeId);
 }

@@ -2,8 +2,8 @@ package com.domain.review.controller;
 
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
-import com.domain.review.dto.request.ReviewLocationRequest;
 import com.domain.review.dto.request.ReviewFinalizeRequest;
+import com.domain.review.dto.request.ReviewLocationRequest;
 import com.domain.review.dto.response.MyReviewResponse;
 import com.domain.review.dto.response.ReviewAssetRequestResponse;
 import com.domain.review.dto.response.ReviewAssetResultResponse;
@@ -465,6 +465,12 @@ public class ReviewController {
     @GetMapping("/received")
     public ResponseEntity<BaseResponse> getMyReceivedReviews(@AuthenticationPrincipal String email) {
         List<Review> reviews = reviewService.getMyReceivedReviews(email);
+        return ApiResponseFactory.success(SuccessCode.REVIEW_RECEIVED_LIST, reviewMapper.toReceivedResponse(reviews));
+    }
+
+    @GetMapping
+    public ResponseEntity<BaseResponse> getReviews(@RequestParam("storeId") Long storeId) {
+        List<Review> reviews = reviewService.getReviews(storeId);
         return ApiResponseFactory.success(SuccessCode.REVIEW_RECEIVED_LIST, reviewMapper.toReceivedResponse(reviews));
     }
 }

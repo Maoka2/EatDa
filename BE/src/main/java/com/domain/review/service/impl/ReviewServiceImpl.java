@@ -327,6 +327,11 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewRepository.findByStoreIdAndStatusOrderByCreatedAtDesc(storeId, Status.SUCCESS);
     }
 
+    @Override
+    public List<Review> getReviews(final Long storeId) {
+        return reviewRepository.findByStoreId(storeId);
+    }
+
     // ===== Private Helper Methods =====
 
     /**
