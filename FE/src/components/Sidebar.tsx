@@ -132,7 +132,7 @@ export default function Sidebar({
           <TouchableOpacity
             style={[
               styles.menuItem,
-              activePage === "StoreClusterring" && styles.active,
+              activePage === "StoreClusteringScreen" && styles.active,
             ]}
             onPress={() => handleNavigation("StoreClusteringScreen")}
           >
