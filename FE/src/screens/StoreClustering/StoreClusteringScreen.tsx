@@ -1120,11 +1120,7 @@ export default function StoreClusteringScreen() {
         </View>
       )}
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>
-          {selectedDistance}m 반경 내 가게 {stores.length}개
-        </Text>
-      </View>
+      
     </SafeAreaView>
   );
 }
