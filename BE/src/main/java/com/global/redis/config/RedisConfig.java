@@ -20,18 +20,34 @@ public class RedisConfig {
      * Redis 기본 템플릿 빈 생성
      */
     @Bean(name = "redisTemplate")
-    public RedisTemplate<String, Object> redisTemplate(final RedisConnectionFactory factory,
-                                                       final ObjectMapper objectMapper) {
-        return createRedisTemplate(factory, objectMapper);
+    public RedisTemplate<String, Object> redisTemplate(
+            RedisConnectionFactory factory, ObjectMapper objectMapper) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(factory);
+        var json = new GenericJackson2JsonRedisSerializer(objectMapper);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(json);
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(json);
+        template.afterPropertiesSet();
+        return template;
     }
 
     /**
      * Redis 스트림 전용 템플릿 빈 생성
      */
     @Bean(name = "redisStreamTemplate")
-    public RedisTemplate<String, Object> redisStreamTemplate(final RedisConnectionFactory factory,
-                                                             final ObjectMapper objectMapper) {
-        return createRedisTemplate(factory, objectMapper);
+    public RedisTemplate<String, String> redisStreamTemplate(RedisConnectionFactory factory) {
+        // 스트림은 문자열로 통일 (호환성↑)
+        RedisTemplate<String, String> template = new RedisTemplate<>();
+        template.setConnectionFactory(factory);
+        var str = new StringRedisSerializer();
+        template.setKeySerializer(str);
+        template.setValueSerializer(str);
+        template.setHashKeySerializer(str);
+        template.setHashValueSerializer(str);
+        template.afterPropertiesSet();
+        return template;
     }
 
     /**
@@ -42,38 +58,5 @@ public class RedisConfig {
         return new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    }
-
-    /**
-     * Redis 템플릿 생성을 위한 private 메서드 직렬화 설정 및 연결 설정을 수행
-     */
-    private RedisTemplate<String, Object> createRedisTemplate(final RedisConnectionFactory factory,
-                                                              final ObjectMapper objectMapper) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(factory);
-
-        GenericJackson2JsonRedisSerializer serializer = createJsonSerializer(objectMapper);
-        configureSerializers(template, serializer);
-
-        template.afterPropertiesSet();
-        return template;
-    }
-
-    /**
-     * JSON 직렬화를 위한 GenericJackson2JsonRedisSerializer 생성
-     */
-    private GenericJackson2JsonRedisSerializer createJsonSerializer(final ObjectMapper objectMapper) {
-        return new GenericJackson2JsonRedisSerializer(objectMapper);
-    }
-
-    /**
-     * Redis 템플릿의 직렬화 설정 구성
-     */
-    private void configureSerializers(final RedisTemplate<String, Object> template,
-                                      final GenericJackson2JsonRedisSerializer serializer) {
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(serializer);
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(serializer);
     }
 }
