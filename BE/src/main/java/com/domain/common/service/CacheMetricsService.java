@@ -3,6 +3,7 @@ package com.domain.common.service;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -90,16 +91,31 @@ public class CacheMetricsService {
         return CacheMetrics.calculate(totalHits, totalMisses, totalStaleServed);
     }
 
-    // 매트릭을 Redis에 주기적으로 저장 (1분마다)
+    @Scheduled(fixedDelay = 60000)
+    public void updateCurrentMetrics() {
+        CacheMetrics metrics = getSystemMetrics();
+        redisTemplate.opsForValue().set(METRICS_KEY_PREFIX + "current", metrics);
+    }
+
     @Scheduled(fixedDelay = 3600000) // 1시간마다
     public void persistMetrics() {
         CacheMetrics metrics = getSystemMetrics();
 
-        String key = METRICS_KEY_PREFIX + LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH"));
+        Map<String, Object> metricsMap = Map.of(
+                "hits", metrics.hits(),
+                "misses", metrics.misses(),
+                "hitRate", metrics.hitRate(),
+                "timestamp", LocalDateTime.now().toString()
+        );
 
-        redisTemplate.opsForValue().set(key, metrics, Duration.ofDays(7));
-        log.info("Persisted hourly metrics: {}", metrics);
+        redisTemplate.opsForStream().add(
+                StreamRecords.newRecord()
+                        .in(METRICS_KEY_PREFIX + "stream")
+                        .ofMap(metricsMap)
+        );
+
+        // 오래된 항목 자동 삭제 (최근 10개만)
+        redisTemplate.opsForStream().trim(METRICS_KEY_PREFIX + "stream", 10);
     }
 }
 
