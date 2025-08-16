@@ -62,11 +62,6 @@ public class MakerController {
     @GetMapping("/me")
     public ResponseEntity<BaseResponse> getProfile(@AuthenticationPrincipal String email) {
         return ApiResponseFactory.success(SuccessCode.PROFILE_GET,
-                makerMapper.toResponse(
-                        makerService.getStoreName(email),
-                        makerService.countReceivedReviews(email),
-                        makerService.countMyEvents(email),
-                        makerService.countMyMenuPosters(email)
-                ));
+                makerService.getProfile(email));
     }
 }

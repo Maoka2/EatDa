@@ -13,6 +13,7 @@ import com.domain.store.repository.StoreRepository;
 import com.domain.user.dto.request.MakerCheckEmailRequest;
 import com.domain.user.dto.request.MakerSignUpBaseRequest;
 import com.domain.user.dto.request.MakerSignUpMenuRequest;
+import com.domain.user.dto.response.MakerGetProfileResponse;
 import com.domain.user.entity.User;
 import com.domain.user.mapper.MakerMapper;
 import com.domain.user.repository.MakerRepository;
@@ -119,6 +120,21 @@ public class MakerServiceImpl implements MakerService {
                 .getStores()
                 .getFirst()
                 .getName();
+    }
+
+    @Override
+    public Long getStoreId(String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getStores()
+                .getFirst()
+                .getId();
+    }
+
+    @Override
+    public MakerGetProfileResponse getProfile(String email) {
+        return makerRepository.getProfileByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
     }
 
     private String storeImage(MultipartFile imageRequest, String path) {
