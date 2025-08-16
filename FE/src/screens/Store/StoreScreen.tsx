@@ -273,7 +273,7 @@ export default function StoreScreen() {
           <StoreMenuScreen storeId={storeId} accessToken={accessToken} />
         )}
         {activeTab === "event" && <StoreEventScreen />}
-        {activeTab === "review" && <StoreReviewScreen />}
+        {activeTab === "review" && <StoreReviewScreen storeId={storeId}/>}
       </View>
 
       {isEater && <BottomButton onPress={handleBottomButtonPress} />}
