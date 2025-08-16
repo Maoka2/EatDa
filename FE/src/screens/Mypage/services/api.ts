@@ -593,30 +593,50 @@ export function mapMenuPostersToGridItems(
 /* =========================
  *  Maker가 '선물 받은' 메뉴판 조회
  * ========================= */
-export interface ReceivedMenuPoster {
+export type ReceivedMenuPoster = {
   id: number;
-  imageUrl: string;
+  type?: "IMAGE" | "VIDEO" | string;
+  imageUrl?: string | null;
+  path?: string | null;
+  createdAt?: string;
+};
+
+function toReceivedMenuPoster(raw: any): ReceivedMenuPoster | null {
+  if (!raw || typeof raw !== "object") return null;
+
+  const id = raw.menuPosterId ?? raw.id ?? raw.posterId ?? null;
+  const src = raw.path ?? raw.imageUrl ?? raw.url ?? null;
+  if (!id) return null;
+
+  return {
+    id: Number(id),
+    type: typeof raw.type === "string" ? raw.type : undefined,
+    imageUrl: typeof src === "string" && src.length > 0 ? src : null,
+    path: typeof raw.path === "string" ? raw.path : null,
+    createdAt: typeof raw.createdAt === "string" ? raw.createdAt : undefined,
+  };
 }
 
-function extractReceivedMenuPostersFromAny(json: any): ReceivedMenuPoster[] {
-  const data = json?.data ?? json;
-  const list = Array.isArray(data)
-    ? data
-    : Array.isArray(data?.items)
-    ? data.items
-    : Array.isArray(data?.posters)
-    ? data.posters
+export function extractReceivedMenuPostersFromAny(
+  json: any
+): ReceivedMenuPoster[] {
+  const arr: any[] = Array.isArray(json?.data)
+    ? json.data
+    : Array.isArray(json)
+    ? json
     : [];
 
-  return list
-    .map((it: any) => {
-      const id = Number(it?.id ?? it?.menuPosterId ?? it?.posterId);
-      const imageUrl = normalizePosterUrl(
-        String(it?.imageUrl ?? it?.url ?? it?.path ?? "")
-      );
-      return { id, imageUrl };
-    })
-    .filter((p) => Number.isFinite(p.id) && !!p.imageUrl);
+  const normalized = arr
+    .map(toReceivedMenuPoster)
+    .filter((v): v is ReceivedMenuPoster => !!v);
+
+  console.log("[RCV-POSTERS][PARSED]", {
+    totalRaw: Array.isArray(arr) ? arr.length : 0,
+    totalParsed: normalized.length,
+    sample: normalized[0],
+  });
+
+  return normalized;
 }
 
 export async function getReceivedMenuPosters(): Promise<ReceivedMenuPoster[]> {
@@ -642,16 +662,15 @@ export async function getReceivedMenuPosters(): Promise<ReceivedMenuPoster[]> {
 
   const status = res.status;
   const raw = await res.text();
-
   let json: any = null;
   try {
     json = JSON.parse(raw);
   } catch {}
 
   if (!res.ok) {
+    console.error("[RCV-POSTERS][ERR]", { status, raw });
     const msg =
       (json && (json.message || json.error)) || raw || `HTTP ${status}`;
-    console.error("[RCV-POSTERS][ERR]", { status, raw });
     throw new Error(msg);
   }
 
@@ -661,21 +680,32 @@ export async function getReceivedMenuPosters(): Promise<ReceivedMenuPoster[]> {
   return extractReceivedMenuPostersFromAny(json);
 }
 
+// 그리드 매핑 (path/imageUrl 둘 다 허용)
 export function mapReceivedPostersToGridItems(
   posters: ReceivedMenuPoster[],
   titleFallback = "받은 메뉴판"
-): ReviewGridItem[] {
+) {
   return posters
-    .filter((p) => !!p.imageUrl)
-    .map((p) => ({
-      id: String(p.id),
-      type: "image",
-      uri: p.imageUrl,
-      title: titleFallback,
-      description: "",
-      thumbnail: null,
-    }));
+    .map((p): ReviewGridItem | null => {
+      const src = p.imageUrl ?? p.path ?? null;
+      if (!src) return null;
+
+      const type: "image" | "video" =
+        p.type === "VIDEO" || p.type === "video" ? "video" : "image";
+
+      const item: ReviewGridItem = {
+        id: String(p.id),
+        type,
+        uri: src,
+        title: titleFallback,
+        description: "",
+        thumbnail: src, // 썸네일 없으면 본 이미지로
+      };
+      return item;
+    })
+    .filter((x): x is ReviewGridItem => x !== null);
 }
+
 
 // 리뷰 삭제(Eater 본인이 작성한 자신의 리뷰를 삭제)
 
