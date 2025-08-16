@@ -4,6 +4,7 @@ import com.domain.menu.dto.request.AdoptMenuPostersRequest;
 import com.domain.menu.dto.request.MenuPosterAssetCreateRequest;
 import com.domain.menu.dto.request.MenuPosterFinalizeRequest;
 import com.domain.menu.dto.response.AdoptMenuPostersResponse;
+import com.domain.menu.dto.response.AdoptedMenuPosterResponse;
 import com.domain.menu.dto.response.MenuPosterAssetRequestResponse;
 import com.domain.menu.dto.response.MenuPosterFinalizeResponse;
 import com.domain.menu.entity.MenuPoster;
@@ -29,4 +30,6 @@ public interface MenuPosterService {
     List<MenuPoster> getMyMenuPosters(String email);
 
     List<MenuPoster> getReceivedMenuPosters(String email);
+
+    List<AdoptedMenuPosterResponse> getAdoptedMenuPosters(Long storeId, String eaterEmail);
 }
