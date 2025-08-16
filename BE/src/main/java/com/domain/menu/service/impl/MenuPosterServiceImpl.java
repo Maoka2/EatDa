@@ -24,6 +24,7 @@ import com.domain.store.repository.StoreRepository;
 import com.domain.user.entity.User;
 import com.domain.user.repository.EaterRepository;
 import com.domain.user.repository.MakerRepository;
+import com.domain.user.repository.UserRepository;
 import com.global.constants.AssetType;
 import com.global.constants.ErrorCode;
 import com.global.constants.Status;
@@ -36,7 +37,6 @@ import com.global.redis.constants.RedisStreamKey;
 import com.global.utils.AssetValidator;
 import java.util.List;
 import java.util.Objects;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,6 +58,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
     private final MenuValidator menuValidator;
     private final MenuPosterAssetRedisPublisher menuPosterAssetRedisPublisher;
     private final FileStorageService fileStorageService;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -203,9 +204,8 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         validateEater(eaterEmail);
         Store store = validateStore(storeId);
 
-        if (!store.getMaker().getEmail().equals(eaterEmail)) {
-            throw new ApiException(ErrorCode.FORBIDDEN);
-        }
+        userRepository.findByEmailAndDeletedFalse(eaterEmail)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
         List<AdoptedMenuPoster> adoptedPosters =
                 adoptedMenuPosterRepository.findByStoreIdOrderByAdoptedAtDesc(storeId);
