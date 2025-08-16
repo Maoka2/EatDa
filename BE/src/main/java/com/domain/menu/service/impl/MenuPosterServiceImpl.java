@@ -192,7 +192,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
 
     @Override
     public List<MenuPoster> getReceivedMenuPosters(final String email) {
-        return menuPosterRepository.findByStoreIdAndStatus(getMakerId(email), Status.SUCCESS);
+        return menuPosterRepository.findByStoreIdAndStatus(getStoreId(email), Status.SUCCESS);
     }
 
     private User validateEater(final String eaterEmail) {
@@ -285,5 +285,11 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         return makerRepository.findByEmailAndDeletedFalse(email)
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
                 .getId();
+    }
+
+    private Long getStoreId(String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getStores().getFirst().getId();
     }
 }
