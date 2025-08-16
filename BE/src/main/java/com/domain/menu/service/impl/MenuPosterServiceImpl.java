@@ -5,6 +5,7 @@ import com.domain.menu.dto.request.AdoptMenuPostersRequest;
 import com.domain.menu.dto.request.MenuPosterAssetCreateRequest;
 import com.domain.menu.dto.request.MenuPosterFinalizeRequest;
 import com.domain.menu.dto.response.AdoptMenuPostersResponse;
+import com.domain.menu.dto.response.AdoptedMenuPosterResponse;
 import com.domain.menu.dto.response.MenuPosterAssetRequestResponse;
 import com.domain.menu.dto.response.MenuPosterFinalizeResponse;
 import com.domain.menu.entity.AdoptedMenuPoster;
@@ -34,6 +35,8 @@ import com.global.filestorage.FileStorageService;
 import com.global.redis.constants.RedisStreamKey;
 import com.global.utils.AssetValidator;
 import java.util.List;
+import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -193,6 +196,34 @@ public class MenuPosterServiceImpl implements MenuPosterService {
     @Override
     public List<MenuPoster> getReceivedMenuPosters(final String email) {
         return menuPosterRepository.findByStoreIdAndStatus(getStoreId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public List<AdoptedMenuPosterResponse> getAdoptedMenuPosters(Long storeId, String eaterEmail) {
+        validateEater(eaterEmail);
+        Store store = validateStore(storeId);
+
+        if (!store.getMaker().getEmail().equals(eaterEmail)) {
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        List<AdoptedMenuPoster> adoptedPosters =
+                adoptedMenuPosterRepository.findByStoreIdOrderByAdoptedAtDesc(storeId);
+
+        return adoptedPosters.stream()
+                .map(adopted -> {
+                    MenuPoster menuPoster = adopted.getMenuPoster();
+                    MenuPosterAsset asset = menuPoster.getMenuPosterAsset();
+                    if (asset == null || asset.getStatus() != Status.SUCCESS) {
+                        return null;
+                    }
+                    return AdoptedMenuPosterResponse.builder()
+                            .menuPosterId(menuPoster.getId())
+                            .imageUrl(asset.getPath())
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private User validateEater(final String eaterEmail) {
