@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 8,
     backgroundColor: "#fff",
-    borderTopWidth: StyleSheet.hairlineWidth,
+    // borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "#e5e7eb",
   },
   posterBarTitle: {
@@ -411,11 +411,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   posterThumbWrap: {
-    marginRight: 10,
+    marginRight: 15,
   },
   posterThumb: {
-    width: 84,
-    height: 118,
+    width: 70,
+    height: 70,
     borderRadius: 8,
     backgroundColor: "#eee",
   },
