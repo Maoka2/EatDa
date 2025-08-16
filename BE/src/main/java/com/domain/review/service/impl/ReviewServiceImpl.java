@@ -3,6 +3,8 @@ package com.domain.review.service.impl;
 import static com.global.constants.ErrorCode.FORBIDDEN;
 import static com.global.constants.ErrorCode.STORE_NOT_FOUND;
 
+import com.domain.common.entity.Poi;
+import com.domain.common.service.SpatialSearchService;
 import com.domain.menu.entity.Menu;
 import com.domain.menu.repository.MenuRepository;
 import com.domain.review.constants.ReviewAssetType;
@@ -20,7 +22,6 @@ import com.domain.review.dto.response.ReviewFeedResponse;
 import com.domain.review.dto.response.ReviewFeedResult;
 import com.domain.review.dto.response.ReviewFinalizeResponse;
 import com.domain.review.dto.response.StoreDistanceResult;
-import com.domain.common.entity.Poi;
 import com.domain.review.entity.Review;
 import com.domain.review.entity.ReviewAsset;
 import com.domain.review.entity.ReviewMenu;
@@ -30,7 +31,6 @@ import com.domain.review.publisher.ReviewAssetRedisPublisher;
 import com.domain.review.repository.ReviewAssetRepository;
 import com.domain.review.repository.ReviewMenuRepository;
 import com.domain.review.repository.ReviewRepository;
-import com.domain.common.service.SpatialSearchService;
 import com.domain.review.service.ReviewAssetService;
 import com.domain.review.service.ReviewService;
 import com.domain.review.service.ReviewThumbnailService;
@@ -55,7 +55,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -320,6 +319,11 @@ public class ReviewServiceImpl implements ReviewService {
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
         long storeId = maker.getStores().getFirst().getId();
         return reviewRepository.findByStoreIdAndStatusOrderByCreatedAtDesc(storeId, Status.SUCCESS);
+    }
+
+    @Override
+    public List<Review> getReviews(final Long storeId) {
+        return reviewRepository.findByStoreId(storeId);
     }
 
     // ===== Private Helper Methods =====

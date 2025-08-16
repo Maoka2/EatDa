@@ -43,4 +43,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                  Pageable pageable);
 
     Long countByStoreIdAndStatus(Long storerId, Status status);
+
+    List<Event> findByStoreIdAndStatus(Long StoreId, Status status);
 }
