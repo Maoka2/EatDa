@@ -12,9 +12,9 @@ import {
   Animated,
   FlatList,
   ViewToken,
-  StyleProp,
-  ViewStyle,
   ImageStyle,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import { COLORS, SPACING } from "../../constants/theme";
@@ -25,11 +25,15 @@ import TabNavigation from "../../components/TabNavigation";
 import CloseBtn from "../../../assets/closeBtn.svg";
 
 import { getMyEvents } from "../EventMaking/services/api";
+import { getReceivedReviews } from "./services/api";
+// 받은 메뉴판 목록 & 매핑은 그대로 사용
 import {
-  getReceivedReviews,
   getReceivedMenuPosters,
   mapReceivedPostersToGridItems,
 } from "./services/api";
+
+// 채택 API (Store > Menu 서비스에 있음)
+import { adoptMenuPosters } from "../Store/Menu/services/api";
 
 // 빈 상태 아이콘
 const EmptyIcon = require("../../../assets/blue-box-with-red-button-that-says-x-it 1.png");
@@ -37,15 +41,17 @@ const EmptyIcon = require("../../../assets/blue-box-with-red-button-that-says-x-
 // FlatList 가시영역 설정(훅 아님 — 순서 안전)
 const VIEWABILITY_CONFIG = { viewAreaCoveragePercentThreshold: 80 as const };
 
+type TabKey = "storeReviews" | "storeEvents" | "receivedMenuBoard";
+
 interface MakerMypageProps {
   userRole: "maker";
   onLogout: () => void;
   initialTab?: TabKey;
   onBack?: () => void;
   setHeaderVisible?: (visible: boolean) => void;
+  /** 채택 API에 필수 — 사장님 가게의 storeId */
+  storeId?: number;
 }
-
-type TabKey = "storeReviews" | "storeEvents" | "receivedMenuBoard";
 
 const EmptyState = ({ message, icon }: { message: string; icon?: any }) => (
   <View style={styles.emptyContent}>
@@ -62,6 +68,7 @@ export default function MakerMypageDetail({
   initialTab = "storeReviews",
   onBack,
   setHeaderVisible,
+  storeId,
 }: MakerMypageProps) {
   // ---- 모든 훅은 최상단 고정 (순서 변동 금지) ----
   const { width, height } = useWindowDimensions();
@@ -96,6 +103,9 @@ export default function MakerMypageDetail({
   const vdoRefs = useRef<{ [key: number]: Video | null }>({});
   const scaleAnimRef = useRef(new Animated.Value(1));
   const scaleAnim = scaleAnimRef.current;
+
+  // 채택 진행 상태
+  const [adopting, setAdopting] = useState(false);
 
   // 현재 인덱스에 맞춰 비디오 재생/일시정지
   useEffect(() => {
@@ -239,6 +249,44 @@ export default function MakerMypageDetail({
     }).start();
   };
 
+  // 받은 메뉴판 상세에서 "채택하기"
+  const handleAdoptCurrent = useCallback(() => {
+    if (detailSource !== "receivedMenuBoard" || !selectedItem) return;
+
+    const idNum = Number.parseInt(selectedItem.id, 10);
+    if (!Number.isFinite(idNum)) {
+      Alert.alert("오류", "잘못된 메뉴판 ID입니다.");
+      return;
+    }
+    if (!storeId || !Number.isFinite(storeId)) {
+      Alert.alert("오류", "가게 식별자(storeId)가 없어 채택할 수 없습니다.");
+      return;
+    }
+
+    Alert.alert(
+      "이 메뉴판을 채택할까요?",
+      "선택하면 가게 페이지의 채택된 메뉴판이 교체될 수 있어요.",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "채택",
+          style: "default",
+          onPress: async () => {
+            try {
+              setAdopting(true);
+              await adoptMenuPosters({ storeId, menuPosterIds: [idNum] });
+              Alert.alert("완료", "메뉴판을 채택했습니다.");
+            } catch (e: any) {
+              Alert.alert("오류", e?.message ?? "채택에 실패했습니다.");
+            } finally {
+              setAdopting(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [detailSource, selectedItem, storeId]);
+
   const gridSize = (width - SPACING.md * 2 - 16) / 2;
 
   // ---- 렌더 ----
@@ -284,13 +332,33 @@ export default function MakerMypageDetail({
                   <CloseBtn />
                 </TouchableOpacity>
 
-                {/* 받은 메뉴판 상세에서는 텍스트 오버레이 숨김 */}
+                {/* 받은 메뉴판 상세에서는 텍스트 오버레이 숨김 (기존) */}
                 {detailSource !== "receivedMenuBoard" && (
                   <View style={[styles.textOverlay, { bottom: height * 0.1 }]}>
                     <Text style={styles.titleText}>#{item.title}</Text>
                     {!!item.description && (
                       <Text style={styles.descText}>{item.description}</Text>
                     )}
+                  </View>
+                )}
+
+                {/* 받은 메뉴판일 때만 채택 버튼 노출 */}
+                {detailSource === "receivedMenuBoard" && (
+                  <View style={[styles.adoptBar, { bottom: 24 }]}>
+                    <TouchableOpacity
+                      style={[styles.adoptBtn, adopting && { opacity: 0.7 }]}
+                      activeOpacity={0.85}
+                      onPress={handleAdoptCurrent}
+                      disabled={adopting}
+                    >
+                      {adopting ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text style={styles.adoptBtnText}>
+                          이 메뉴판 채택하기
+                        </Text>
+                      )}
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
@@ -473,4 +541,32 @@ const styles = StyleSheet.create({
   imageFill: {
     ...StyleSheet.absoluteFillObject,
   } as ImageStyle,
+
+  // 채택 바/버튼
+  adoptBar: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    alignItems: "center",
+  },
+  adoptBtn: {
+    minHeight: 48,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#fc6fae",
+    alignSelf: "stretch",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  adoptBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });
