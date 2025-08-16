@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -41,7 +41,7 @@ public class MultiLevelCacheService {
         String key = generateKey(poiId, distance);
 
         List<StoreDistanceResult> l1Result = l1Cache.getIfPresent(key);
-        if (l1Result != null) {
+        if (Objects.nonNull(l1Result)) {
             log.info("L1 cache hit for {}", key);
             cacheMetricsService.recordHit(poiId, false);
             return l1Result;
@@ -50,17 +50,19 @@ public class MultiLevelCacheService {
         if (l2Cache.hasCache(poiId, distance)) {
             List<StoreDistanceResult> l2Result = l2Cache.getCache(poiId, distance);
 
-            l1Cache.put(key, l2Result);
-            boolean isStale = cacheMetadataService.isStale(poiId, distance);
-            cacheMetricsService.recordHit(poiId, isStale);
-            log.info("L2 cache hit for {}, promoted to L1", key);
+            if (Objects.nonNull(l2Result)) {
+                l1Cache.put(key, l2Result);
+                boolean isStale = cacheMetadataService.isStale(poiId, distance);
+                cacheMetricsService.recordHit(poiId, isStale);
+                log.info("L2 cache hit for {}, promoted to L1", key);
 
-            return l2Result;
+                return l2Result;
+            }
         }
 
         log.info("Cache miss for {}", key);
         cacheMetricsService.recordMiss(poiId);
-        return null;
+        return Collections.emptyList();
     }
 
     /**
@@ -100,6 +102,10 @@ public class MultiLevelCacheService {
                 stats.evictionCount(),
                 l1Cache.estimatedSize()
         );
+    }
+
+    public Map<String, List<StoreDistanceResult>> getL1Contents() {
+        return new HashMap<>(l1Cache.asMap()); // 스냅샷 생성하여 반환
     }
 
     private String generateKey(Long poiId, int distance) {

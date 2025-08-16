@@ -1,10 +1,12 @@
 package com.domain.common.controller;
 
 import com.domain.common.service.*;
+import com.domain.review.dto.response.StoreDistanceResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -44,5 +46,10 @@ public class CacheMonitoringController {
                 "accessCount", accessTrackingService.getCurrentAccessCount(poiId),
                 "lastAccess", accessTrackingService.getLastAccessTime(poiId)
         ));
+    }
+
+    @GetMapping("/l1/contents")
+    public ResponseEntity<Map<String, List<StoreDistanceResult>>> getL1Contents() {
+        return ResponseEntity.ok(multiLevelCache.getL1Contents());
     }
 }
