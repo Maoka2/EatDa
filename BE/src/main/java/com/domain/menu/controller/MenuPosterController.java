@@ -1,13 +1,7 @@
 package com.domain.menu.controller;
 
-import com.domain.menu.dto.request.AdoptMenuPostersRequest;
-import com.domain.menu.dto.request.MenuPosterAssetCreateRequest;
-import com.domain.menu.dto.request.MenuPosterFinalizeRequest;
-import com.domain.menu.dto.request.SendMenuPosterRequest;
-import com.domain.menu.dto.response.AdoptMenuPostersResponse;
-import com.domain.menu.dto.response.AdoptedMenuPosterResponse;
-import com.domain.menu.dto.response.MenuPosterAssetRequestResponse;
-import com.domain.menu.dto.response.MenuPosterFinalizeResponse;
+import com.domain.menu.dto.request.*;
+import com.domain.menu.dto.response.*;
 import com.domain.menu.mapper.MenuPosterMapper;
 import com.domain.menu.service.MenuPosterService;
 import com.global.constants.AssetType;
@@ -22,13 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -98,6 +86,16 @@ public class MenuPosterController {
         AdoptMenuPostersResponse response = menuPosterService.adoptMenuPosters(request, email);
         return ApiResponseFactory.success(SuccessCode.POSTERS_ADOPTED, response);
     }
+
+    @DeleteMapping("/adopted")
+    public ResponseEntity<BaseResponse> releaseMenuPosters(
+            @Valid @RequestBody final ReleaseMenuPosterRequest request,
+            @AuthenticationPrincipal final String email
+    ) {
+        ReleaseMenuPosterResponse response = menuPosterService.releaseMenuPosters(request, email);
+        return ApiResponseFactory.success(SuccessCode.POSTER_RELEASE, response);
+    }
+
 
     @GetMapping("/{storeId}/adopted")
     public ResponseEntity<BaseResponse> getAdoptedMenuPosters(
