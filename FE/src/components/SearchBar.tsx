@@ -56,50 +56,14 @@ export default function SearchBar({
 
   return (
     <View style={[styles.container, { width: width - 20 }]}>
-      {/* 첫 번째 드롭다운 */}
-      <View style={{ position: "relative" }}>
-        <TouchableOpacity
-          style={[
-            styles.dropdown,
-            { backgroundColor: "#e8a3c2" },
-            { flexDirection: "row" },
-          ]}
-          onPress={() => {
-            setShowTypeDropdown(!showTypeDropdown);
-            setShowDistanceDropdown(false);
-          }}
-        >
-          <Text style={styles.dropdownText}>{searchType}</Text>
-          <Dropdown />
-        </TouchableOpacity>
-
-        {showTypeDropdown && (
-          <View style={styles.dropdownMenu}>
-            <FlatList
-              data={SEARCH_OPTIONS}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSearchType(item);
-                    setShowTypeDropdown(false);
-                  }}
-                >
-                  <Text style={styles.dropdownItemText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        )}
-      </View>
+    
 
       {/* 두 번째 드롭다운 (거리) */}
       <View style={{ position: "relative" }}>
         <TouchableOpacity
           style={[
             styles.dropdown,
-            { backgroundColor: "#f3dea0" },
+            { backgroundColor: "#fec566" },
             { flexDirection: "row" },
           ]}
           onPress={() => {
@@ -137,26 +101,9 @@ export default function SearchBar({
         )}
       </View>
 
-      {/* 검색 공간 */}
-      <TouchableOpacity style={styles.textInput}>
-        <TextInput
-          onPress={() => {
-            if (showTypeDropdown || showDistanceDropdown) {
-              setShowDistanceDropdown(false);
-              setShowTypeDropdown(false);
-            }
-          }}
-          placeholder={`리뷰를 검색해보세요.`}
-          placeholderTextColor="#555"
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-      </TouchableOpacity>
+  
 
-      {/* 돋보기 버튼 */}
-      <TouchableOpacity style={styles.searchBtn}>
-        <SearchBtn />
-      </TouchableOpacity>
+   
     </View>
   );
 }
@@ -165,7 +112,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f1f1f1",
     borderRadius: 30,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -175,10 +121,9 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   dropdown: {
-    borderRadius: 20,
+    borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    marginHorizontal: 3,
     minWidth: 60,
     alignItems: "center",
     zIndex: 10,
@@ -189,15 +134,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     paddingRight: 4,
   },
-  textInput: {
-    flex: 1,
-    paddingHorizontal: 8,
-    fontSize: 13,
-    color: COLORS.textColors.secondary,
-  },
-  searchBtn: {
-    paddingHorizontal: 8,
-  },
+  
   dropdownMenu: {
     position: "absolute",
     top: 40,
