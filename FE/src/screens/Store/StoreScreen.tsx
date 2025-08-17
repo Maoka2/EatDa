@@ -367,7 +367,7 @@ export default function StoreScreen() {
         </View>
       )}
 
-      {isEater && <BottomButton onPress={handleBottomButtonPress} />}
+      {isEater && activeTab==="menu" && <BottomButton onPress={handleBottomButtonPress} />}
 
       {/* 포스터 미리보기 모달 */}
       <PosterPreviewModal
