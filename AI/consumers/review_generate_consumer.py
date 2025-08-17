@@ -52,6 +52,23 @@ from services.review_generate_callback import review_generate_callback
 
 def _load_enhancer():
     """Robust loader for luma_prompt_enhancer regardless of layout."""
+    # 0) Explicit overrides via environment
+    mod_path = os.getenv("LUMA_ENHANCER_PATH")
+    if mod_path and os.path.exists(mod_path):
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location("_enh_mod_env", mod_path)
+        if _spec and _spec.loader:
+            _mod = _ilu.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)  # type: ignore[attr-defined]
+            return _mod.enhance, _mod.EnhancerPolicy, _mod.Score
+    mod_name = os.getenv("LUMA_ENHANCER_MODULE")
+    if mod_name:
+        try:
+            _m = __import__(mod_name, fromlist=["enhance","EnhancerPolicy","Score"])  # type: ignore
+            return _m.enhance, _m.EnhancerPolicy, _m.Score
+        except Exception:
+            pass
+
     try:
         from AI.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score  # type: ignore
         return enhance, EnhancerPolicy, Score
