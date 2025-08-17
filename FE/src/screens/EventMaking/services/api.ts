@@ -2,9 +2,24 @@ import { getTokens } from "../../Login/services/tokenStorage";
 import { normalizeImageForUpload } from "../../../utils/normalizeImage";
 import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
-import { Alert } from "react-native";
 
 const BASE_URL = "https://i13a609.p.ssafy.io/test";
+
+// ─────────────────────────────────────────────
+// AppError: 화면에서 에러 코드를 구분해 모달/토스트 처리 가능
+// ─────────────────────────────────────────────
+export class AppError extends Error {
+  code: string;
+  status?: number;
+  details?: any;
+  constructor(code: string, message: string, status?: number, details?: any) {
+    super(message);
+    this.name = "AppError";
+    this.code = code;
+    this.status = status;
+    this.details = details;
+  }
+}
 
 // 이벤트 asset 파일 다운로드 시
 const downloadAttempts: Record<number, number> = {};
@@ -91,13 +106,16 @@ async function logImageSizes(
 
 export type EventAssetResp = { eventAssetId: number; eventId: number };
 
-// 기존 함수 시그니처 변경 + 응답 파싱 보강
+// 기존 함수 시그니처 유지 + 응답 파싱 보강
 export const requestEventAsset = async (
   data: EventAssetRequestData
 ): Promise<EventAssetResp> => {
   const { accessToken } = await getTokens();
   if (!accessToken)
-    throw new Error("인증 정보가 없습니다. 다시 로그인해주세요");
+    throw new AppError(
+      "UNAUTHENTICATED",
+      "인증 정보가 없습니다. 다시 로그인해주세요"
+    );
 
   const fd = new FormData();
   fd.append("title", data.title);
@@ -139,8 +157,11 @@ export const requestEventAsset = async (
 
   if (!res.ok) {
     console.error("EVENT ASSET ERROR", { status: res.status, raw });
-    throw new Error(
-      (json && (json.message || json.error)) || raw || `HTTP ${res.status}`
+    throw new AppError(
+      "REQUEST_FAILED",
+      (json && (json.message || json.error)) || raw || `HTTP ${res.status}`,
+      res.status,
+      json ?? raw
     );
   }
 
@@ -162,7 +183,7 @@ export const requestEventAsset = async (
 
   if (!Number.isFinite(eventAssetId) || !Number.isFinite(eventId)) {
     console.warn("[requestEventAsset] unexpected response shape:", json);
-    throw new Error("eventId / eventAssetId 파싱 실패");
+    throw new AppError("PARSE_FAILED", "eventId / eventAssetId 파싱 실패");
   }
 
   return { eventAssetId, eventId };
@@ -172,7 +193,10 @@ export const requestEventAsset = async (
 export const getEventAssetResult = async (eventAssetId: number) => {
   const { accessToken } = await getTokens();
   if (!accessToken) {
-    throw new Error("인증 정보가 없습니다. 다시 로그인해주세요");
+    throw new AppError(
+      "UNAUTHENTICATED",
+      "인증 정보가 없습니다. 다시 로그인해주세요"
+    );
   }
 
   const url = `${BASE_URL}/api/events/assets/${eventAssetId}/result`;
@@ -211,7 +235,6 @@ export const getEventAssetResult = async (eventAssetId: number) => {
       )}`
     );
   } else {
-    // JSON이 아닐 때도 보기 좋게
     const preview =
       typeof raw === "string" && raw.length > 1000
         ? raw.slice(0, 1000) + `… (truncated ${raw.length - 1000} chars)`
@@ -225,8 +248,11 @@ export const getEventAssetResult = async (eventAssetId: number) => {
 
   if (!res.ok) {
     console.error("GET ASSET RESULT ERROR", { status, raw });
-    throw new Error(
-      (json && (json.message || json.error)) || raw || `HTTP ${status}`
+    throw new AppError(
+      "REQUEST_FAILED",
+      (json && (json.message || json.error)) || raw || `HTTP ${status}`,
+      status,
+      json ?? raw
     );
   }
 
@@ -241,10 +267,12 @@ export interface FinalizeEventData {
 }
 
 export const finalizeEvent = async (data: FinalizeEventData) => {
-  // 토큰 받아오기
   const { accessToken } = await getTokens();
   if (!accessToken) {
-    throw new Error("인증 정보가 없습니다. 다시 로그인 해주세요.");
+    throw new AppError(
+      "UNAUTHENTICATED",
+      "인증 정보가 없습니다. 다시 로그인 해주세요."
+    );
   }
 
   const body = {
@@ -272,9 +300,11 @@ export const finalizeEvent = async (data: FinalizeEventData) => {
   } catch {}
   if (!res.ok) {
     console.error("FINALIZE EVENT ERROR", { status: res.status, raw, json });
-
-    throw new Error(
-      (json && (json.message || json.details)) || raw || `HTTP ${res.status}`
+    throw new AppError(
+      "REQUEST_FAILED",
+      (json && (json.message || json.details)) || raw || `HTTP ${res.status}`,
+      res.status,
+      json ?? raw
     );
   }
 
@@ -282,7 +312,16 @@ export const finalizeEvent = async (data: FinalizeEventData) => {
   return json;
 };
 
+// ─────────────────────────────────────────────
 // 생성된 이벤트 asset 다운로드 API
+//  - Alert 제거
+//  - 결과는 반환값 또는 AppError throw
+// ─────────────────────────────────────────────
+export type DownloadOutcome =
+  | "SAVED_FROM_CACHE"
+  | "SAVED_FROM_URL"
+  | "SAVED_FROM_ENDPOINT";
+
 export const downloadEventAsset = async (
   eventAssetId: number,
   opts?: {
@@ -290,8 +329,7 @@ export const downloadEventAsset = async (
     cachedLocalPath?: string | null;
     preferredExt?: string | null;
   }
-) => {
-  // 시도 횟수 카운트
+): Promise<DownloadOutcome> => {
   const attempt = (downloadAttempts[eventAssetId] =
     (downloadAttempts[eventAssetId] ?? 0) + 1);
   console.log(`[DL][#${attempt}] start eventAssetId=${eventAssetId}`);
@@ -300,13 +338,16 @@ export const downloadEventAsset = async (
   const { status } = await MediaLibrary.requestPermissionsAsync();
   if (status !== "granted") {
     console.warn(`[DL][#${attempt}] no-permission`);
-    Alert.alert("권한 필요", "앨범에 저장하려면 접근 권한이 필요합니다.");
-    return;
+    throw new AppError(
+      "PERMISSION_DENIED",
+      "앨범에 저장하려면 접근 권한이 필요합니다."
+    );
   }
 
   // 토큰
   const { accessToken } = await getTokens();
-  if (!accessToken) throw new Error("인증 정보가 없습니다.");
+  if (!accessToken)
+    throw new AppError("UNAUTHENTICATED", "인증 정보가 없습니다.");
 
   // 확장자 추정
   const guessFromUrl =
@@ -327,8 +368,7 @@ export const downloadEventAsset = async (
         );
         const asset = await MediaLibrary.createAssetAsync(opts.cachedLocalPath);
         await MediaLibrary.createAlbumAsync("EatDa", asset, false);
-        Alert.alert("저장 완료", "이미지가 갤러리에 저장되었습니다.");
-        return;
+        return "SAVED_FROM_CACHE";
       } else {
         console.log(
           `[DL][#${attempt}] cache-miss path=${opts.cachedLocalPath}`
@@ -348,8 +388,7 @@ export const downloadEventAsset = async (
       const dl = await FileSystem.downloadAsync(opts.assetUrl, fileUri);
       const asset = await MediaLibrary.createAssetAsync(dl.uri);
       await MediaLibrary.createAlbumAsync("EatDa", asset, false);
-      Alert.alert("저장 완료", "이미지가 갤러리에 저장되었습니다.");
-      return;
+      return "SAVED_FROM_URL";
     } catch (e) {
       console.warn(`[DL][#${attempt}] direct-failed, will fallback`, e);
     }
@@ -377,8 +416,12 @@ export const downloadEventAsset = async (
       );
       const errorMessage =
         parsed?.details?.eventAssetId || parsed?.message || "오류 발생";
-      Alert.alert("오류", errorMessage);
-      return;
+      throw new AppError(
+        "ENDPOINT_PRECHECK_FAILED",
+        errorMessage,
+        preflight.status,
+        parsed ?? txt
+      );
     }
 
     console.log(`[DL][#${attempt}] endpoint-download start`);
@@ -390,10 +433,15 @@ export const downloadEventAsset = async (
     await MediaLibrary.createAlbumAsync("EatDa", albumAsset, false);
 
     console.log(`[DL][#${attempt}] endpoint-download success -> ${result.uri}`);
-    Alert.alert("저장 완료", "이미지가 갤러리에 성공적으로 저장되었습니다.");
+    return "SAVED_FROM_ENDPOINT";
   } catch (error: any) {
     console.error(`[DL][#${attempt}] endpoint-download-error:`, error);
-    Alert.alert("오류", "이미지를 저장하는 중 오류가 발생했습니다.");
+    throw new AppError(
+      "DOWNLOAD_FAILED",
+      "이미지를 저장하는 중 오류가 발생했습니다.",
+      undefined,
+      error
+    );
   }
 };
 
@@ -403,7 +451,7 @@ export const getActiveEvents = async (
 ): Promise<ActiveEvent[]> => {
   const { accessToken } = await getTokens();
   if (!accessToken) {
-    throw new Error("인증 정보가 없습니다.");
+    throw new AppError("UNAUTHENTICATED", "인증 정보가 없습니다.");
   }
 
   const url = lastEventId
@@ -427,7 +475,7 @@ export const getActiveEvents = async (
     json = raw ? JSON.parse(raw) : null;
   } catch {
     console.error("응답 JSON 파싱 실패:", raw);
-    throw new Error(`응답 파싱 실패: ${raw}`);
+    throw new AppError("PARSE_FAILED", `응답 파싱 실패: ${raw}`);
   }
 
   if (!res.ok) {
@@ -436,7 +484,12 @@ export const getActiveEvents = async (
       raw,
       json,
     });
-    throw new Error((json && json.message) || raw || `HTTP ${res.status}`);
+    throw new AppError(
+      "REQUEST_FAILED",
+      (json && (json as any).message) || raw || `HTTP ${res.status}`,
+      res.status,
+      json ?? raw
+    );
   }
 
   console.log("✅ 진행 중인 이벤트 조회 성공:");
@@ -445,7 +498,6 @@ export const getActiveEvents = async (
 };
 
 // 생성 다 되고나서 fianlize 되게끔하기
-
 type AssetPhase = "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED";
 
 export type WaitForAssetReadyOptions = {
@@ -546,7 +598,10 @@ export async function waitForAssetReady(
 
       // 실패 코드 or 상태
       if (status === "FAILED" || code === "ASSET_GENERATION_FAILED") {
-        throw new Error(message || "에셋 생성이 실패했습니다.");
+        throw new AppError(
+          "ASSET_FAILED",
+          message || "에셋 생성이 실패했습니다."
+        );
       }
 
       // 성공 처리
@@ -561,7 +616,7 @@ export async function waitForAssetReady(
     }
 
     if (Date.now() - start > maxWaitMs) {
-      throw new Error("에셋 생성 대기 시간이 초과되었습니다.");
+      throw new AppError("TIMEOUT", "에셋 생성 대기 시간이 초과되었습니다.");
     }
 
     await new Promise((r) => setTimeout(r, delay));
@@ -573,7 +628,10 @@ export async function waitForAssetReady(
 export const getMyEvents = async (lastEventId?: number) => {
   const { accessToken } = await getTokens();
   if (!accessToken)
-    throw new Error("인증 정보가 없습니다. 다시 로그인해주세요");
+    throw new AppError(
+      "UNAUTHENTICATED",
+      "인증 정보가 없습니다. 다시 로그인해주세요"
+    );
 
   const url = lastEventId
     ? `${BASE_URL}/api/events/my?lastEventId=${lastEventId}`
@@ -595,8 +653,11 @@ export const getMyEvents = async (lastEventId?: number) => {
 
   if (!res.ok) {
     console.error("GET MY EVENTS ERROR", { status, raw });
-    throw new Error(
-      (json && (json.message || json.error)) || raw || `HTTP ${status}`
+    throw new AppError(
+      "REQUEST_FAILED",
+      (json && (json.message || json.error)) || raw || `HTTP ${status}`,
+      status,
+      json ?? raw
     );
   }
 
@@ -607,7 +668,10 @@ export const getMyEvents = async (lastEventId?: number) => {
 export const deleteEvent = async (eventId: number, storeId?: number) => {
   const { accessToken } = await getTokens();
   if (!accessToken)
-    throw new Error("인증 정보가 없습니다. 다시 로그인해주세요");
+    throw new AppError(
+      "UNAUTHENTICATED",
+      "인증 정보가 없습니다. 다시 로그인해주세요"
+    );
 
   const idStr = encodeURIComponent(String(eventId));
   const baseUrl = `${BASE_URL}/api/events/${idStr}`;
@@ -622,7 +686,6 @@ export const deleteEvent = async (eventId: number, storeId?: number) => {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        // ⚠️ 바디 없음 → Content-Type 생략 (서버에 혼란 주지 않도록)
       },
     });
 
@@ -665,9 +728,7 @@ export const deleteEvent = async (eventId: number, storeId?: number) => {
     else if (status === 403) msg = "삭제 권한이 없습니다.";
     else if (status === 404) msg = "이벤트를 찾을 수 없습니다.";
 
-    const err: any = new Error(msg);
-    err.status = status;
-    err.code = code;
+    const err = new AppError("REQUEST_FAILED", msg, status, { code, data });
     throw err;
   }
 
@@ -687,8 +748,12 @@ export const getStoreEvents = async (
 ): Promise<ActiveEvent[]> => {
   const { accessToken } = await getTokens();
   if (!accessToken)
-    throw new Error("인증 정보가 없습니다. 다시 로그인해주세요.");
-  if (!storeId || storeId <= 0) throw new Error("유효하지 않은 가게 ID입니다.");
+    throw new AppError(
+      "UNAUTHENTICATED",
+      "인증 정보가 없습니다. 다시 로그인해주세요."
+    );
+  if (!storeId || storeId <= 0)
+    throw new AppError("INVALID_INPUT", "유효하지 않은 가게 ID입니다.");
 
   const url = `${BASE_URL}/api/events?storeId=${encodeURIComponent(
     String(storeId)
@@ -709,13 +774,13 @@ export const getStoreEvents = async (
     json = raw ? JSON.parse(raw) : null;
   } catch {
     console.error("[getStoreEvents] JSON 파싱 실패:", raw);
-    throw new Error("응답 파싱 실패");
+    throw new AppError("PARSE_FAILED", "응답 파싱 실패");
   }
 
   if (!res.ok) {
     const msg = json?.message || raw || `HTTP ${res.status}`;
     console.error("[getStoreEvents] 서버 오류:", msg);
-    throw new Error(msg);
+    throw new AppError("REQUEST_FAILED", msg, res.status, json ?? raw);
   }
 
   // 스웨거 응답: { code, message, status, data: [ {title, description, startDate, endDate, imageUrl} ] }
@@ -743,7 +808,7 @@ export const getStoreEvents = async (
         ? e.postUrl
         : typeof e?.imageUrl === "string"
         ? e.imageUrl
-        : "", // 이미지 URL로 대체
+        : "",
     storeName: String(e?.storeName ?? ""),
     description: String(e?.description ?? ""),
   }));
