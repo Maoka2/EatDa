@@ -1,3 +1,4 @@
+// src/screens/Store/DetailEventScreen.tsx
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
@@ -8,7 +9,7 @@ import {
   useWindowDimensions,
   Animated,
   ActivityIndicator,
-  Modal,
+  Alert,
 } from "react-native";
 import { eventItem } from "../../components/GridComponent";
 import CloseBtn from "../../../assets/closeBtn.svg";
@@ -24,59 +25,6 @@ interface DetailEventScreenProps {
   canDelete?: boolean;
   /** (선택) 서버가 스토어 스코프를 요구할 때 404 리트라이 용 */
   storeId?: number;
-}
-
-function ConfirmModal({
-  visible,
-  title = "확인",
-  message,
-  confirmText = "삭제",
-  cancelText = "취소",
-  busy = false,
-  onConfirm,
-  onCancel,
-}: {
-  visible: boolean;
-  title?: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  busy?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <Modal visible={visible} animationType="fade" transparent>
-      <View style={cm.overlay}>
-        <View style={cm.sheet}>
-          <Text style={cm.title}>{title}</Text>
-          <Text style={cm.msg}>{message}</Text>
-          <View style={cm.row}>
-            <TouchableOpacity
-              style={[cm.btn, cm.ghost]}
-              onPress={busy ? undefined : onCancel}
-              disabled={busy}
-              activeOpacity={0.8}
-            >
-              <Text style={[cm.btnText, cm.ghostText]}>{cancelText}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[cm.btn, cm.danger, busy && { opacity: 0.7 }]}
-              onPress={busy ? undefined : onConfirm}
-              disabled={busy}
-              activeOpacity={0.8}
-            >
-              {busy ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={cm.btnText}>{confirmText}</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
 }
 
 export default function DetailEventScreen({
@@ -98,8 +46,8 @@ export default function DetailEventScreen({
   const [modalTitle, setModalTitle] = useState<string | undefined>(undefined);
   const [modalMessage, setModalMessage] = useState("");
 
-  // 삭제 확인 모달
-  const [confirmVisible, setConfirmVisible] = useState(false);
+  // 상세가 언마운트되기 전에 삭제 완료 모달을 먼저 띄우기 위해 id를 보관
+  const [deletedId, setDeletedId] = useState<string | null>(null);
 
   useEffect(() => {
     Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
@@ -124,37 +72,38 @@ export default function DetailEventScreen({
     );
   }
 
-  const openError = (msg: string) => {
-    setModalType("failure");
-    setModalTitle("삭제 실패");
-    setModalMessage(msg);
-    setModalVisible(true);
-  };
-
-  const openSuccess = (msg: string) => {
-    setModalType("success");
-    setModalTitle("삭제 완료");
-    setModalMessage(msg);
-    setModalVisible(true);
-  };
-
-  const onPressDelete = () => setConfirmVisible(true);
-
   const doDelete = async () => {
     try {
       setDeleting(true);
-      await deleteEvent(Number(event.id), storeId); // storeId는 선택 전달
-      // 목록에서 제거(부모가 리스트 갱신)
-      onDeleted?.(event.id);
-      setConfirmVisible(false);
-      // ✅ 성공 모달
-      openSuccess("이벤트가 성공적으로 삭제되었습니다.");
+      await deleteEvent(Number(event.id), storeId);
+      // 부모 리스트 즉시 갱신하지 말고(언마운트 방지) 모달 먼저 띄움
+      setDeletedId(event.id);
+      setModalType("success");
+      setModalTitle("삭제 완료");
+      setModalMessage("이벤트가 성공적으로 삭제되었습니다.");
+      setModalVisible(true);
     } catch (e: any) {
-      setConfirmVisible(false);
-      openError(e?.message ?? "삭제 중 오류가 발생했습니다.");
+      setModalType("failure");
+      setModalTitle("삭제 실패");
+      setModalMessage(e?.message ?? "삭제 중 오류가 발생했습니다.");
+      setModalVisible(true);
     } finally {
       setDeleting(false);
     }
+  };
+
+  // 삭제 버튼 → Alert로 확인 후 실행
+  const onPressDelete = () => {
+    if (deleting) return;
+    Alert.alert(
+      "이벤트 삭제",
+      "정말 삭제하시겠어요?",
+      [
+        { text: "취소", style: "cancel" },
+        { text: "삭제", style: "destructive", onPress: doDelete },
+      ],
+      { cancelable: true }
+    );
   };
 
   // 안전 이미지 소스
@@ -165,29 +114,32 @@ export default function DetailEventScreen({
       ? (event as any).uri
       : undefined;
 
-  // ResultModal 닫기: 성공이면 상세도 닫기
+  // ResultModal 닫기: 성공이면 여기서 부모에 반영하고 상세 닫기
   const handleResultClose = () => {
     setModalVisible(false);
-    if (modalType === "success") onClose();
+    if (modalType === "success") {
+      if (deletedId) {
+        onDeleted?.(deletedId);
+        setDeletedId(null);
+      }
+      onClose();
+    }
   };
 
   return (
     <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
       <View style={styles.eventDetailContainer}>
         {/* 닫기 */}
-        <TouchableOpacity
-          onPress={onClose}
-          style={styles.closeBtn}
-          disabled={deleting}
-          activeOpacity={0.8}
-        >
-          <CloseBtn />
-        </TouchableOpacity>
-
-        {/* 상단 가게명 */}
-        {!!event.storeName && (
-          <Text style={styles.storeName}>{event.storeName}</Text>
-        )}
+        <View style={{paddingVertical:30,}}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.closeBtn}
+            disabled={deleting}
+            activeOpacity={0.8}
+          >
+            <CloseBtn></CloseBtn>
+          </TouchableOpacity>
+        </View>
 
         {/* 이미지 */}
         <View style={styles.ImageContainer}>
@@ -199,7 +151,7 @@ export default function DetailEventScreen({
                 { width: width * 0.8, height: height * 0.4 },
               ]}
               resizeMode="cover"
-            />
+            ></Image>
           ) : (
             <View
               style={[
@@ -236,7 +188,7 @@ export default function DetailEventScreen({
               activeOpacity={0.8}
             >
               {deleting ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#fff"></ActivityIndicator>
               ) : (
                 <Text style={styles.deleteText}>이벤트 삭제하기</Text>
               )}
@@ -245,18 +197,6 @@ export default function DetailEventScreen({
         )}
       </View>
 
-      {/* 삭제 확인 모달 */}
-      <ConfirmModal
-        visible={confirmVisible}
-        title="이벤트 삭제"
-        message="정말 삭제하시겠어요?"
-        confirmText="삭제"
-        cancelText="취소"
-        busy={deleting}
-        onConfirm={doDelete}
-        onCancel={() => setConfirmVisible(false)}
-      />
-
       {/* ✅ ResultModal로 성공/실패 안내 */}
       <ResultModal
         visible={modalVisible}
@@ -264,7 +204,7 @@ export default function DetailEventScreen({
         title={modalTitle}
         message={modalMessage}
         onClose={handleResultClose}
-      />
+      ></ResultModal>
     </Animated.View>
   );
 }
@@ -278,16 +218,11 @@ const styles = StyleSheet.create({
     paddingRight: 15,
     zIndex: 5,
   },
-  storeName: {
-    fontWeight: "500",
-    textAlign: "center",
-    fontSize: 20,
-    paddingVertical: 15,
-  } as any,
+  
   ImageContainer: { alignItems: "center" },
   eventImage: { borderRadius: 12 } as any,
   eventTextContainer: {
-    marginTop: 20,
+    marginTop: 30,
     alignItems: "center",
     backgroundColor: "#F7F8F9",
   } as any,
@@ -321,39 +256,4 @@ const styles = StyleSheet.create({
     minWidth: 180,
     alignItems: "center",
   },
-});
-
-const cm = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  sheet: {
-    width: "100%",
-    maxWidth: 420,
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 18,
-  },
-  title: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  msg: { fontSize: 14, color: "#374151", marginTop: 8, lineHeight: 20 },
-  row: { flexDirection: "row", gap: 10, marginTop: 16 },
-  btn: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnText: { color: "#fff", fontWeight: "700" },
-  danger: { backgroundColor: "#ef4444" },
-  ghost: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  ghostText: { color: "#374151" },
 });
