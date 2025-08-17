@@ -52,7 +52,11 @@ from services.review_generate_callback import review_generate_callback
 try:
     from AI.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score
 except ModuleNotFoundError:
-    from clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score
+    try:
+        from clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score
+    except ModuleNotFoundError:
+        # lowercase 'ai' package name (some builds place code under /app/ai)
+        from ai.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score  # type: ignore
 
 
 load_dotenv()
