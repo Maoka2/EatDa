@@ -22,12 +22,13 @@ try:
         short_image_prompt,
     )
 except ModuleNotFoundError:
-    from clients.gms_api.gpt import (
+    from ai.clients.gms_api.gpt import (  # 폴더명이 ai인 환경 대비
         generate_luma_prompt,
         generate_gen4_prompt,
         generate_menuboard_prompt,
         short_image_prompt,
     )
+
 
 
 class GPTService:
