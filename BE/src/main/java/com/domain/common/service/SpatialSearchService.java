@@ -91,7 +91,7 @@ public class SpatialSearchService {
 
         List<StoreDistanceResult> cachedData = multiLevelCache.get(poiId, requestedDistance);
 
-        if (Objects.nonNull(cachedData)) {
+        if (Objects.nonNull(cachedData) && !cachedData.isEmpty()) {
             boolean isHotspot = poiAccessTrackingService.isHotspot(poiId);
             boolean isStale = cacheMetadataService.isStale(poiId, requestedDistance);
             log.info("XX POI is id={}, isHotSpot={}, isStale={}", poiId, isHotspot, isStale);
