@@ -65,6 +65,7 @@ public enum SuccessCode {
     POSTER_FINALIZED("POSTER_FINALIZED", "포스터가 성공적으로 저장되었습니다.", HttpStatus.OK.value()),
     POSTER_SENT("POSTER_SENT", "포스터가 성공적으로 사장님에게 전송되었습니다.", HttpStatus.OK.value()),
     POSTERS_ADOPTED("POSTERS_ADOPTED", "선택한 메뉴판을 성공적으로 채택했습니다.", HttpStatus.OK.value()),
+    POSTER_RELEASE("POSTER_RELEASE", "선택한 메뉴판을 성공적으로 해제했습니다.", HttpStatus.OK.value()),
     POSTER_UNADOPTED("POSTER_UNADOPTED", "메뉴판이 성공적으로 채택 해제되었습니다.", HttpStatus.OK.value()),
     POSTER_GET("POSTER_GET", "작성했던 메뉴판을 성공적으로 조회했습니다.", HttpStatus.OK.value()),
     POSTER_RECEIVED_GET("POSTER_RECEIVED", "전송받은 메뉴판을 성공적으로 조회했습니다.", HttpStatus.OK.value()),
