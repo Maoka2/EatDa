@@ -3,10 +3,8 @@ package com.domain.menu.service;
 import com.domain.menu.dto.request.AdoptMenuPostersRequest;
 import com.domain.menu.dto.request.MenuPosterAssetCreateRequest;
 import com.domain.menu.dto.request.MenuPosterFinalizeRequest;
-import com.domain.menu.dto.response.AdoptMenuPostersResponse;
-import com.domain.menu.dto.response.AdoptedMenuPosterResponse;
-import com.domain.menu.dto.response.MenuPosterAssetRequestResponse;
-import com.domain.menu.dto.response.MenuPosterFinalizeResponse;
+import com.domain.menu.dto.request.ReleaseMenuPosterRequest;
+import com.domain.menu.dto.response.*;
 import com.domain.menu.entity.MenuPoster;
 import com.global.dto.request.AssetCallbackRequest;
 import com.global.dto.response.AssetResultResponse;
@@ -26,6 +24,8 @@ public interface MenuPosterService {
     void sendMenuPosterToMaker(final Long menuPosterId, final String eaterEmail);
 
     AdoptMenuPostersResponse adoptMenuPosters(final AdoptMenuPostersRequest request, final String makerEmail);
+
+    ReleaseMenuPosterResponse releaseMenuPosters(ReleaseMenuPosterRequest request, String makerEmail);
 
     List<MenuPoster> getMyMenuPosters(String email);
 
