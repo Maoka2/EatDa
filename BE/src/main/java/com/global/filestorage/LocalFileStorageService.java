@@ -102,18 +102,22 @@ public class LocalFileStorageService implements FileStorageService {
                              final String relativePath,
                              final String originalName) {
         try {
+            log.info("storeImage: file={}, relativePath={}, originalName={}", file, relativePath, originalName);
             // 1) MIME 타입 검증 및 확장자 도출 (등록되지 않은 타입이면 예외)
             final String mimeType = extractAndValidateMimeType(file);
             final String extension = resolveExtensionFromMimeType(mimeType);
+            log.info("storeImage: mimeType={}, extension={}", mimeType, extension);
 
             // 2) 상대 경로 정리(디렉토리 트래버설 방지) 후 전체 경로 생성
             final String safeRelativePath = sanitize(relativePath);
+            log.info("storeImage: safeRelativePath={}", safeRelativePath);
             final Path fullPath = generateFullPath(properties.getImageRoot(), safeRelativePath, extension);
+            log.info("storeImage: fullPath={}", fullPath);
 
             // 3) 디렉토리 생성은 generateFullPath에서 보장됨 → 파일 그대로 저장
             //    (변환/리사이징/압축 등 일절 수행하지 않음)
             file.transferTo(fullPath.toFile());
-
+            log.info("storeImage: file.transferTo(fullPath.toFile())");
             // 4) 저장된 전체 경로 반환
             return fullPath.toString();
         } catch (IOException e) {
@@ -357,6 +361,7 @@ public class LocalFileStorageService implements FileStorageService {
         String mimeType = Optional.ofNullable(file.getContentType())
                 .orElseThrow(() -> new GlobalException(INVALID_FILE_TYPE, NULL));
 
+        log.info("extractAndValidateMimeType: mimeType={}", mimeType);
         if (!MIME_TO_EXT.containsKey(mimeType)) {
             throw new GlobalException(INVALID_FILE_TYPE, mimeType);
         }
@@ -371,6 +376,7 @@ public class LocalFileStorageService implements FileStorageService {
      * @return 파일 확장자 (예: ".webp", ".mp4")
      */
     private String resolveExtensionFromMimeType(final String mimeType) {
+        log.info("resolveExtensionFromMimeType: mimeType={}", mimeType);
         return Optional.ofNullable(MIME_TO_EXT.get(mimeType))
                 .orElseThrow(() -> new GlobalException(INVALID_FILE_TYPE, mimeType));
     }

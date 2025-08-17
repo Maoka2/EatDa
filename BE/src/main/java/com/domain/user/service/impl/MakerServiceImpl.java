@@ -77,10 +77,10 @@ public class MakerServiceImpl implements MakerService {
 
         List<Menu> menus = new ArrayList<>();
         for (int i = 0; i < menuRequests.size(); i++) {
-            log.info("menuImageRequests : {}", menuImageRequests.get(i).getOriginalFilename());
-            log.info("menuImageRequests : {}", menuImageRequests.get(i).getSize());
-            log.info("menuImageRequests : {}", menuImageRequests.get(i).getContentType());
             MultipartFile imageRequest = menuImageRequests.get(i);
+            log.info("menuImageRequests : {}", imageRequest.getOriginalFilename());
+            log.info("menuImageRequests : {}", imageRequest.getSize());
+            log.info("menuImageRequests : {}", imageRequest.getContentType());
             String iamgePath = storeImage(imageRequest, "menus/" + maker.getEmail());
             log.info("iamgePath : {}", iamgePath);
 
