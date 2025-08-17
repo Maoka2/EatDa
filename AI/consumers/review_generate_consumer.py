@@ -33,6 +33,7 @@ import socket
 from typing import Any, Dict, Tuple
 import logging
 import time
+from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
@@ -106,7 +107,29 @@ def _load_enhancer():
                     return _mod.enhance, _mod.EnhancerPolicy, _mod.Score
         except Exception:
             continue
-    raise ModuleNotFoundError("luma_prompt_enhancer module not found in any expected path")
+    # Last-resort inline fallback so the pipeline keeps working
+    from services import gpt_service as _gpt
+
+    @dataclass
+    class _Score:
+        subject: float = 0.0
+        action: float = 0.0
+        detail: float = 0.0
+        scene: float = 0.0
+        style: float = 0.0
+        def mean(self) -> float:
+            return (self.subject + self.action + self.detail + self.scene + self.style) / 5.0
+
+    class _Policy:
+        def __init__(self, **kwargs):
+            pass
+
+    def _enhance(idea: str, **kwargs) -> Dict[str, Any]:
+        # Simple pass-through enhancement using LLM only
+        text = asyncio.run(_gpt.gpt_service.enhance_prompt_for_luma(idea))
+        return {"prompt": text, "score": _Score(), "history": []}
+
+    return _enhance, _Policy, _Score
 
 
 load_dotenv()
