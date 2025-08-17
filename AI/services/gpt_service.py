@@ -3,7 +3,7 @@ GPT 서비스
 GPT를 사용한 프롬프트 개선을 담당합니다.
 """
 
-from clients.gms_api.gpt import (
+from AI.clients.gms_api.gpt import (
     generate_luma_prompt,
     generate_gen4_prompt,
     generate_menuboard_prompt,
