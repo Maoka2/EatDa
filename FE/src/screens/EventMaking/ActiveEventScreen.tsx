@@ -164,7 +164,7 @@ export default function ActiveEventScreen() {
             <Text
               style={[
                 styles.eventDescription,
-                { paddingBottom: height * 0.02 },
+                { paddingBottom: height * 0.02, paddingLeft : width * 0.05 },
               ]}
             >
               {selectedEvent.description}
