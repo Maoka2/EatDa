@@ -38,6 +38,7 @@ from services import (
 )
 from services.google_image_service import google_image_service
 from services.review_generate_callback import review_generate_callback
+from AI.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score
 
 
 load_dotenv()
@@ -181,8 +182,75 @@ class ReviewGenerateConsumer:
     async def process_luma(self, req: GenerateRequest) -> Tuple[str, str | None]:
         if not luma_service.is_available():
             return "FAIL", None
-        detailed = await gpt_service.enhance_prompt_for_luma(req.prompt)
-        gen = await luma_service.generate_video(detailed, req.referenceImages, model_name="ray-2")
+
+        # Define LLM helper functions (sync wrappers using asyncio.run)
+        def _llm_generate_fn(idea: str) -> str:
+            guide = (
+                "Write a single 40–60 word natural English prompt that explicitly covers: "
+                "Subject (who/what), Action (what happens), Detail (concrete visuals), "
+                "Scene (place/time/ambience), and Style (aesthetic/camera/mood). "
+                "Preserve any quoted text verbatim. Do not include technical parameters.\n\n"
+                f"User idea: {idea}"
+            )
+            return asyncio.run(gpt_service.enhance_prompt_for_luma(guide))
+
+        def _low_dims(sc: Score):
+            dims = []
+            if sc.subject < 4.0: dims.append("Subject")
+            if sc.action < 4.0: dims.append("Action")
+            if sc.detail < 4.0: dims.append("Detail")
+            if sc.scene < 4.0: dims.append("Scene")
+            if sc.style < 4.0: dims.append("Style")
+            return dims
+
+        def _llm_revise_fn(current_text: str, sc: Score) -> str:
+            dims = ", ".join(_low_dims(sc)) or "all dimensions"
+            instruction = (
+                "Revise the following prompt to better satisfy the checklist dimensions: "
+                f"{dims}. Keep it as a single natural sentence/prose, 40–60 words. "
+                "Preserve any quoted text verbatim. Do not add technical parameters (like model settings).\n\n"
+                f"Current prompt:\n{current_text}"
+            )
+            return asyncio.run(gpt_service.enhance_prompt_for_luma(instruction))
+
+        def _llm_scorer_fn(text: str) -> Score:
+            instruction = (
+                "You are a strict grader. Score the following prompt on five dimensions, integers 0-5: "
+                "subject, action, detail, scene, style. Return ONLY a compact JSON object with these keys. "
+                "No prose, no code fences.\n\n"
+                f"Prompt:\n{text}"
+            )
+            raw = asyncio.run(gpt_service.enhance_prompt_for_luma(instruction))
+            try:
+                start = raw.find("{")
+                end = raw.rfind("}")
+                obj = json.loads(raw[start:end+1])
+                return Score(
+                    float(obj.get("subject", 0)),
+                    float(obj.get("action", 0)),
+                    float(obj.get("detail", 0)),
+                    float(obj.get("scene", 0)),
+                    float(obj.get("style", 0)),
+                )
+            except Exception:
+                return Score(0.0, 0.0, 0.0, 0.0, 0.0)
+
+        # Run the enhancement pipeline in a thread (to safely use asyncio.run)
+        loop = asyncio.get_running_loop()
+        def _run_enhance():
+            pol = EnhancerPolicy()  # default logging path inside clients/gms_api
+            return enhance(
+                idea=req.prompt,
+                generate_fn=_llm_generate_fn,
+                revise_fn=_llm_revise_fn,
+                policy=pol,
+                llm_scorer_fn=_llm_scorer_fn,
+            )
+
+        result = await loop.run_in_executor(None, _run_enhance)
+        enhanced_prompt = result.get("prose") or req.prompt
+
+        gen = await luma_service.generate_video(enhanced_prompt, req.referenceImages, model_name="ray-2")
         wait = await luma_service.wait_for_generation_completion(gen["id"])
         ok = wait["state"] == "completed" and bool(wait.get("asset_url"))
         return ("SUCCESS" if ok else "FAIL"), wait.get("asset_url")
