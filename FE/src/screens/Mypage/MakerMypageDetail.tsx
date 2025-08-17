@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     bottom: 32,
   },
   adoptFab: {
-    backgroundColor: "#fc6fae",
+    backgroundColor: "#fec566",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 24,
