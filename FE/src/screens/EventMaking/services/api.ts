@@ -604,60 +604,81 @@ export const getMyEvents = async (lastEventId?: number) => {
 };
 
 // 이벤트 삭제
-export const deleteEvent = async (eventId: number) => {
+export const deleteEvent = async (eventId: number, storeId?: number) => {
   const { accessToken } = await getTokens();
   if (!accessToken)
     throw new Error("인증 정보가 없습니다. 다시 로그인해주세요");
 
-  const url = `${BASE_URL}/api/events/${encodeURIComponent(String(eventId))}`;
+  const idStr = encodeURIComponent(String(eventId));
+  const baseUrl = `${BASE_URL}/api/events/${idStr}`;
 
-  // 요청 로그
-  console.log("=== [DELETE EVENT] 요청 ===");
-  console.log(`DELETE ${url}`);
-  console.log(`Authorization: Bearer ****(len=${accessToken.length})`);
+  // 공통 호출 함수 (로깅 + 유연 파싱)
+  const callDelete = async (url: string) => {
+    console.log("=== [DELETE EVENT] 요청 ===");
+    console.log(`DELETE ${url}`);
+    console.log(`Authorization: Bearer ****(len=${accessToken.length})`);
 
-  const res = await fetch(url, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-  });
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        // ⚠️ 바디 없음 → Content-Type 생략 (서버에 혼란 주지 않도록)
+      },
+    });
 
-  const raw = await res.text();
-  let json: any = null;
-  try {
-    json = raw ? JSON.parse(raw) : null;
-  } catch {
-    // 본문이 비어있는 경우(data:null) 대비
+    const text = await res.text();
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      // 문자열 응답 대비
+    }
+
+    console.log("=== [DELETE EVENT] 응답 ===");
+    if (data) {
+      console.log(JSON.stringify(data, null, 2));
+    } else {
+      console.log(text || "(empty)");
+    }
+
+    return { res, data, text };
+  };
+
+  // 1차 호출
+  let { res, data, text } = await callDelete(baseUrl);
+
+  // 404면 storeId 쿼리로 1회 리트라이 (서버가 스토어 스코프를 요구하는 케이스 방지)
+  if (res.status === 404 && typeof storeId === "number") {
+    const retryUrl = `${baseUrl}?storeId=${encodeURIComponent(
+      String(storeId)
+    )}`;
+    console.log("[DELETE RETRY] status 404 → retry with storeId:", retryUrl);
+    ({ res, data, text } = await callDelete(retryUrl));
   }
 
-  // 응답 로그 (명세서 스타일)
-  console.log("=== [DELETE EVENT] 응답 ===");
-  if (json) {
-    console.log(JSON.stringify(json, null, 2));
-  } else {
-    console.log(raw || "(empty)");
-  }
-
+  // 에러 매핑
   if (!res.ok) {
     const status = res.status;
-    const code = json?.code;
-    const serverMsg = json?.message || raw || `HTTP ${status}`;
-
-    // 명세 기반 메시지 보정
-    let msg = serverMsg;
+    const code = data?.code;
+    let msg = data?.message || text || `HTTP ${status}`;
     if (status === 401) msg = "인증이 필요합니다.";
     else if (status === 403) msg = "삭제 권한이 없습니다.";
     else if (status === 404) msg = "이벤트를 찾을 수 없습니다.";
 
-    const err = new Error(msg) as any;
+    const err: any = new Error(msg);
     err.status = status;
     err.code = code;
     throw err;
   }
 
-  return json; // 성공 시 { code:"EVENT_DELETED", message:"...", status:200, data:null, timestamp:... }
+  // 응답 정규화: 서버가 string/JSON 혼용해도 message를 만들어 돌려줌
+  const message =
+    data?.message ||
+    (typeof text === "string" && text.trim().length > 0
+      ? text
+      : "이벤트가 삭제되었습니다.");
+
+  return { status: res.status, message, raw: data ?? text };
 };
 
 // 해당 가게 전체 이벤트 조회

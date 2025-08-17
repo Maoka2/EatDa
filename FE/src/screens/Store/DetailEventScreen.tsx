@@ -1,4 +1,3 @@
-// src/screens/Store/DetailEventScreen.tsx
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
@@ -23,6 +22,8 @@ interface DetailEventScreenProps {
   onDeleted?: (deletedId: string) => void;
   /** 가게 주인일 때만 true → 삭제 버튼 노출 */
   canDelete?: boolean;
+  /** (선택) 서버가 스토어 스코프를 요구할 때 404 리트라이 용 */
+  storeId?: number;
 }
 
 function ConfirmModal({
@@ -84,15 +85,17 @@ export default function DetailEventScreen({
   onClose,
   onDeleted,
   canDelete = false,
+  storeId,
 }: DetailEventScreenProps) {
   const { width, height } = useWindowDimensions();
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   const [deleting, setDeleting] = useState(false);
 
-  // ResultModal 상태 (에러/알림)
+  // ResultModal 상태 (성공/실패)
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<"success" | "failure">("failure");
+  const [modalTitle, setModalTitle] = useState<string | undefined>(undefined);
   const [modalMessage, setModalMessage] = useState("");
 
   // 삭제 확인 모달
@@ -104,6 +107,7 @@ export default function DetailEventScreen({
 
   // 안전 가드
   const event = events[selectedIndex];
+
   if (!event) {
     return (
       <View
@@ -122,6 +126,14 @@ export default function DetailEventScreen({
 
   const openError = (msg: string) => {
     setModalType("failure");
+    setModalTitle("삭제 실패");
+    setModalMessage(msg);
+    setModalVisible(true);
+  };
+
+  const openSuccess = (msg: string) => {
+    setModalType("success");
+    setModalTitle("삭제 완료");
     setModalMessage(msg);
     setModalVisible(true);
   };
@@ -131,15 +143,12 @@ export default function DetailEventScreen({
   const doDelete = async () => {
     try {
       setDeleting(true);
-      await deleteEvent(Number(event.id));
-      // 목록에서 제거 및 닫기
+      await deleteEvent(Number(event.id), storeId); // storeId는 선택 전달
+      // 목록에서 제거(부모가 리스트 갱신)
       onDeleted?.(event.id);
       setConfirmVisible(false);
-      onClose();
-      // 성공 토스트/모달이 필요하면 아래 주석 해제
-      // setModalType("success");
-      // setModalMessage("이벤트가 삭제되었습니다.");
-      // setModalVisible(true);
+      // ✅ 성공 모달
+      openSuccess("이벤트가 성공적으로 삭제되었습니다.");
     } catch (e: any) {
       setConfirmVisible(false);
       openError(e?.message ?? "삭제 중 오류가 발생했습니다.");
@@ -148,13 +157,19 @@ export default function DetailEventScreen({
     }
   };
 
-  // 안전 이미지 소스 (GridComponent 타입과 동일하게 {uri}|number 지원)
+  // 안전 이미지 소스
   const imageSource =
     typeof (event as any)?.uri === "number"
       ? (event as any).uri
       : (event as any).uri?.uri
       ? (event as any).uri
       : undefined;
+
+  // ResultModal 닫기: 성공이면 상세도 닫기
+  const handleResultClose = () => {
+    setModalVisible(false);
+    if (modalType === "success") onClose();
+  };
 
   return (
     <Animated.View style={{ flex: 1, transform: [{ scale: scaleAnim }] }}>
@@ -242,12 +257,13 @@ export default function DetailEventScreen({
         onCancel={() => setConfirmVisible(false)}
       />
 
-      {/* 에러/알림 모달 (Alert 대체) */}
+      {/* ✅ ResultModal로 성공/실패 안내 */}
       <ResultModal
         visible={modalVisible}
         type={modalType}
+        title={modalTitle}
         message={modalMessage}
-        onClose={() => setModalVisible(false)}
+        onClose={handleResultClose}
       />
     </Animated.View>
   );
