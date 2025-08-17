@@ -1,4 +1,4 @@
-// EventGenerateStep.tsx
+// src/screens/EventMaking/EventGenerateStep.tsx
 import React, { useState, useEffect } from "react";
 import {
   ScrollView,
@@ -8,6 +8,8 @@ import {
   TextInput,
   StyleSheet,
   useWindowDimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Calendar } from "react-native-calendars";
@@ -159,13 +161,17 @@ export default function GenerateStep({
 가장 마음에 드는 버전이 나올 때까지 편하게 이용하세요!`;
 
   return (
-    <>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === "android" ? "height" : "padding"}
+      keyboardVerticalOffset={0}
+    >
       {/* 뒤로가기 버튼 */}
       <TouchableOpacity onPress={onBack} style={styles.backButton}>
         <Ionicons name="chevron-back" size={width * 0.06} color="#1A1A1A" />
       </TouchableOpacity>
 
-      <ScrollView style={styles.scroll}>
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Text style={styles.title}>이벤트 포스터 생성</Text>
           <Text style={styles.subtitle}>
@@ -243,11 +249,12 @@ export default function GenerateStep({
           <Text style={styles.buttonText}>확인</Text>
         </TouchableOpacity>
       </View>
-    </>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   backButton: {
     position: "absolute",
     top: 40,
