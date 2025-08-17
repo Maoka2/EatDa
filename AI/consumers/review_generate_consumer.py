@@ -11,6 +11,15 @@ Redis Stream Consumer (리뷰 자산 생성)
 - 성공/실패 여부와 URL을 Spring 콜백으로 전달
 """
 
+# 경로 안전장치: /app(평탄화)와 /app/AI(중첩) 모두 지원
+import os, sys
+_CUR = os.path.abspath(os.path.dirname(__file__))
+_ROOT_FLAT = os.path.abspath(os.path.join(_CUR, ".."))           # /app
+_ROOT_REPO = os.path.abspath(os.path.join(_CUR, "..", ".."))     # /app/AI
+for p in (_ROOT_FLAT, _ROOT_REPO):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 from __future__ import annotations
 
 import asyncio
@@ -38,7 +47,10 @@ from services import (
 )
 from services.google_image_service import google_image_service
 from services.review_generate_callback import review_generate_callback
-from AI.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score
+try:
+    from AI.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score
+except ModuleNotFoundError:
+    from clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score
 
 
 load_dotenv()
