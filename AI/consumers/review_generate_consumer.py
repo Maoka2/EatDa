@@ -49,46 +49,47 @@ from services import (
 )
 from services.google_image_service import google_image_service
 from services.review_generate_callback import review_generate_callback
-try:
-    from AI.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score
-except ModuleNotFoundError:
+
+def _load_enhancer():
+    """Robust loader for luma_prompt_enhancer regardless of layout."""
     try:
-        from clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score
-    except ModuleNotFoundError:
+        from AI.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score  # type: ignore
+        return enhance, EnhancerPolicy, Score
+    except Exception:
+        pass
+    try:
+        from clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score  # type: ignore
+        return enhance, EnhancerPolicy, Score
+    except Exception:
+        pass
+    try:
+        from ai.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score  # type: ignore
+        return enhance, EnhancerPolicy, Score
+    except Exception:
+        pass
+    # Final: search filesystem and load by path
+    import importlib.util as _ilu
+    _cands = [
+        os.path.join(_ROOT_FLAT, "clients", "gms_api", "luma_prompt_enhancer.py"),
+        os.path.join(_ROOT_AI,   "clients", "gms_api", "luma_prompt_enhancer.py"),
+        os.path.join(_ROOT_ai,   "clients", "gms_api", "luma_prompt_enhancer.py"),
+    ]
+    _search_roots = [p for p in (_ROOT_FLAT, _ROOT_AI, _ROOT_ai) if os.path.isdir(p)]
+    for _root in _search_roots:
+        for _dirpath, _dirnames, _filenames in os.walk(_root):
+            if "luma_prompt_enhancer.py" in _filenames and "clients" in _dirpath and "gms_api" in _dirpath:
+                _cands.append(os.path.join(_dirpath, "luma_prompt_enhancer.py"))
+    for _p in _cands:
         try:
-            # lowercase 'ai' package name (some builds place code under /app/ai)
-            from ai.clients.gms_api.luma_prompt_enhancer import enhance, EnhancerPolicy, Score  # type: ignore
-        except ModuleNotFoundError:
-            # 최후의 폴백: 파일 경로에서 직접 로드 (경로 탐색 포함)
-            import importlib.util as _ilu
-            _cands = [
-                os.path.join(_ROOT_FLAT, "clients", "gms_api", "luma_prompt_enhancer.py"),
-                os.path.join(_ROOT_AI,   "clients", "gms_api", "luma_prompt_enhancer.py"),
-                os.path.join(_ROOT_ai,   "clients", "gms_api", "luma_prompt_enhancer.py"),
-            ]
-            # 디렉터리 트리 전체를 순회하며 검색
-            _search_roots = [p for p in (_ROOT_FLAT, _ROOT_AI, _ROOT_ai) if os.path.isdir(p)]
-            for _root in _search_roots:
-                for _dirpath, _dirnames, _filenames in os.walk(_root):
-                    if "luma_prompt_enhancer.py" in _filenames and "clients" in _dirpath and "gms_api" in _dirpath:
-                        _cands.append(os.path.join(_dirpath, "luma_prompt_enhancer.py"))
-            _loaded = False
-            for _p in _cands:
-                try:
-                    if os.path.exists(_p):
-                        _spec = _ilu.spec_from_file_location("_enh_mod", _p)
-                        if _spec and _spec.loader:
-                            _mod = _ilu.module_from_spec(_spec)
-                            _spec.loader.exec_module(_mod)  # type: ignore[attr-defined]
-                            enhance = _mod.enhance
-                            EnhancerPolicy = _mod.EnhancerPolicy
-                            Score = _mod.Score
-                            _loaded = True
-                            break
-                except Exception:
-                    continue
-            if not _loaded:
-                raise
+            if os.path.exists(_p):
+                _spec = _ilu.spec_from_file_location("_enh_mod", _p)
+                if _spec and _spec.loader:
+                    _mod = _ilu.module_from_spec(_spec)
+                    _spec.loader.exec_module(_mod)  # type: ignore[attr-defined]
+                    return _mod.enhance, _mod.EnhancerPolicy, _mod.Score
+        except Exception:
+            continue
+    raise ModuleNotFoundError("luma_prompt_enhancer module not found in any expected path")
 
 
 load_dotenv()
