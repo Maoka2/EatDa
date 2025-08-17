@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class AssetValidator {
     private static final long MAX_IMAGE_SIZE_MB = 10;
-    private static final long MIN_IMAGE_SIZE_MB = 1;
+    private static final long MIN_IMAGE_SIZE_KB = 700;
     private static final int IMAGE_BYTE = 1024;
 
     private static final String LOG_IMAGE_TOO_LARGE =
@@ -36,8 +36,8 @@ public class AssetValidator {
                 log.warn(LOG_IMAGE_TOO_LARGE, file.getOriginalFilename(), file.getSize() / (IMAGE_BYTE * IMAGE_BYTE));
                 throw new ApiException(ErrorCode.IMAGE_TOO_LARGE, file.getOriginalFilename());
             }
-            if (file.getSize() < MIN_IMAGE_SIZE_MB * IMAGE_BYTE * IMAGE_BYTE) {
-                log.warn(LOG_IMAGE_TOO_SMALL, file.getOriginalFilename(), file.getSize() / (IMAGE_BYTE * IMAGE_BYTE));
+            if (file.getSize() < MIN_IMAGE_SIZE_KB * IMAGE_BYTE) {
+                log.warn(LOG_IMAGE_TOO_SMALL, file.getOriginalFilename(), file.getSize() / IMAGE_BYTE);
                 throw new ApiException(ErrorCode.IMAGE_TOO_SMALL, file.getOriginalFilename());
             }
         }
