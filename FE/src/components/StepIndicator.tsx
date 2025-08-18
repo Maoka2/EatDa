@@ -1,13 +1,8 @@
-// src/components/StepIndicator.tsx
 import React from "react";
 import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
 import { COLORS } from "../constants/theme";
 
-type Props = {
-  currentStep: number;
-  totalSteps: number;
-  activeColor?: string;
-};
+type Props = { currentStep: number; totalSteps: number; activeColor?: string };
 
 export default function StepIndicator({
   currentStep,
@@ -15,26 +10,24 @@ export default function StepIndicator({
   activeColor = COLORS.primaryMaker,
 }: Props) {
   const { width } = useWindowDimensions();
-
   return (
     <View style={[styles.container, { marginVertical: width * 0.05 }]}>
-      {Array.from({ length: totalSteps }, (_, index) => {
-        const stepNumber = index + 1;
-        const isActive = stepNumber <= currentStep;
-        const isCompleted = stepNumber < currentStep;
-
+      {Array.from({ length: totalSteps }, (_, i) => {
+        const step = i + 1;
+        const isActive = step <= currentStep;
+        const isDone = step < currentStep;
         return (
-          <React.Fragment key={stepNumber}>
+          <React.Fragment key={step}>
             <View
               style={[
                 styles.step,
                 {
+                  width: width * 0.1,
+                  height: width * 0.1,
                   backgroundColor: isActive
                     ? activeColor
                     : COLORS.inactive + "30",
-                  borderColor: isActive ? activeColor : COLORS.inactive,
-                  width: width * 0.1,
-                  height: width * 0.1,
+                  borderColor: isActive ? activeColor : "#ddd",
                 },
               ]}
             >
@@ -42,24 +35,22 @@ export default function StepIndicator({
                 style={[
                   styles.stepText,
                   {
-                    color: isActive ? "#fff" : COLORS.inactive,
                     fontSize: width * 0.04,
+                    color: isActive ? "#fff" : COLORS.inactive,
                   },
                 ]}
               >
-                {isCompleted ? "✓" : stepNumber}
+                {isDone ? "✓" : step}
               </Text>
             </View>
-            {stepNumber < totalSteps && (
+            {step < totalSteps && (
               <View
                 style={[
                   styles.connector,
                   {
-                    backgroundColor:
-                      stepNumber < currentStep
-                        ? activeColor
-                        : COLORS.inactive + "30",
                     width: width * 0.15,
+                    backgroundColor:
+                      step < currentStep ? activeColor : COLORS.inactive + "30",
                   },
                 ]}
               />
@@ -83,11 +74,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  stepText: {
-    fontWeight: "600",
-  },
-  connector: {
-    height: 3,
-    borderRadius: 1.5,
-  },
+  stepText: { fontWeight: "600" },
+  connector: { height: 3, borderRadius: 1.5 },
 });

@@ -1,102 +1,270 @@
 // src/components/Sidebar.tsx
-import React, { useState } from "react";
+
+import React, { useRef, useEffect, useState } from "react";
 import {
+  Animated,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
   View,
   Text,
-  Image,
-  StyleSheet,
-  useWindowDimensions,
-  TouchableOpacity,
-  SafeAreaView,
+  Pressable,
 } from "react-native";
-import SidebarComponent from "./SidebarComponent";
-import { imageStyles } from "../constants/theme";
-// .svg 파일로 했을 때 이미지가 잘려서 일단 .png 로 진행하였습니다.
-import MyPageIcon from "../../assets/mypage.svg";
-import EventPageIcon from "../../assets/eventpage.svg";
-import ReviewPageIcon from "../../assets/reviews.svg";
+// ✨ 수정: CommonActions를 import 합니다.
+import { CommonActions, useNavigation } from "@react-navigation/native";
+import { AuthStackParamList } from "../navigation/AuthNavigator";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { logOut } from "../auth/logout";
 
-import SidebarCharacter from "../../assets/sidebarCharacter.svg";
-import Spoon from "../../assets/sidespoon.svg";
-import Fork from "../../assets/sidefork.svg";
+import Spoon from "../../assets/sideSpoon.svg";
+import Fork from "../../assets/sideFork.svg";
 
-export default function Sidebar() {
+export interface SidebarProps {
+  onClose: () => void;
+  userRole: "eater" | "maker";
+  activePage: string;
+  onMypage: () => void;
+}
+
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
+
+export default function Sidebar({
+  onClose,
+  activePage,
+  onMypage,
+}: SidebarProps) {
   const { width, height } = useWindowDimensions();
-  const topPadding = height * 0.05;
-  const [selected, setSelected] = useState<string | null>(null);
-  return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { paddingTop: topPadding, overflow: "visible" },
-      ]}
-    >
-      <SidebarComponent
-        label="고객 리뷰"
-        IconComponent={ReviewPageIcon}
-        onPress={() => setSelected("고객 리뷰")}
-        selected={selected === "고객 리뷰"}
-      ></SidebarComponent>
-      <SidebarComponent
-        label="이벤트 게시판"
-        onPress={() => {
-          setSelected("이벤트 게시판");
-        }}
-        IconComponent={EventPageIcon}
-        selected={selected === "이벤트 게시판"}
-      ></SidebarComponent>
-      <SidebarComponent
-        label="마이 페이지"
-        onPress={() => {
-          setSelected("마이 페이지");
-        }}
-        IconComponent={MyPageIcon}
-        selected={selected === "마이 페이지"}
-      ></SidebarComponent>
-      {/* <View style={{ flex: 1 }}></View */}
+  const navigation = useNavigation<NavigationProp>();
+  const sidebarWidth = width * 0.8;
 
-      <View
-        style={{
-          position: "absolute",
-          bottom: -50,
-          right: -480,
-          transform: [{ rotate: "-15deg" }],
-        }}
+  const slideAnim = useRef(new Animated.Value(-sidebarWidth)).current;
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const requestClose = (callback?: () => void) => {
+    Animated.timing(slideAnim, {
+      toValue: -sidebarWidth,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      if (callback) {
+        callback();
+      }
+      onClose();
+    });
+  };
+
+  const handlePressLogOut = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await logOut();
+      requestClose(() => {
+        // ✨ 수정: navigation.reset 대신 CommonActions.reset 사용
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: "Login" }],
+          })
+        );
+      });
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setLoading(false);
+    }
+  };
+
+  const handleNavigation = (screenName: keyof AuthStackParamList) => {
+    if (activePage === screenName) {
+      requestClose();
+      return;
+    }
+    requestClose(() => {
+      // ✨ 수정: navigation.navigate 대신 CommonActions.navigate 사용
+      navigation.dispatch(
+        CommonActions.navigate({
+          name: screenName,
+        })
+      );
+    });
+  };
+
+  return (
+    <>
+      <Pressable style={styles.overlay} onPress={() => requestClose()} />
+
+      <Animated.View
+        style={[
+          styles.sideMenu,
+          {
+            width: sidebarWidth,
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
       >
-        <Fork width={1000}  height={600}></Fork>
-      </View>
-      <View
-        style={{
-          position: "absolute",
-          bottom: -200,
-          left: -480,
-          transform: [{ rotate: "20deg" }],
-        }}
-      >
-        <Spoon width={1000} height={600}></Spoon>
-      </View>
-    </SafeAreaView>
+        <View style={styles.menuItems}>
+          {/* 고객 리뷰 */}
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              activePage === "ReviewTabScreen" && styles.active,
+            ]}
+            onPress={() => handleNavigation("ReviewTabScreen")}
+          >
+            <Text
+              style={[
+                styles.menuText,
+                activePage === "ReviewTabScreen" && styles.activeText,
+              ]}
+            >
+              고객 리뷰
+            </Text>
+          </TouchableOpacity>
+
+          {/* 주변 가게 */}
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              activePage === "StoreClusteringScreen" && styles.active,
+            ]}
+            onPress={() => handleNavigation("StoreClusteringScreen")}
+          >
+            <Text
+              style={[
+                styles.menuText,
+                activePage === "StoreClusteringScreen" && styles.activeText,
+              ]}
+            >
+              주변 가게
+            </Text>
+          </TouchableOpacity>
+
+          {/* 이벤트 게시판 */}
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              activePage === "ActiveEventScreen" && styles.active,
+            ]}
+            onPress={() => handleNavigation("ActiveEventScreen")}
+          >
+            <Text
+              style={[
+                styles.menuText,
+                activePage === "ActiveEventScreen" && styles.activeText,
+              ]}
+            >
+              이벤트 게시판
+            </Text>
+          </TouchableOpacity>
+
+          {/* 마이페이지 */}
+          <TouchableOpacity
+            style={[
+              styles.menuItem,
+              activePage === "MypageScreen" && styles.active,
+            ]}
+            onPress={() => handleNavigation("MypageScreen")}
+          >
+            <Text
+              style={[
+                styles.menuText,
+                activePage === "MypageScreen" && styles.activeText,
+              ]}
+            >
+              마이페이지
+            </Text>
+          </TouchableOpacity>
+
+          {/* 로그아웃 */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handlePressLogOut}
+            disabled={loading}
+          >
+            <Text style={styles.menuText}>로그아웃</Text>
+          </TouchableOpacity>
+
+          {/* 배경 이미지 */}
+          <View style={styles.characterContainer}>
+            <Spoon
+              style={{
+                position: "absolute",
+                left: -sidebarWidth * 0.58,
+                bottom: -height * 0.93,
+                transform: [{ rotate: "20deg" }],
+                opacity: 0.9,
+              }}
+              width={sidebarWidth * 1.5}
+              height={sidebarWidth * 1.5}
+            />
+            <Fork
+              style={{
+                position: "absolute",
+                right: -sidebarWidth * 0.7,
+                bottom: -height * 0.7,
+                transform: [{ rotate: "-15deg" }],
+                opacity: 0.9,
+              }}
+              width={sidebarWidth * 1.5}
+              height={sidebarWidth * 1.5}
+            />
+          </View>
+        </View>
+      </Animated.View>
+    </>
   );
 }
 
+// 스타일
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F7F8F9",
-    height: "100%",
-    // backgroundColor: "yellow",
-    width: "100%",
-    position: "relative",
-  },
-
-  character: {
-    // backgroundColor: "red",
+  overlay: {
     position: "absolute",
-    // top: 0,
+    top: 0,
+    left: 0,
+    right: 0,
     bottom: 0,
-    // width: "100%",
-    // height: "100%",
-    resizeMode: "contain",
-    opacity: 0.9,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    zIndex: 20,
+  },
+  sideMenu: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "white",
+    zIndex: 30,
+    overflow: "hidden",
+  },
+  menuItems: {
+    marginTop: 10,
+  },
+  menuItem: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
+  menuText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  active: {
+    backgroundColor: "#FEC566",
+    opacity: 0.7,
+  },
+  activeText: {
+    fontWeight: "700",
+    color: "#000",
+  },
+  characterContainer: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    height: 300,
   },
 });

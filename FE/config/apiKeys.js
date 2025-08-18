@@ -1,0 +1,8 @@
+// config/apiKeys.js
+
+export const API_KEYS = {
+  GOOGLE_VISION: "AIzaSyAY3FWNBSUj_ZK699hMxJEnsEb295cRanY",
+  GOOGLE_MAPS: "AIzaSyA101kyJNzWdoKY_PkTnlKnwv08hLaPbjw", // 복사한 API 키
+  NAVER_CLIENT_ID: "YOUR_NAVER_CLIENT_ID",
+  NAVER_CLIENT_SECRET: "YOUR_NAVER_CLIENT_SECRET",
+};

@@ -1,5 +1,16 @@
 {
-  "compilerOptions": {},
   "extends": "expo/tsconfig.base",
-  "include": ["**/*.ts", "**/*.tsx", "declarations.d.ts"]
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react",
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": ["react-native", "expo"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "declarations.d.ts"],
+  "exclude": ["node_modules", "babel.config.js", "metro.config.js"]
 }
