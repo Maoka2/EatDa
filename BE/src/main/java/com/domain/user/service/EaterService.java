@@ -12,4 +12,12 @@ public interface EaterService {
     void validateEmailAvailable(EaterCheckEmailRequest request);
 
     void validateNicknameAvailable(EaterCheckNicknameRequest request);
+
+    Long countMyReviews(String email);
+
+    Long countMyScrapReviews(String email);
+
+    Long countMyMenuPosters(String email);
+
+    String getNickname(String email);
 }

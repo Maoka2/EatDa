@@ -6,6 +6,7 @@ import com.domain.event.dto.response.ActiveStoreEventResponse;
 import com.domain.event.dto.response.EventAssetRequestResponse;
 import com.domain.event.dto.response.EventFinalizeResponse;
 import com.domain.event.dto.response.MyEventResponse;
+import com.domain.event.entity.Event;
 import com.global.dto.request.AssetCallbackRequest;
 import com.global.dto.response.AssetResultResponse;
 import java.util.List;
@@ -28,4 +29,6 @@ public interface EventService {
     List<ActiveStoreEventResponse> getActiveEvents(Long lastEventId);
 
     void deleteEvent(Long eventId, String makerEmail);
+
+    List<Event> getEvents(Long storeId);
 }

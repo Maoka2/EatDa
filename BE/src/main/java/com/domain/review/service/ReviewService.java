@@ -4,6 +4,7 @@ package com.domain.review.service;
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
 import com.domain.review.dto.request.ReviewFinalizeRequest;
+import com.domain.review.dto.request.ReviewLocationRequest;
 import com.domain.review.dto.response.MyReviewResponse;
 import com.domain.review.dto.response.ReviewAssetRequestResponse;
 import com.domain.review.dto.response.ReviewAssetResultResponse;
@@ -11,6 +12,8 @@ import com.domain.review.dto.response.ReviewDetailResponse;
 import com.domain.review.dto.response.ReviewFeedResponse;
 import com.domain.review.dto.response.ReviewFeedResult;
 import com.domain.review.dto.response.ReviewFinalizeResponse;
+import com.domain.review.entity.Review;
+import java.util.List;
 
 public interface ReviewService {
 
@@ -34,7 +37,7 @@ public interface ReviewService {
      */
     ReviewFinalizeResponse finalizeReview(ReviewFinalizeRequest request, String eaterEmail);
 
-    ReviewFeedResult<ReviewFeedResponse> getReviewFeed(Double latitude, Double longitude, Integer distance,
+    ReviewFeedResult<ReviewFeedResponse> getReviewFeed(ReviewLocationRequest request, Integer distance,
                                                        Long lastReviewId, String email);
 
     ReviewDetailResponse getReviewDetail(Long reviewId, String email);
@@ -42,4 +45,8 @@ public interface ReviewService {
     ReviewFeedResult<MyReviewResponse> getMyReviews(Long lastReviewId, int pageSize, String eaterEmail);
 
     void removeReview(Long reviewId, String eaterEmail);
+
+    List<Review> getMyReceivedReviews(String email);
+
+    List<Review> getReviews(Long storeId);
 }

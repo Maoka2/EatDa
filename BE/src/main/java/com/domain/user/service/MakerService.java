@@ -3,6 +3,7 @@ package com.domain.user.service;
 import com.domain.user.dto.request.MakerCheckEmailRequest;
 import com.domain.user.dto.request.MakerSignUpBaseRequest;
 import com.domain.user.dto.request.MakerSignUpMenuRequest;
+import com.domain.user.dto.response.MakerGetProfileResponse;
 import com.domain.user.entity.User;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,4 +14,14 @@ public interface MakerService {
                        MultipartFile licenseImageRequest, List<MultipartFile> menuImageRequests);
 
     void validateEmailAvailable(MakerCheckEmailRequest request);
+
+    Long countReceivedReviews(String email);
+
+    Long countMyEvents(String email);
+
+    Long countMyMenuPosters(String email);
+
+    String getStoreName(String email);
+    Long getStoreId(String email);
+    MakerGetProfileResponse getProfile(String email);
 }

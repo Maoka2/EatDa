@@ -1,28 +1,35 @@
 package com.domain.user.service.impl;
 
+import com.domain.event.repository.EventRepository;
 import com.domain.menu.entity.Menu;
 import com.domain.menu.mapper.MenuMapper;
+import com.domain.menu.repository.MenuPosterRepository;
 import com.domain.menu.repository.MenuRepository;
-import com.domain.review.service.H3Service;
+import com.domain.review.repository.ReviewRepository;
 import com.domain.store.entity.Store;
+import com.domain.store.event.StoreCreatedEvent;
 import com.domain.store.mapper.StoreMapper;
 import com.domain.store.repository.StoreRepository;
 import com.domain.user.dto.request.MakerCheckEmailRequest;
 import com.domain.user.dto.request.MakerSignUpBaseRequest;
 import com.domain.user.dto.request.MakerSignUpMenuRequest;
+import com.domain.user.dto.response.MakerGetProfileResponse;
 import com.domain.user.entity.User;
 import com.domain.user.mapper.MakerMapper;
 import com.domain.user.repository.MakerRepository;
 import com.domain.user.service.MakerService;
 import com.domain.user.validator.UserValidator;
 import com.global.constants.ErrorCode;
+import com.global.constants.Status;
 import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
+import com.global.utils.geo.H3Utils;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,12 +39,15 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class MakerServiceImpl implements MakerService {
 
+    private final MenuPosterRepository menuPosterRepository;
     private final FileStorageService fileStorageService;
+    private final ReviewRepository reviewRepository;
+    private final EventRepository eventRepository;
     private final MakerRepository makerRepository;
     private final StoreRepository storeRepository;
     private final MenuRepository menuRepository;
 
-    private final H3Service h3Service;
+    private final H3Utils h3Service;
 
     private final MakerMapper makerMapper;
     private final StoreMapper storeMapper;
@@ -45,27 +55,18 @@ public class MakerServiceImpl implements MakerService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     @Override
     @Transactional
     public User registerMaker(final MakerSignUpBaseRequest baseRequest,
                               final List<MakerSignUpMenuRequest> menuRequests,
                               final MultipartFile licenseImageRequest,
                               final List<MultipartFile> menuImageRequests) {
-
-        log.info("===== [Service] registerMaker START =====");
-        log.info("BaseRequest: {}", baseRequest);
-        log.info("menuRequests size: {}", menuRequests != null ? menuRequests.size() : 0);
-        log.info("menuImageRequests size: {}", menuImageRequests != null ? menuImageRequests.size() : 0);
-
         validateSignUpRequest(baseRequest, menuRequests, licenseImageRequest, menuImageRequests);
-        log.info("Step1: Validation complete");
-
         User maker = makerMapper.toEntity(baseRequest, passwordEncoder.encode(baseRequest.password()));
-        log.info("Step2: Maker entity mapped");
 
         long h3Index7 = h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 7);
-        log.info("Step3: h3Index7={}", h3Index7);
-
         Store store = storeMapper.toEntity(baseRequest, maker,
                 storeImage(licenseImageRequest, "licenses/" + maker.getEmail()),
                 h3Index7,
@@ -73,26 +74,25 @@ public class MakerServiceImpl implements MakerService {
                 h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 9),
                 h3Service.encode(baseRequest.latitude(), baseRequest.longitude(), 10)
         );
-        log.info("Step4: Store entity mapped");
 
         List<Menu> menus = new ArrayList<>();
         for (int i = 0; i < menuRequests.size(); i++) {
-            log.info("Step5: Processing menu index {}", i);
             MultipartFile imageRequest = menuImageRequests.get(i);
+
             menus.add(menuMapper.toEntity(menuRequests.get(i), store,
                     storeImage(imageRequest, "menus/" + maker.getEmail())));
         }
-        log.info("Step6: Menu list created, size={}", menus.size());
 
         maker.addStore(store);
-        log.info("Step7: Store added to Maker");
-
         makerRepository.save(maker);
-        storeRepository.save(store);
-        menuRepository.saveAll(menus);
-        log.info("Step8: All entities saved");
+        Store savedStore = storeRepository.save(store);
 
-        log.info("===== [Service] registerMaker END =====");
+        log.info("menus : {}", menus);
+        log.info("menus.size : {}", menus.size());
+        menuRepository.saveAll(menus);
+
+        publishStoreCreatedEvent(savedStore, baseRequest);
+
         return maker;
     }
 
@@ -100,6 +100,45 @@ public class MakerServiceImpl implements MakerService {
     public void validateEmailAvailable(final MakerCheckEmailRequest request) {
         UserValidator.validateEmail(request.email());
         validateDuplicateEmail(request.email());
+    }
+
+    @Override
+    public Long countReceivedReviews(final String email) {
+        return reviewRepository.countByStoreIdAndStatus(getStorerId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public Long countMyEvents(final String email) {
+        return eventRepository.countByStoreIdAndStatus(getStorerId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public Long countMyMenuPosters(final String email) {
+        return menuPosterRepository.countByStoreIdAndStatus(getStorerId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public String getStoreName(final String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getStores()
+                .getFirst()
+                .getName();
+    }
+
+    @Override
+    public Long getStoreId(String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getStores()
+                .getFirst()
+                .getId();
+    }
+
+    @Override
+    public MakerGetProfileResponse getProfile(String email) {
+        return makerRepository.getProfileByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
     }
 
     private String storeImage(MultipartFile imageRequest, String path) {
@@ -139,6 +178,35 @@ public class MakerServiceImpl implements MakerService {
     private void validateDuplicateEmail(final String email) {
         if (makerRepository.existsByEmail(email)) {
             throw new ApiException(ErrorCode.EMAIL_DUPLICATED, email);
+        }
+    }
+
+    private Long getStorerId(String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getStores()
+                .getFirst()
+                .getId();
+    }
+
+    private void publishStoreCreatedEvent(Store store, MakerSignUpBaseRequest request) {
+        try {
+            StoreCreatedEvent event = StoreCreatedEvent.of(
+                    store.getId(),
+                    request.latitude(),
+                    request.longitude(),
+                    store.getH3Index7(),
+                    store.getH3Index8(),
+                    store.getH3Index9(),
+                    store.getH3Index10()
+            );
+
+            eventPublisher.publishEvent(event);
+            log.debug("Published store created event for store: {}", store.getId());
+        } catch (Exception e) {
+            // 이벤트 발행 실패해도 가게 등록은 성공해야 함
+            log.error("Failed to publish store created event for store {}: {}",
+                    store.getId(), e.getMessage());
         }
     }
 }

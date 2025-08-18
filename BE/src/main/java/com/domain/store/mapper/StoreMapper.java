@@ -1,5 +1,6 @@
 package com.domain.store.mapper;
 
+import com.domain.store.dto.response.StoreGetResponse;
 import com.domain.store.entity.Store;
 import com.domain.user.dto.request.MakerSignUpBaseRequest;
 import com.domain.user.entity.User;
@@ -23,4 +24,6 @@ public interface StoreMapper {
     @Mapping(target = "maker", source = "maker")
     Store toEntity(MakerSignUpBaseRequest request, User maker, String licenseUrl, long h3Index7, long h3Index8,
                    long h3Index9, long h3Index10);
+
+    StoreGetResponse toResponse(Store store);
 }

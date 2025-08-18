@@ -24,7 +24,7 @@ public class MenuPosterAssetGenerateMessage extends AbstractRedisStreamMessage {
     private final Long storeId;
     private final Long userId;
     private final List<MenuItem> menuItems;  // Menu 엔티티 → MenuItem DTO로 변경
-    private final List<String> imageUrls;
+    private final List<String> referenceImages;
     private final Instant requestedAt;
 
     // MenuItem 내부 레코드 추가
@@ -42,9 +42,9 @@ public class MenuPosterAssetGenerateMessage extends AbstractRedisStreamMessage {
             Long storeId,
             Long userId,
             List<MenuItem> menuItems,  // 파라미터 타입 변경
-            List<String> imageUrls
+            List<String> referenceImages
     ) {
-        validateRequiredFields(menuPostAssetId, type, prompt, storeId, userId, menuItems, imageUrls);
+        validateRequiredFields(menuPostAssetId, type, prompt, storeId, userId, menuItems, referenceImages);
 
         Instant requestedAt = Instant.now();
 
@@ -55,7 +55,7 @@ public class MenuPosterAssetGenerateMessage extends AbstractRedisStreamMessage {
                 .storeId(storeId)
                 .userId(userId)
                 .menuItems(menuItems)  // 필드명 변경
-                .imageUrls(imageUrls)
+                .referenceImages(referenceImages)
                 .requestedAt(requestedAt)
                 .expireAt(calculateExpireAt(STREAM_EVENT_ASSET_TTL))
                 .retryCount(INITIAL_RETRY_COUNT)

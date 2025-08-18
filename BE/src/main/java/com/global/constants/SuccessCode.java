@@ -13,7 +13,7 @@ public enum SuccessCode {
     EMAIL_AVAILABLE("EMAIL_AVAILABLE", "사용 가능한 이메일입니다.", HttpStatus.OK.value()),
     NICKNAME_AVAILABLE("NICKNAME_AVAILABLE", "사용 가능한 닉네임입니다.", HttpStatus.OK.value()),
 
-    // 사장님 회원가입 단계
+    // 사장님
     MAKER_SIGNUP_STEP1("MAKER_SIGNUP_STEP1", "기본 정보가 저장되었습니다.", HttpStatus.CREATED.value()),
     MENU_EXTRACTION_RECEIVED("MENU_EXTRACTION_RECEIVED", "메뉴 추출 결과가 수신되었습니다.", HttpStatus.OK.value()),
     MENU_EXTRACTION_SUCCESS("MENU_EXTRACTION_SUCCESS", "메뉴 추출이 성공적으로 완료되었습니다.", HttpStatus.OK.value()),
@@ -23,6 +23,9 @@ public enum SuccessCode {
     MAKER_SIGNUP_STEP3("MAKER_SIGNUP_STEP3", "사장님 회원가입이 완료되었습니다.", HttpStatus.OK.value()),
 
     MAKER_SIGNUP("MAKERS_SIGNUP", "사장님 회원가입이 완료되었습니다.", HttpStatus.OK.value()),
+    PROFILE_GET("PROFILE_GET", "회원 조회를 성공했습니다.", HttpStatus.OK.value()),
+
+    STORE_GET("STORE_GET", "가게 조회를 성공했습니다.", HttpStatus.OK.value()),
 
     // 로그인 / 권한
     SIGN_IN_SUCCESS("SIGN_IN_SUCCESS", "로그인에 성공했습니다.", HttpStatus.OK.value()),
@@ -47,6 +50,8 @@ public enum SuccessCode {
     REVIEW_DETAIL_FETCHED("REVIEW_DETAIL_FETCHED", "리뷰 상세정보를 성공적으로 조회했습니다.", HttpStatus.OK.value()),
     MY_REVIEWS_FETCHED("MY_REVIEWS_FETCHED", "사용자가 작성한 리뷰 목록을 성공적으로 조회했습니다.", HttpStatus.OK.value()),
     REVIEW_SCRAP_SUCCESS("REVIEW_SCRAP_SUCCESS", "리뷰를 스크랩했습니다.", HttpStatus.CREATED.value()),
+    REVIEW_SCRAP_LIST("REVIEW_SCRAP_LIST", "사용자가 스크랩한 리뷰를 성공적으로 조회했습니다.", HttpStatus.OK.value()),
+    REVIEW_RECEIVED_LIST("REVIEW_RECEIVED_LIST", "해당 가게에 작성된 리뷰를 성공적으로 조회했습니다.", HttpStatus.OK.value()),
     REVIEW_UN_SCRAP_SUCCESS("REVIEW_UN_SCRAP_SUCCESS", "리뷰 스크랩이 해제되었습니다.", HttpStatus.OK.value()),
     REVIEW_DELETED("REVIEW_DELETED", "리뷰가 성공적으로 삭제되었습니다.", HttpStatus.OK.value()),
 
@@ -60,7 +65,11 @@ public enum SuccessCode {
     POSTER_FINALIZED("POSTER_FINALIZED", "포스터가 성공적으로 저장되었습니다.", HttpStatus.OK.value()),
     POSTER_SENT("POSTER_SENT", "포스터가 성공적으로 사장님에게 전송되었습니다.", HttpStatus.OK.value()),
     POSTERS_ADOPTED("POSTERS_ADOPTED", "선택한 메뉴판을 성공적으로 채택했습니다.", HttpStatus.OK.value()),
+    POSTER_RELEASE("POSTER_RELEASE", "선택한 메뉴판을 성공적으로 해제했습니다.", HttpStatus.OK.value()),
     POSTER_UNADOPTED("POSTER_UNADOPTED", "메뉴판이 성공적으로 채택 해제되었습니다.", HttpStatus.OK.value()),
+    POSTER_GET("POSTER_GET", "작성했던 메뉴판을 성공적으로 조회했습니다.", HttpStatus.OK.value()),
+    POSTER_RECEIVED_GET("POSTER_RECEIVED", "전송받은 메뉴판을 성공적으로 조회했습니다.", HttpStatus.OK.value()),
+    ADOPTED_POSTERS_FOUND("ADOPTED_POSTERS_FOUND", "채택된 메뉴 포스터를 조회했습니다.", HttpStatus.OK.value()),
 
     // 이벤트
     EVENT_ASSET_REQUESTED("EVENT_ASSET_REQUESTED", "이벤트 생성 요청이 접수되었습니다.", HttpStatus.ACCEPTED.value()),
@@ -76,9 +85,10 @@ public enum SuccessCode {
     DISTANCE_CALCULATED("DISTANCE_CALCULATED", "소비자와 가게 간의 거리를 계산했습니다.", HttpStatus.OK.value()),
 
     // 경로
+
     PUBLIC_DIRECTIONS_FOUND("PUBLIC_DIRECTIONS_FOUND", "대중교통 경로를 성공적으로 조회했습니다.", HttpStatus.OK.value()),
     DISTANCE_TOO_SHORT("DISTANCE_TOO_SHORT", "해당 위치는 너무 가까워 대중교통 경로가 제공되지 않습니다.", HttpStatus.OK.value()),
-
+    NEARBY_STORES_FOUND("NEARBY_STORES_FOUND", "근처 가게 목록을 조회했습니다.", HttpStatus.OK.value()),
     // 영상 후처리
     THUMBNAILIZATION("THUMBNAILIZATION", "생성된 영상의 썸네일을 생성했습니다.", HttpStatus.OK.value());
 

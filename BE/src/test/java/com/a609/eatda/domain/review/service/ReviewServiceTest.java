@@ -10,7 +10,7 @@
 //import com.domain.review.entity.Review;
 //import com.domain.review.repository.ReviewRepository;
 //import com.domain.review.repository.StoreRepository;
-//import com.domain.review.service.HaversineCalculator;
+//import com.global.utils.geo.HaversineCalculator;
 //import com.domain.review.service.ReviewService;
 //import com.global.constants.ErrorCode;
 //import com.global.exception.ApiException;

@@ -15,6 +15,8 @@ import com.domain.event.dto.response.ActiveStoreEventResponse;
 import com.domain.event.dto.response.EventAssetRequestResponse;
 import com.domain.event.dto.response.EventFinalizeResponse;
 import com.domain.event.dto.response.MyEventResponse;
+import com.domain.event.entity.Event;
+import com.domain.event.mapper.EventMapper;
 import com.domain.event.service.EventService;
 import com.global.constants.AssetType;
 import com.global.constants.SuccessCode;
@@ -48,6 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventController {
 
     private final EventService eventService;
+    private final EventMapper eventMapper;
 
     @PostMapping(value = "/assets/request", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse> requestEventAsset(
@@ -142,5 +145,11 @@ public class EventController {
         eventService.deleteEvent(eventId, email);
 
         return ApiResponseFactory.success(EVENT_DELETED);
+    }
+
+    @GetMapping
+    public ResponseEntity<BaseResponse> getEvents(@RequestParam("storeId") final Long storeId) {
+        List<Event> events = eventService.getEvents(storeId);
+        return ApiResponseFactory.success(EVENT_LIST_RETRIEVED, eventMapper.toResponse(events));
     }
 }

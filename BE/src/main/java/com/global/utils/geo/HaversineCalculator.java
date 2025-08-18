@@ -1,4 +1,4 @@
-package com.domain.review.service;
+package com.global.utils.geo;
 
 import org.springframework.stereotype.Component;
 

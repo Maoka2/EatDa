@@ -4,10 +4,13 @@ import com.domain.menu.dto.redis.MenuPosterAssetGenerateMessage;
 import com.domain.menu.dto.request.AdoptMenuPostersRequest;
 import com.domain.menu.dto.request.MenuPosterAssetCreateRequest;
 import com.domain.menu.dto.request.MenuPosterFinalizeRequest;
-import com.domain.menu.dto.response.AdoptMenuPostersResponse;
-import com.domain.menu.dto.response.MenuPosterAssetRequestResponse;
-import com.domain.menu.dto.response.MenuPosterFinalizeResponse;
-import com.domain.menu.entity.*;
+import com.domain.menu.dto.request.ReleaseMenuPosterRequest;
+import com.domain.menu.dto.response.*;
+import com.domain.menu.entity.AdoptedMenuPoster;
+import com.domain.menu.entity.Menu;
+import com.domain.menu.entity.MenuPoster;
+import com.domain.menu.entity.MenuPosterAsset;
+import com.domain.menu.entity.MenuPosterMenu;
 import com.domain.menu.redis.MenuPosterAssetRedisPublisher;
 import com.domain.menu.repository.AdoptedMenuPosterRepository;
 import com.domain.menu.repository.MenuPosterAssetRepository;
@@ -29,13 +32,13 @@ import com.global.exception.ApiException;
 import com.global.filestorage.FileStorageService;
 import com.global.redis.constants.RedisStreamKey;
 import com.global.utils.AssetValidator;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -55,11 +58,12 @@ public class MenuPosterServiceImpl implements MenuPosterService {
 
     @Override
     @Transactional
-    public MenuPosterAssetRequestResponse requestMenuPosterAsset(MenuPosterAssetCreateRequest request, String eaterMail) {
+    public MenuPosterAssetRequestResponse requestMenuPosterAsset(MenuPosterAssetCreateRequest request,
+                                                                 String eaterMail) {
         User eater = validateEater(eaterMail);
         Store store = validateStore(request.storeId());
 
-        AssetValidator.validateImages(request.image(), ErrorCode.IMAGE_TOO_LARGE);
+        AssetValidator.validateImages(request.image());
 
         List<Menu> menus = menuValidator.validateMenusBelongToStore(request.menuIds(), store);
         MenuPoster menuPoster = createPendingPoster(eater, store);
@@ -68,7 +72,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         MenuPosterAsset menuPosterAsset = createPendingAsset(menuPoster, request);
 
         boolean convertToWebp = shouldConvertToWebp(request.type());
-        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(), convertToWebp);
+        List<String> uploadedImageUrls = uploadImages(request.image(), IMAGE_BASE_PATH + eater.getEmail(), false);
         List<MenuPosterAssetGenerateMessage.MenuItem> menuItems = menus.stream()
                 .map(m -> new MenuPosterAssetGenerateMessage.MenuItem(
                         m.getId(),
@@ -87,6 +91,7 @@ public class MenuPosterServiceImpl implements MenuPosterService {
                 menuItems,  // MenuItem DTO 리스트 전달
                 uploadedImageUrls
         );
+        log.info("[MenuPosterServiceImpl]: message={}", uploadedImageUrls.toString());
         menuPosterAssetRedisPublisher.publish(RedisStreamKey.MENU_POSTER, message);
 
         return MenuPosterAssetRequestResponse.from(menuPosterAsset);
@@ -124,15 +129,14 @@ public class MenuPosterServiceImpl implements MenuPosterService {
     @Override
     @Transactional
     public MenuPosterFinalizeResponse finalizeMenuPoster(MenuPosterFinalizeRequest request) {
-        MenuPosterAsset asset = validateAsset(request.menuPosterAssetId());
-        menuValidator.validateForFinalization(asset);
-
         MenuPoster menuPoster = validateMenuPoster(request.menuPosterId());
         menuValidator.validatePendingStatus(menuPoster);
 
+        MenuPosterAsset asset = menuPoster.getMenuPosterAsset();
+        menuValidator.validateForFinalization(asset);
+
         menuPoster.updateDescription(request.description());
         menuPoster.updateStatus(Status.SUCCESS);
-        asset.registerMenuPoster(menuPoster);
 
         return MenuPosterFinalizeResponse.from(menuPoster);
     }
@@ -164,7 +168,8 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         menuValidator.validateAllPostersSent(menuPosters);
         menuValidator.validatePostersBelongToStore(menuPosters, request.storeId());
 
-        List<AdoptedMenuPoster> existingAdopted = adoptedMenuPosterRepository.findByStoreIdAndDeletedFalse(request.storeId());
+        List<AdoptedMenuPoster> existingAdopted = adoptedMenuPosterRepository.findByStoreIdAndDeletedFalse(
+                request.storeId());
         if (!existingAdopted.isEmpty()) {
             existingAdopted.forEach(BaseEntity::delete);
             adoptedMenuPosterRepository.saveAll(existingAdopted);
@@ -178,6 +183,70 @@ public class MenuPosterServiceImpl implements MenuPosterService {
                 ).toList();
         adoptedMenuPosterRepository.saveAll(newAdopted);
         return AdoptMenuPostersResponse.of(request.storeId(), request.menuPosterIds());
+    }
+
+    @Override
+    public ReleaseMenuPosterResponse releaseMenuPosters(ReleaseMenuPosterRequest request, String makerEmail) {
+        User maker = validateMater(makerEmail);
+        Store store = validateStore(request.storeId());
+
+        menuValidator.validateStoreOwnership(maker, store);
+
+        MenuPoster menuPoster = menuPosterRepository.findByIdAndDeletedFalse(request.menuPosterId())
+                .orElseThrow(() -> new ApiException(ErrorCode.MENU_POSTER_NOT_FOUND));
+
+        if (!menuPoster.getStore().getId().equals(store.getId())) {
+            throw new ApiException(ErrorCode.MENU_NOT_BELONG_TO_STORE);
+        }
+
+        AdoptedMenuPoster adoptedMenuPoster = adoptedMenuPosterRepository
+                .findByStoreIdAndMenuPosterIdAndDeletedFalse(store.getId(), menuPoster.getId())
+                .orElseThrow(() -> new ApiException(ErrorCode.MENU_POSTER_NOT_FOUND));
+
+        adoptedMenuPoster.delete();
+        adoptedMenuPosterRepository.save(adoptedMenuPoster);
+
+        return new ReleaseMenuPosterResponse(
+                store.getId(),
+                menuPoster.getId()
+        );
+    }
+
+    @Override
+    public List<MenuPoster> getMyMenuPosters(final String email) {
+        return menuPosterRepository.findByUserIdAndStatus(getEaterId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public List<MenuPoster> getReceivedMenuPosters(final String email) {
+        return menuPosterRepository.findByStoreIdAndStatus(getStoreId(email), Status.SUCCESS);
+    }
+
+    @Override
+    public List<AdoptedMenuPosterResponse> getAdoptedMenuPosters(Long storeId, String eaterEmail) {
+        validateEater(eaterEmail);
+        Store store = validateStore(storeId);
+
+        eaterRepository.findByEmailAndDeletedFalse(eaterEmail)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+
+        List<AdoptedMenuPoster> adoptedPosters =
+                adoptedMenuPosterRepository.findByStoreIdOrderByAdoptedAtDesc(storeId);
+
+        return adoptedPosters.stream()
+                .map(adopted -> {
+                    MenuPoster menuPoster = adopted.getMenuPoster();
+                    MenuPosterAsset asset = menuPoster.getMenuPosterAsset();
+                    if (asset == null || asset.getStatus() != Status.SUCCESS) {
+                        return null;
+                    }
+                    return AdoptedMenuPosterResponse.builder()
+                            .menuPosterId(menuPoster.getId())
+                            .imageUrl(asset.getPath())
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private User validateEater(final String eaterEmail) {
@@ -224,14 +293,20 @@ public class MenuPosterServiceImpl implements MenuPosterService {
         return menuPosterRepository.save(MenuPoster.createPending(user, store));
     }
 
-    private MenuPosterAsset createPendingAsset(final MenuPoster menuPoster, final MenuPosterAssetCreateRequest request) {
-        return menuPosterAssetRepository.save(MenuPosterAsset.createPending(menuPoster, AssetType.IMAGE, request.prompt()));
+    private MenuPosterAsset createPendingAsset(final MenuPoster menuPoster,
+                                               final MenuPosterAssetCreateRequest request) {
+        return menuPosterAssetRepository.save(
+                MenuPosterAsset.createPending(menuPoster, AssetType.IMAGE, request.prompt()));
+    }
+
+    private void updateMenuPosterAsset(final MenuPosterAsset asset) {
+        menuPosterAssetRepository.save(asset);
     }
 
     private List<String> uploadImages(final List<MultipartFile> images, final String relativeBase,
                                       final boolean convertToWebp) {
         return images.stream()
-                .map(file -> fileStorageService.storeImage(
+                .map(file -> fileStorageService.storeEventAndMenuPosterImage(
                         file,
                         relativeBase,
                         file.getOriginalFilename(),
@@ -252,5 +327,23 @@ public class MenuPosterServiceImpl implements MenuPosterService {
                     .build();
             menuPoster.getMenuPosterMenus().add(menuPosterMenu);
         }
+    }
+
+    private Long getEaterId(String email) {
+        return eaterRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getId();
+    }
+
+    private Long getMakerId(String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getId();
+    }
+
+    private Long getStoreId(String email) {
+        return makerRepository.findByEmailAndDeletedFalse(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND))
+                .getStores().getFirst().getId();
     }
 }

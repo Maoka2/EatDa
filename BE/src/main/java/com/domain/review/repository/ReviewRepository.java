@@ -1,13 +1,13 @@
 package com.domain.review.repository;
 
 import com.domain.review.entity.Review;
-import java.util.List;
+import com.global.constants.Status;
 import io.lettuce.core.dynamic.annotation.Param;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-
-import java.util.Optional;
 
 /**
  * 리뷰 데이터베이스 접근을 위한 Repository 인터페이스
@@ -16,34 +16,37 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     /**
      * 특정 Store들의 리뷰를 최신순으로 조회 (무한스크롤)
      */
-    @Query("SELECT r FROM Review r " +
+    @Query("SELECT DISTINCT r FROM Review r " +
+            "LEFT JOIN FETCH r.reviewAsset ra " +
+            "LEFT JOIN FETCH r.store s " +
+            "LEFT JOIN FETCH r.reviewMenus rm " +
             "WHERE r.store.id IN :storeIds " +
             "AND (:lastReviewId IS NULL OR r.id < :lastReviewId) " +
             "ORDER BY r.id DESC")
-    List<Review> findByStoreIdInOrderByIdDesc(
+    List<Review> findByStoreIdInOrderByIdDescWithAssets(
             @Param("storeIds") List<Long> storeIds,
             @Param("lastReviewId") Long lastReviewId,
-            Pageable pageable
-    );
+            Pageable pageable);
 
     /**
-     * 사용자 ID로 리뷰 목록 조회
-     * 전체 리뷰를 최신순으로 조회 (무한스크롤)
+     * 사용자 ID로 리뷰 목록 조회 전체 리뷰를 최신순으로 조회 (무한스크롤)
      */
     List<Review> findByUserId(Long userId);
-    @Query("SELECT r FROM Review r " +
+    @Query("SELECT DISTINCT r FROM Review r " +
+            "LEFT JOIN FETCH r.reviewAsset ra " +
+            "LEFT JOIN FETCH r.store s " +
+            "LEFT JOIN FETCH r.reviewMenus rm " +
             "WHERE :lastReviewId IS NULL OR r.id < :lastReviewId " +
             "ORDER BY r.id DESC")
-    List<Review> findAllOrderByIdDesc(
+    List<Review> findAllOrderByIdDescWithAssets(
             @Param("lastReviewId") Long lastReviewId,
-            Pageable pageable
-    );
+            Pageable pageable);
 
     /**
-     * 가게 ID로 리뷰 목록 조회
-     * Store별 리뷰 개수 조회
+     * 가게 ID로 리뷰 목록 조회 Store별 리뷰 개수 조회
      */
     List<Review> findByStoreId(Long storeId);
+
     @Query("SELECT r.store.id, COUNT(r) FROM Review r " +
             "WHERE r.store.id IN :storeIds " +
             "GROUP BY r.store.id")
@@ -58,15 +61,28 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     Optional<Review> findByIdWithDetails(@Param("reviewId") Long reviewId);
 
     @Query("""
-    SELECT r FROM Review r
-    LEFT JOIN FETCH r.store
-    WHERE r.user.id = :userId
-      AND (:lastReviewId IS NULL OR r.id < :lastReviewId)
-    ORDER BY r.id DESC
-    """)
+            SELECT r FROM Review r
+            LEFT JOIN FETCH r.store
+            WHERE r.user.id = :userId
+              AND (:lastReviewId IS NULL OR r.id < :lastReviewId)
+            ORDER BY r.id DESC
+            """)
     List<Review> findMyReviews(
             @Param("userId") Long userId,
             @Param("lastReviewId") Long lastReviewId,
             Pageable pageable
     );
+
+    @Query("""
+                select r from Review r
+                join ReviewScrap rs on rs.review.id = r.id
+                where rs.user.id = :userId
+            """)
+    List<Review> findAllScrappedByUserId(@Param("userId") Long userId);
+
+    List<Review> findByStoreIdAndStatusOrderByCreatedAtDesc(Long storeId, Status status);
+
+    Long countByUserIdAndStatus(Long userId, Status status);
+
+    Long countByStoreIdAndStatus(Long storeId, Status status);
 }

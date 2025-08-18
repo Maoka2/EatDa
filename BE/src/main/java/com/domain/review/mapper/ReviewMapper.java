@@ -2,6 +2,8 @@ package com.domain.review.mapper;
 
 import com.domain.review.constants.ReviewAssetType;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
+import com.domain.review.dto.response.MyReceivedResponse;
+import com.domain.review.dto.response.MyScrapResponse;
 import com.domain.review.dto.response.ReviewAssetRequestResponse;
 import com.domain.review.dto.response.ReviewAssetResultResponse;
 import com.domain.review.dto.response.ReviewFinalizeResponse;
@@ -10,6 +12,7 @@ import com.domain.review.entity.ReviewAsset;
 import com.domain.store.entity.Store;
 import com.domain.user.entity.User;
 import com.global.constants.Status;
+import java.util.List;
 import java.util.Objects;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -68,4 +71,19 @@ public interface ReviewMapper {
 
         return new ReviewAssetResultResponse(type, imageUrl, shortsUrl, thumbnailPath);
     }
+
+    @Mapping(target = "storeName", source = "store.name")
+    @Mapping(target = "imageUrl", source = "reviewAsset.imageUrl")
+    @Mapping(target = "shortsUrl", source = "reviewAsset.shortsUrl")
+    @Mapping(target = "thumbnailUrl", source = "reviewAsset.thumbnailPath")
+    MyScrapResponse toResponse(Review review);
+
+    List<MyScrapResponse> toScrapResponse(List<Review> reviewList);
+
+    @Mapping(target = "imageUrl", source = "reviewAsset.imageUrl")
+    @Mapping(target = "shortsUrl", source = "reviewAsset.shortsUrl")
+    @Mapping(target = "thumbnailUrl", source = "reviewAsset.thumbnailPath")
+    MyReceivedResponse toReceivedResponse(Review review);
+
+    List<MyReceivedResponse> toReceivedResponse(List<Review> reviewList);
 }

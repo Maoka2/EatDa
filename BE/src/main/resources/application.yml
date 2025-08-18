@@ -10,10 +10,26 @@ spring:
       host: redis
       port: 6379
 
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: never
+
 logging:
   level:
-    com.global.aop: INFO        # AOP 진입/종료 로그
-    com.global.exception: INFO  # 전역 예외 핸들러
+    root: WARN
+    com.global: INFO
+    com.domain: INFO
+    org.springframework.batch: INFO
+    org.springframework.jdbc: INFO
+    # --- Hibernate SQL 관련 모두 OFF ---
+    org.hibernate.SQL: OFF
+    org.hibernate.orm.jdbc.bind: OFF
+    org.hibernate.orm.jdbc.extract: OFF
+    org.hibernate.type.descriptor.sql: OFF
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: OFF
+    org.hibernate.stat: OFF
 
 management: # Spring-Actuator 설정
   endpoints:
@@ -26,8 +42,16 @@ management: # Spring-Actuator 설정
         enabled: true   # prometheus 엔드포인트 활성화 여부 *default = true
 
 filestorage: # 파일 저장소 설정
-  base-dir: ${user.home}/eatda
+  base-dir: /root/eatda
   base-url: ""
+  host-base-dir: /home/ubuntu/eatda
+  video:
+    max-size-mb: 32
+    request-timeout-sec: 20
+    allowed-mime:
+      - video/mp4
+      - video/quicktime
+      - video/webm
 
 jwt:
   secret-key: SnnjiquvcPa8IZXG7XyOr36wYRfYLbkAsB6AxbPcnivRyAot428rMAvEXmFKFDH3vAkBmfEmS12YxSrZdTIknQ==

@@ -1,15 +1,12 @@
-package com.domain.review.repository;
+package com.domain.common.repository;
 
-import com.domain.review.entity.Poi;
+import com.domain.common.entity.Poi;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Set;
 
-@Repository
 public interface PoiRepository extends JpaRepository<Poi, Long> {
 
     /**
@@ -65,4 +62,7 @@ public interface PoiRepository extends JpaRepository<Poi, Long> {
      */
     @Query("SELECT p FROM Poi p WHERE p.h3Index7 IN :h3Indexes OR p.h3Index8 IN :h3Indexes OR p.h3Index9 IN :h3Indexes OR p.h3Index10 IN :h3Indexes")
     List<Poi> findByH3IndexIn(@Param("h3Indexes") List<Long> h3Indexes);
+
+    @Query("SELECT p FROM Poi p WHERE p.name = :name")
+    List<Poi> findByName(@Param("areaName") String name);
 }

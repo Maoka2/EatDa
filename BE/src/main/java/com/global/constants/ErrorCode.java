@@ -65,6 +65,7 @@ public enum ErrorCode {
     REVIEW_ASSET_TYPE_MISMATCH("REVIEW_ASSET_TYPE_MISMATCH", "요청한 리뷰 에셋 타입이 일치하지 않습니다.",
             HttpStatus.BAD_REQUEST.value()),
     REVIEW_OWNER_MISMATCH("REVIEW_OWNER_MISMATCH", "리뷰 소유자가 일치하지 않습니다.", HttpStatus.FORBIDDEN.value()),
+    FILE_TOO_LARGE("FILE_TOO_LARGE", "파일이 너무 큽니다.", HttpStatus.BAD_REQUEST.value()),
 
     // 리소스 관련
     NOT_FOUND("NOT_FOUND", "요청한 파일이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
@@ -72,6 +73,7 @@ public enum ErrorCode {
     SCRAP_NOT_FOUND("SCRAP_NOT_FOUND", "해당 스크랩을 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     INVALID_STATUS("INVALID_STATUS", "유효하지 않은 상태값입니다.", HttpStatus.BAD_REQUEST.value()),
     IMAGE_TOO_LARGE("IMAGE_TOO_LARGE", "이미지 크기는 10MB 이하만 허용됩니다.", HttpStatus.BAD_REQUEST.value()),
+    IMAGE_TOO_SMALL("IMAGE_TOO_SMALL", "이미지 크기는 1MB 이상 이어야만 허용됩니다.", HttpStatus.BAD_REQUEST.value()),
 
     // 이벤트 관련
     EVENT_NOT_FOUND("EVENT_NOT_FOUND", "요청한 이벤트를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
@@ -82,6 +84,9 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST.value()),
     EVENT_INVALID_DATE_RANGE("EVENT_INVALID_DATE_RANGE", "시작 날짜가 종료 날짜보다 늦을 수 없습니다.", HttpStatus.BAD_REQUEST.value()),
     EVENT_START_DATE_IN_PAST("EVENT_START_DATE_IN_PAST", "시작 날짜는 과거일 수 없습니다.", HttpStatus.BAD_REQUEST.value()),
+
+    // geo 관련
+    POI_NOT_FOUND("POI_NOT_FOUND", "근처 역을 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
 
     // asset 관련
     ASSET_NOT_FOUND("ASSET_NOT_FOUND", "해당 에셋이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
@@ -99,8 +104,10 @@ public enum ErrorCode {
     MENU_POSTER_NOT_FOUND("MENU_POSTER_NOT_FOUND", "요청한 메뉴 포스터를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
     MENU_POSTER_NOT_PENDING("MENU_POSTER_NOT_PENDING", "해당 메뉴 포스터는 대기 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
     MENU_POSTER_NOT_SUCCESS("MENU_POSTER_NOT_SUCCESS", "해당 메뉴 포스터는 완료 상태가 아닙니다.", HttpStatus.BAD_REQUEST.value()),
-    MENU_POSTER_ASSET_NOT_FOUND("MENU_POSTER_ASSET_NOT_FOUND", "해당 메뉴 포스터 에셋이 존재하지 않습니다.", HttpStatus.NOT_FOUND.value()),
-    REQUIRED_MENU_FIELDS_MISSING("REQUIRED_MENU_FIELDS_MISSING", "assetId, type, prompt, storeId, userId, menus, imagesUrls는 필수입니다.", HttpStatus.BAD_REQUEST.value()),
+    MENU_POSTER_ASSET_NOT_FOUND("MENU_POSTER_ASSET_NOT_FOUND", "해당 메뉴 포스터 에셋이 존재하지 않습니다.",
+            HttpStatus.NOT_FOUND.value()),
+    REQUIRED_MENU_FIELDS_MISSING("REQUIRED_MENU_FIELDS_MISSING",
+            "assetId, type, prompt, storeId, userId, menus, imagesUrls는 필수입니다.", HttpStatus.BAD_REQUEST.value()),
     MENU_POSTER_ALREADY_SENT("MENU_POSTER_ALREADY_SENT", "이미 전송된 메뉴 포스터입니다.", HttpStatus.BAD_REQUEST.value()),
     MENU_POSTER_NOT_SENT("MENU_POSTER_NOT_SENT", "전송되지 않은 메뉴 포스터는 채택할 수 없습니다.", HttpStatus.BAD_REQUEST.value()),
     MENU_POSTER_EXCEED_LIMIT("MENU_POSTER_EXCEED_LIMIT", "메뉴 포스터는 최대 5개까지만 선택 가능합니다.", HttpStatus.BAD_REQUEST.value()),
@@ -115,6 +122,7 @@ public enum ErrorCode {
     FILE_DOWNLOAD_ERROR("FILE_DOWNLOAD_ERROR", "파일 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
     INVALID_FILE_TYPE("INVALID_FILE_TYPE", "지원하지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST.value()),
     FILE_SIZE_EXCEEDED("FILE_SIZE_EXCEEDED", "파일 크기가 제한을 초과했습니다.", HttpStatus.BAD_REQUEST.value()),
+    IMAGES_REQUIRED("IMAGES_REQUIRED_ERROR", "이미지 사이즈를 확인해주세요", HttpStatus.BAD_REQUEST.value()),
     IMAGE_PROCESSING_FAILED("IMAGE_PROCESSING_FAILED", "이미지 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
     VIDEO_PROCESSING_FAILED("VIDEO_PROCESSING_FAILED", "비디오 처리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR.value()),
 

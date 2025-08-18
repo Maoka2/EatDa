@@ -1,9 +1,9 @@
 package com.domain.review.controller;
 
-import com.domain.review.constants.ReviewConstants;
 import com.domain.review.dto.request.ReviewAssetCallbackRequest;
 import com.domain.review.dto.request.ReviewAssetCreateRequest;
 import com.domain.review.dto.request.ReviewFinalizeRequest;
+import com.domain.review.dto.request.ReviewLocationRequest;
 import com.domain.review.dto.response.MyReviewResponse;
 import com.domain.review.dto.response.ReviewAssetRequestResponse;
 import com.domain.review.dto.response.ReviewAssetResultResponse;
@@ -12,10 +12,11 @@ import com.domain.review.dto.response.ReviewFeedResponse;
 import com.domain.review.dto.response.ReviewFeedResult;
 import com.domain.review.dto.response.ReviewFinalizeResponse;
 import com.domain.review.dto.response.ReviewScrapResult;
+import com.domain.review.entity.Review;
+import com.domain.review.mapper.ReviewMapper;
 import com.domain.review.service.ReviewScrapService;
 import com.domain.review.service.ReviewService;
 import com.domain.review.service.ReviewThumbnailService;
-import com.domain.review.validator.SeoulLocation;
 import com.global.annotation.ExcludeFromLogging;
 import com.global.config.swagger.annotation.ApiInternalServerError;
 import com.global.config.swagger.annotation.ApiUnauthorizedError;
@@ -35,6 +36,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +65,8 @@ public class ReviewController {
     private final ReviewService reviewService;
     private final ReviewScrapService reviewScrapService;
     private final ReviewThumbnailService reviewThumbnailService;
+
+    private final ReviewMapper reviewMapper;
 
     @Operation(
             summary = "1단계 - 리뷰 에셋 생성 요청",
@@ -247,33 +251,18 @@ public class ReviewController {
     @PreAuthorize("hasAnyAuthority('EATER','MAKER')")
     @GetMapping("/feed")
     public ResponseEntity<BaseResponse> getReviewFeed(
-            @RequestParam
-            @NotNull(message = "위도는 필수입니다")
-            @SeoulLocation(type = SeoulLocation.LocationType.LATITUDE, message = "위도는 서울 지역 범위여야 합니다")
-            Double latitude,
-
-            @RequestParam
-            @NotNull(message = "경도는 필수입니다")
-            @SeoulLocation(type = SeoulLocation.LocationType.LONGITUDE, message = "경도는 서울 지역 범위여야 합니다")
-            Double longitude,
-
+            @Valid ReviewLocationRequest request,
             @RequestParam(defaultValue = "500")
             Integer distance,
-
             @RequestParam(required = false)
             Long lastReviewId,
-
             @AuthenticationPrincipal final String email
     ) {
         log.info("Review feed request - lat: {}, lon: {}, distance: {}m, lastReviewId: {}",
-                latitude, longitude, distance, lastReviewId);
-
-        if (!ReviewConstants.SEARCH_DISTANCES.contains(distance)) {
-            throw new IllegalArgumentException("거리는 300, 500, 700, 850, 1000, 2000m 중 하나여야 합니다");
-        }
+                request.latitude(), request.longitude(), distance, lastReviewId);
 
         ReviewFeedResult<ReviewFeedResponse> result = reviewService.getReviewFeed(
-                latitude, longitude, distance, lastReviewId, email
+                request, distance, lastReviewId, email
         );
 
         String code = result.nearbyReviewsFound() ? "FEED_FETCHED" : "FEED_FALLBACK";
@@ -465,5 +454,23 @@ public class ReviewController {
                                                          @RequestParam("fileName") String fileName) {
         Path path = reviewThumbnailService.extractThumbnail(videoUrl, filePath, fileName);
         return ApiResponseFactory.success(SuccessCode.THUMBNAILIZATION, path);
+    }
+
+    @GetMapping("/scraps")
+    public ResponseEntity<BaseResponse> getMyScrapReviews(@AuthenticationPrincipal String email) {
+        List<Review> scraps = reviewScrapService.getScrapReviews(email);
+        return ApiResponseFactory.success(SuccessCode.REVIEW_SCRAP_LIST, reviewMapper.toScrapResponse(scraps));
+    }
+
+    @GetMapping("/received")
+    public ResponseEntity<BaseResponse> getMyReceivedReviews(@AuthenticationPrincipal String email) {
+        List<Review> reviews = reviewService.getMyReceivedReviews(email);
+        return ApiResponseFactory.success(SuccessCode.REVIEW_RECEIVED_LIST, reviewMapper.toReceivedResponse(reviews));
+    }
+
+    @GetMapping
+    public ResponseEntity<BaseResponse> getReviews(@RequestParam("storeId") Long storeId) {
+        List<Review> reviews = reviewService.getReviews(storeId);
+        return ApiResponseFactory.success(SuccessCode.REVIEW_RECEIVED_LIST, reviewMapper.toReceivedResponse(reviews));
     }
 }

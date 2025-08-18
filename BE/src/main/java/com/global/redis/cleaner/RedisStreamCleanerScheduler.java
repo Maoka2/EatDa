@@ -26,7 +26,7 @@ public class RedisStreamCleanerScheduler {
     /**
      * 5분 간격으로 Redis Stream 정리 Job 실행
      */
-    @Scheduled(cron = "0 0/5 * * * *") // 매 5분마다 실행
+    @Scheduled(cron = "0 0/20 * * * *") // 매 5분마다 실행
     public void runRedisStreamCleaner() {
         try {
             jobLauncher.run(

@@ -1,14 +1,14 @@
 package com.domain.event.repository;
 
 import com.domain.event.entity.Event;
+import com.global.constants.Status;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
 
@@ -28,10 +28,11 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                        @Param("lastEventId") Long lastEventId,
                                        Pageable pageable);
 
-    // 진행 중인 가게 이벤트 조회 (deleted = false 조건 추가)
+    // 진행 중인 가게 이벤트 조회 (Store fetch join 추가)
     @Query("SELECT e FROM Event e " +
-            "WHERE e.store.deleted = false " +  // Store deleted 체크
-            "AND e.deleted = false " +  // Event deleted 체크 추가
+            "JOIN FETCH e.store s " +  // Store fetch join 추가
+            "WHERE s.deleted = false " +
+            "AND e.deleted = false " +
             "AND e.status = 'SUCCESS' " +
             "AND e.startDate <= :currentDate " +
             "AND e.endDate >= :currentDate " +
@@ -40,4 +41,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findActiveEvents(@Param("currentDate") LocalDate currentDate,
                                  @Param("lastEventId") Long lastEventId,
                                  Pageable pageable);
+
+    Long countByStoreIdAndStatus(Long storerId, Status status);
+
+    List<Event> findByStoreIdAndStatus(Long StoreId, Status status);
 }

@@ -1,6 +1,7 @@
 package com.domain.store.entity;
 
 import com.domain.menu.entity.Menu;
+import com.domain.menu.entity.MenuPoster;
 import com.domain.user.entity.User;
 import com.global.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
@@ -15,6 +16,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -47,8 +50,8 @@ public class Store extends BaseEntity {
     @JoinColumn(name = "maker_id")
     private User maker;
 
-    @OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
-    private List<Menu> menus;
+    @OneToMany(mappedBy = "store", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MenuPoster> menuPosters = new ArrayList<>();
 
     @NotNull
     @Column

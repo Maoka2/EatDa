@@ -64,10 +64,6 @@ import org.springframework.web.multipart.MultipartFile;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class EventServiceImplTest {
 
-    private final String makerEmail = "maker@example.com";
-    private final Long userId = 1L;
-    private final Long storeId = 100L;
-    private final Long assetId = 300L;
     @InjectMocks
     private EventServiceImpl eventService;
     @Mock
@@ -90,6 +86,10 @@ class EventServiceImplTest {
     private Event event;
     @Mock
     private EventAsset eventAsset;
+    private final String makerEmail = "maker@example.com";
+    private final Long userId = 1L;
+    private final Long storeId = 100L;
+    private final Long assetId = 300L;
 
     @BeforeEach
     void setUp() {
@@ -169,7 +169,7 @@ class EventServiceImplTest {
         // verify(storeRepository).findById(storeId);
         verify(eventRepository).save(any(Event.class));
         verify(eventAssetRepository).save(any(EventAsset.class));
-        verify(fileStorageService).storeImage(
+        verify(fileStorageService).storeEventAndMenuPosterImage(
                 mockFile,
                 expectedPath,
                 "test.jpg",
@@ -255,22 +255,21 @@ class EventServiceImplTest {
                 List.of(file1, file2)
         );
 
-        // given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
         given(maker.getStores()).willReturn(List.of(store));
         given(eventRepository.save(any(Event.class))).willReturn(event);
         given(eventAssetRepository.save(any(EventAsset.class))).willReturn(eventAsset);
-        given(fileStorageService.storeImage(
+        given(fileStorageService.storeEventAndMenuPosterImage(
                 file1,
                 expectedPath,
                 "image1.jpg",
-                false // WebP 변환 적용 X
+                false
         )).willReturn("uploaded/path/image1.jpg");
 
-        given(fileStorageService.storeImage(
+        given(fileStorageService.storeEventAndMenuPosterImage(
                 file2,
                 expectedPath,
                 "image2.jpg",
-                false  // WebP 변환 적용 X
+                false
         )).willReturn("uploaded/path/image2.jpg");
 
         // when
@@ -282,8 +281,8 @@ class EventServiceImplTest {
         ArgumentCaptor<EventAssetGenerateMessage> messageCaptor =
                 ArgumentCaptor.forClass(EventAssetGenerateMessage.class);
         verify(eventAssetRedisPublisher).publish(eq(RedisStreamKey.EVENT_ASSET), messageCaptor.capture());
-        verify(fileStorageService).storeImage(file1, expectedPath, "image1.jpg", false);
-        verify(fileStorageService).storeImage(file2, expectedPath, "image2.jpg", false);
+        verify(fileStorageService).storeEventAndMenuPosterImage(file1, expectedPath, "image1.jpg", false);
+        verify(fileStorageService).storeEventAndMenuPosterImage(file2, expectedPath, "image2.jpg", false);
         assertThat(messageCaptor.getValue().getReferenceImages())
                 .hasSize(2)
                 .containsExactly("uploaded/path/image1.jpg", "uploaded/path/image2.jpg");
@@ -1216,7 +1215,7 @@ class EventServiceImplTest {
 
         given(storeRepository.findById(storeId))
                 .willReturn(Optional.of(store));
-        given(eventRepository.findActiveEvents( any(LocalDate.class), isNull(), any(Pageable.class)))
+        given(eventRepository.findActiveEvents(any(LocalDate.class), isNull(), any(Pageable.class)))
                 .willReturn(events);
         given(eventAssetRepository.findByEventIds(List.of(50L, 45L)))
                 .willReturn(List.of(asset1));  // event2는 에셋 없음

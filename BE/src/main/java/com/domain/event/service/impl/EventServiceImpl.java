@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +79,7 @@ public class EventServiceImpl implements EventService {
 
         // Step3: 이미지 유효성 검사
         log.info("Step3: Validate images - count={}", request.image() != null ? request.image().size() : 0);
-        AssetValidator.validateImages(request.image(), ErrorCode.IMAGE_TOO_LARGE);
+        AssetValidator.validateImages(Objects.requireNonNull(request.image()));
         log.info("Step3: OK");
 
         // Step4: 날짜 파싱
@@ -128,6 +129,7 @@ public class EventServiceImpl implements EventService {
         );
         log.info("Step10: OK");
 
+        log.info("[EventServiceImpl]: {}", uploadedImageUrls);
         // Step11: 메시지 발행
         log.info("Step11: Publish message to Redis stream={}", RedisStreamKey.EVENT_ASSET);
         eventAssetRedisPublisher.publish(RedisStreamKey.EVENT_ASSET, message);
@@ -281,7 +283,8 @@ public class EventServiceImpl implements EventService {
         return events.stream()
                 .map(event -> ActiveStoreEventResponse.from(
                         event,
-                        assetMap.get(event.getId())  // null일 수 있음을 고려
+                        assetMap.get(event.getId()),
+                        event.getStore()
                 ))
                 .toList();
     }
@@ -301,6 +304,11 @@ public class EventServiceImpl implements EventService {
         eventRepository.save(event);
     }
 
+    @Override
+    public List<Event> getEvents(final Long storeId) {
+        return eventRepository.findByStoreIdAndStatus(storeId, Status.SUCCESS);
+    }
+
     private Event createPendingEvent(final String title, final Store store, final LocalDate startDate,
                                      final LocalDate endDate) {
         return eventRepository.save(Event.createPending(title, store, startDate, endDate));
@@ -313,7 +321,7 @@ public class EventServiceImpl implements EventService {
     private List<String> uploadImages(final List<MultipartFile> images, final String relativeBase,
                                       final boolean convertToWebp) {
         return images.stream()
-                .map(file -> fileStorageService.storeImage(
+                .map(file -> fileStorageService.storeEventAndMenuPosterImage(
                         file,
                         relativeBase,
                         file.getOriginalFilename(),

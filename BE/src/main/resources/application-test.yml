@@ -8,22 +8,17 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
+
   aop:
     proxy-target-class: true
 
-logging:
-  level:
-    com.global.aop: TRACE
-    com.domain..controller: INFO
-    com.domain..service: INFO
-    com.domain..repository: INFO
-    org.hibernate.SQL: OFF
-
 filestorage: # 파일 저장소 설정
+  base-dir: /root/eatda
+  host-base-dir: /home/ubuntu/eatda/test
   base-url: "https://i13a609.p.ssafy.io/eatda/test"
 
 springdoc:

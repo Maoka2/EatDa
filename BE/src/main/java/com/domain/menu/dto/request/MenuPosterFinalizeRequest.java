@@ -10,9 +10,6 @@ public record MenuPosterFinalizeRequest(
         @NotNull(message = "MENU_POSTER_ID_REQUIRED")
         Long menuPosterId,
 
-        @NotNull(message = "MENU_POSTER_ASSET_ID_REQUIRED")
-        Long menuPosterAssetId,
-
         @NotBlank(message = "DESCRIPTION_REQUIRED")
         @Size(min = 30, message = "DESCRIPTION_TOO_SHORT")
         String description,
