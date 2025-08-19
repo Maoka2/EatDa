@@ -19,7 +19,7 @@ reload-infra:
     entrypoint: [""]
   script:
     - cp -r $CI_PROJECT_DIR/INFRA/* /srv/
-    - docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.yml down
+    # - docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.yml down
     - docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.yml up -d
   rules:
     - when: manual
