@@ -41,3 +41,11 @@ scrape_configs:
     static_configs:
       - targets:
           - "eatda-prod-green:8080"
+
+  - job_name: "eatda-ai"
+    metrics_path: "/metrics"
+    scheme: "http"
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - "eatda-ai:8000"
