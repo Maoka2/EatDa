@@ -19,7 +19,7 @@ reload-infra:
     entrypoint: [""]
   script:
     - cp -r $CI_PROJECT_DIR/INFRA/* /srv/
-    # - docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.yml down
+    - docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.yml down
     - docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.yml up -d
   rules:
     - when: manual
@@ -92,7 +92,7 @@ BE:build-docker-image:
       else
         export ENV=test
       fi
-      export NEXT_SLOT=green
+      export NEXT_SLOT=$($CI_PROJECT_DIR/INFRA/scripts/get-next-slot.sh $ENV)
       docker build -t eatda:$CI_COMMIT_SHORT_SHA .
       docker tag eatda:$CI_COMMIT_SHORT_SHA eatda:$ENV-$NEXT_SLOT
   rules:
@@ -140,7 +140,7 @@ BE:deploy-slot-based:
       else
         export ENV=test
       fi
-      export NEXT_SLOT=green
+      export NEXT_SLOT=$($CI_PROJECT_DIR/INFRA/scripts/get-next-slot.sh $ENV)
       export PREV_SLOT=$( [ "$NEXT_SLOT" = "blue" ] && echo "green" || echo "blue" )
       docker compose -f $CI_PROJECT_DIR/INFRA/docker/docker-compose.${ENV}.yml up -d ${ENV}-${NEXT_SLOT}
       docker exec ${ENV}-nginx cp /srv/nginx/${ENV}/default-${NEXT_SLOT}.conf /etc/nginx/conf.d/default.conf
