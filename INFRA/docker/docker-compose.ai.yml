@@ -8,6 +8,8 @@ services:
       - /home/ubuntu/eatda/ai:/home/ubuntu/eatda/ai
     networks:
       - backend
+    command: >
+      gunicorn -k uvicorn.workers.UvicornWorker main:app -w 4 -b 0.0.0.0:8000
 
 networks:
   backend:
