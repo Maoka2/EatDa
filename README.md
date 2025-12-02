@@ -596,6 +596,7 @@ CREATE TABLE review_asset (
   status ENUM('PENDING', 'SUCCESS', 'FAIL'),
   FOREIGN KEY (review_id) REFERENCES review(id)
 );
+```
 </details>
 
 팀원 소개
