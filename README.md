@@ -615,3 +615,4 @@ CREATE TABLE review_asset (
 이 프로젝트는 MIT 라이선스 하에 배포됩니다.
 <div align="center">
  EatDa - AI로 소상공인과 소비자를 연결하는 위치 기반 로컬 커뮤니티 플랫폼 GitHub </div>
+```
