@@ -1,3 +1,4 @@
+```
 # EatDa - AI 기반 소상공인 홍보 플랫폼
 
 <div align="center">
@@ -167,29 +168,32 @@
 <img src="https://i.imgur.com/twJ0i4L.png" width="80%">
 
 ### 전체 구조
+
+```
 ┌─────────────┐
 │ React Native│
-│ Client │
+│   Client    │
 └──────┬──────┘
-│
-▼
+       │
+       ▼
 ┌─────────────────────────────────────┐
-│ Nginx (Reverse Proxy) │
+│         Nginx (Reverse Proxy)        │
 └──────┬──────────────────────┬───────┘
-│ │
-▼ ▼
-┌─────────────┐ ┌──────────────┐
-│ Spring │◄─────┤ FastAPI │
-│ Boot │ │ (AI Service)│
-└──────┬──────┘ └──────────────┘
-│
-├──────────────┐
-▼ ▼
-┌─────────┐ ┌────────────┐
-│ MySQL │ │ Redis │
-└─────────┘ │ Streams │
-│ + Cache │
-└────────────┘
+       │                      │
+       ▼                      ▼
+┌─────────────┐      ┌──────────────┐
+│   Spring    │◄─────┤   FastAPI    │
+│    Boot     │      │  (AI Service)│
+└──────┬──────┘      └──────────────┘
+       │
+       ├──────────────┐
+       ▼              ▼
+┌─────────┐    ┌────────────┐
+│  MySQL  │    │   Redis    │
+└─────────┘    │  Streams   │
+               │  + Cache   │
+               └────────────┘
+```
 
 ### Blue-Green Deployment
 
@@ -215,9 +219,11 @@
 - 분산 환경 캐시 일관성 유지
 
 #### 조회 흐름
+```
 사용자 요청 → L1 확인 → L2 확인 → MySQL 조회
-↓ Hit ↓ Hit ↓
-응답 L1 승격 캐시 갱신
+            ↓ Hit     ↓ Hit     ↓
+            응답     L1 승격    캐시 갱신
+```
 
 ### Redis Streams 메시징
 
@@ -257,51 +263,51 @@
 
 ### 리뷰 피드
 <p>
-    <img src="https://github.com/user-attachments/assets/9b702f77-d5ef-4a14-92e4-2ceb79445111" height="300"/>
-    <img src="https://github.com/user-attachments/assets/9caa7799-cbbe-49f3-97bf-ac1d48d53164" height="300"/>
+	<img src="https://github.com/user-attachments/assets/9b702f77-d5ef-4a14-92e4-2ceb79445111" height="300"/>
+	<img src="https://github.com/user-attachments/assets/9caa7799-cbbe-49f3-97bf-ac1d48d53164" height="300"/>
 </p>
 
 ### 가게 메뉴, 이벤트
 <p>
-    <img src="https://github.com/user-attachments/assets/9061bbd5-292a-403e-82a7-6e3e548150ab" height="300"/>
-    <img src="https://github.com/user-attachments/assets/386bd5dd-993d-4249-bf5e-1b5a4a398371" height="300"/>
-    <img src="https://github.com/user-attachments/assets/fbdd5bfd-6bf6-41d4-9dd5-93fe33f1f260" height="300"/>
-    <img src="https://github.com/user-attachments/assets/ecdff839-a98d-4703-bfd7-9f37c2a47589" height="300"/>
-    <img src="https://github.com/user-attachments/assets/18ba07a0-eb18-4c0b-911a-13450b816f44" height="300"/>
+	<img src="https://github.com/user-attachments/assets/9061bbd5-292a-403e-82a7-6e3e548150ab" height="300"/>
+	<img src="https://github.com/user-attachments/assets/386bd5dd-993d-4249-bf5e-1b5a4a398371" height="300"/>
+	<img src="https://github.com/user-attachments/assets/fbdd5bfd-6bf6-41d4-9dd5-93fe33f1f260" height="300"/>
+	<img src="https://github.com/user-attachments/assets/ecdff839-a98d-4703-bfd7-9f37c2a47589" height="300"/>
+	<img src="https://github.com/user-attachments/assets/18ba07a0-eb18-4c0b-911a-13450b816f44" height="300"/>
 </p>
 
 ### 리뷰 작성
 <p>
-    <img src="https://github.com/user-attachments/assets/435d88c0-b034-425c-b2e2-eb0b3ccfd567" height="300"/>
-    <img src="https://github.com/user-attachments/assets/857e2380-b306-422a-87fa-2f5878ce191b" height="300"/>
-    <img src="https://github.com/user-attachments/assets/2d19ae4d-5f99-4574-be00-1420bd370de3" height="300"/>
-    <img src="https://github.com/user-attachments/assets/867a3f46-3462-45bf-a473-9d673a3fa818" height="300"/>
-    <img src="https://github.com/user-attachments/assets/b5274859-88d8-4885-a19b-8d49cedb7954" height="300"/>
-    <img src="https://github.com/user-attachments/assets/c0994442-7b1e-45eb-8b16-7b43aef0b0ca" height="300"/>
+	<img src="https://github.com/user-attachments/assets/435d88c0-b034-425c-b2e2-eb0b3ccfd567" height="300"/>
+	<img src="https://github.com/user-attachments/assets/857e2380-b306-422a-87fa-2f5878ce191b" height="300"/>
+	<img src="https://github.com/user-attachments/assets/2d19ae4d-5f99-4574-be00-1420bd370de3" height="300"/>
+	<img src="https://github.com/user-attachments/assets/867a3f46-3462-45bf-a473-9d673a3fa818" height="300"/>
+	<img src="https://github.com/user-attachments/assets/b5274859-88d8-4885-a19b-8d49cedb7954" height="300"/>
+	<img src="https://github.com/user-attachments/assets/c0994442-7b1e-45eb-8b16-7b43aef0b0ca" height="300"/>
 </p>
 
 ### 메뉴판 꾸미기
 <p>
-    <img src="https://github.com/user-attachments/assets/f1b307b3-3779-4f73-8cc3-f0aec6f33421" height="300"/>
-    <img src="https://github.com/user-attachments/assets/7f101b70-f2c7-464f-9de7-25bd81874bc7" height="300"/>
-    <img src="https://github.com/user-attachments/assets/693af2e9-8b6a-4add-b1a8-336091ee7a6a" height="300"/>
-    <img src="https://github.com/user-attachments/assets/c5bc2200-7513-477f-964b-4c2aeb6f49b8" height="300"/>
+	<img src="https://github.com/user-attachments/assets/f1b307b3-3779-4f73-8cc3-f0aec6f33421" height="300"/>
+	<img src="https://github.com/user-attachments/assets/7f101b70-f2c7-464f-9de7-25bd81874bc7" height="300"/>
+	<img src="https://github.com/user-attachments/assets/693af2e9-8b6a-4add-b1a8-336091ee7a6a" height="300"/>
+	<img src="https://github.com/user-attachments/assets/c5bc2200-7513-477f-964b-4c2aeb6f49b8" height="300"/>
 </p>
 
 ### 이벤트 만들기
 <p>
-    <img src="https://github.com/user-attachments/assets/991e3f27-8751-4f4b-ba1c-2726046526f4" height="300"/>
-    <img src="https://github.com/user-attachments/assets/ea8d4e75-3e3c-45ff-9f14-c3fdac1322ff" height="300"/>
-    <img src="https://github.com/user-attachments/assets/ce2169af-7a77-46f1-901e-1d63a1a8bddb" height="300"/>
-    <img src="https://github.com/user-attachments/assets/a909366d-e9a6-41f2-8bb3-9e3206335fdc" height="300"/>
+	<img src="https://github.com/user-attachments/assets/991e3f27-8751-4f4b-ba1c-2726046526f4" height="300"/>
+	<img src="https://github.com/user-attachments/assets/ea8d4e75-3e3c-45ff-9f14-c3fdac1322ff" height="300"/>
+	<img src="https://github.com/user-attachments/assets/ce2169af-7a77-46f1-901e-1d63a1a8bddb" height="300"/>
+	<img src="https://github.com/user-attachments/assets/a909366d-e9a6-41f2-8bb3-9e3206335fdc" height="300"/>
 </p>
 
 ### 마이페이지
 <p>
-    <img src="https://github.com/user-attachments/assets/12671e73-e781-49b2-91b4-f26db173da63" height="300"/>
-    <img src="https://github.com/user-attachments/assets/fd7f01f6-ebcf-4bca-9cef-396b9adcc89b" height="300"/>
-    <img src="https://github.com/user-attachments/assets/b329f9da-faf8-40d0-98e9-fa1654082538" height="300"/>
-    <img src="https://github.com/user-attachments/assets/7ca09544-2223-4e51-8133-20938725f113" height="300"/>
+	<img src="https://github.com/user-attachments/assets/12671e73-e781-49b2-91b4-f26db173da63" height="300"/>
+	<img src="https://github.com/user-attachments/assets/fd7f01f6-ebcf-4bca-9cef-396b9adcc89b" height="300"/>
+	<img src="https://github.com/user-attachments/assets/b329f9da-faf8-40d0-98e9-fa1654082538" height="300"/>
+	<img src="https://github.com/user-attachments/assets/7ca09544-2223-4e51-8133-20938725f113" height="300"/>
 </p>
 
 ---
@@ -597,23 +603,39 @@ CREATE TABLE review_asset (
   FOREIGN KEY (review_id) REFERENCES review(id)
 );
 ```
+
 </details>
 
-팀원 소개
+---
+
+## 팀원 소개
+
 <div align="center">
+
 | 역할 | 이름 | GitHub |
 |:---:|:---:|:---:|
-| 팀장 / Infra | 백제완 | @jewan100 |
-| BE | 김건학 | @Gonagi |
-| BE | 한종욱 | @Ukj0ng |
-| FE | 양세희 | @sehee-xx |
-| FE | 이종현 | @Maoka2 |
-| AI | 최상인 | @sangin302 |
+| **팀장 / Infra** | 백제완 | [@jewan100](https://github.com/jewan100) |
+| **BE** | 김건학 | [@Gonagi](https://github.com/Gonagi) |
+| **BE** | 한종욱 | [@Ukj0ng](https://github.com/Ukj0ng) |
+| **FE** | 양세희 | [@sehee-xx](https://github.com/sehee-xx) |
+| **FE** | 이종현 | [@Maoka2](https://github.com/Maoka2) |
+| **AI** | 최상인 | [@sangin302](https://github.com/sangin302) |
+
 </div>
 
+---
 
-라이선스
+## 라이선스
+
 이 프로젝트는 MIT 라이선스 하에 배포됩니다.
+
+---
+
 <div align="center">
- EatDa - AI로 소상공인과 소비자를 연결하는 위치 기반 로컬 커뮤니티 플랫폼 GitHub </div>
+
+**EatDa** - AI로 소상공인과 소비자를 연결하는 위치 기반 로컬 커뮤니티 플랫폼
+
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/your-repo)
+
+</div>
 ```
